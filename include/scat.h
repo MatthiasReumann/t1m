@@ -45,7 +45,7 @@ std::vector<std::vector<size_t>> multi_level(std::vector<std::vector<size_t>> le
   return l;
 }
 
-std::vector<size_t> scat(std::vector<size_t> sizes, std::vector<size_t> strides)
+std::vector<size_t> get_scat(std::vector<size_t> sizes, std::vector<size_t> strides)
 {
   assert(sizes.size() == strides.size());
 
@@ -70,7 +70,7 @@ std::vector<size_t> scat(std::vector<size_t> sizes, std::vector<size_t> strides)
   std::reverse(levels.begin(), levels.end());
   auto ml = multi_level(levels);
 
-  // flatten again
+  // flatten
   for (auto &x : ml)
   {
     for (auto &y : x)
