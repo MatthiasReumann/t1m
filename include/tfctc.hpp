@@ -4,11 +4,11 @@
 Please give this project a better name.
 */
 #include "marray.hpp"
-#include "index_bundle_finder.h"
-#include "scatter_matrix.h"
-#include "macrokernel.h"
-#include "definitions.h"
-#include "utils.h"
+#include "index_bundle_finder.hpp"
+#include "scatter_matrix.hpp"
+#include "macrokernel.hpp"
+#include "definitions.hpp"
+#include "utils.hpp"
 
 template <int mc, int nc, int kc>
 void gemm(ScatterMatrix *A, ScatterMatrix *B, ScatterMatrix *C)
@@ -33,8 +33,8 @@ void gemm(ScatterMatrix *A, ScatterMatrix *B, ScatterMatrix *C)
   {
     for (int p_c = 0; p_c < k - (k % kc); p_c += kc)
     {
-      B->pack_to_submatrix<float, kc, nc>(B_tilde,  p_c, j_c);
-      
+      B->pack_to_submatrix<float, kc, nc>(B_tilde, p_c, j_c);
+
       for (int i_c = 0; i_c < m - (m % mc); i_c += mc)
       {
         A->pack_to_submatrix<float, mc, kc>(A_tilde, i_c, p_c);
@@ -61,8 +61,8 @@ void gemm(ScatterMatrix *A, ScatterMatrix *B, ScatterMatrix *C)
     }
   }
 
-   for (int i = 0; i < m; i++)
-    {
+  for (int i = 0; i < m; i++)
+  {
     for (int j = n - (n % nc); j < n; j++)
     {
       float c_ij = 0.;

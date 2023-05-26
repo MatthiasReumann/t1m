@@ -16,7 +16,7 @@ template <typename T>
 void print_vec(std::vector<T> &vec)
 {
   std::cout << "[ ";
-  for (auto &v : vec)
+  for (auto v : vec)
   {
     std::cout << v << " ";
   }

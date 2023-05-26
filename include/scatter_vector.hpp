@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-#include "scat.h"
+#include "scat.hpp"
 #include "marray.hpp"
 
 class ScatterVector
@@ -27,6 +27,6 @@ public:
   {
     return this->scat.at(i);
   }
-private:
+  
   std::vector<size_t> scat;
 };

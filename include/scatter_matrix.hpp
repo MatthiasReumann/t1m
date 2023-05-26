@@ -1,7 +1,9 @@
 #pragma once
 
-#include "definitions.h"
-#include "scatter_vector.h"
+#include "definitions.hpp"
+#include "scatter_vector.hpp"
+#include "block_scatter_vector.hpp"
+#include "utils.hpp"
 #include <vector>
 
 class ScatterMatrix : public Tensor<float>
@@ -10,7 +12,15 @@ public:
   ScatterMatrix(Tensor<float> &t, std::vector<size_t> row_indices, std::vector<size_t> col_indices)
       : Tensor<float>(t),
         rscat(this->lengths(), this->strides(), row_indices),
-        cscat(this->lengths(), this->strides(), col_indices) { }
+        cscat(this->lengths(), this->strides(), col_indices),
+        rbs(this->rscat),
+        cbs(this->cscat)
+  {
+    print_vec(this->rscat.scat);
+    print_vec(this->rbs.bs);
+    print_vec(this->cscat.scat);
+    print_vec(this->cbs.bs);
+  }
 
   template <typename T, int m, int n> // m x n
   void pack_to_submatrix(T *submatrix, int off_i, int off_j)
@@ -55,4 +65,7 @@ public:
 
   ScatterVector rscat;
   ScatterVector cscat;
+
+  BlockScatterVector<2> rbs;
+  BlockScatterVector<2> cbs;
 };
