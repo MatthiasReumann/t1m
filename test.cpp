@@ -27,7 +27,11 @@ public:
       s.push_back(static_cast<size_t>(strides.at(idx)));
     }
     this->scat = get_scat(l, s);
-    print_vec(this->scat);
+  }
+
+  const size_t size()
+  {
+    return this->scat.size();
   }
 
   const size_t at(int i)
@@ -44,47 +48,47 @@ public:
   ScatterMatrix(Tensor<float> &t, std::vector<size_t> row_indices, std::vector<size_t> col_indices)
       : Tensor<float>(t),
         rscat(this->lengths(), this->strides(), row_indices),
-        cscat(this->lengths(), this->strides(), col_indices) {}
+        cscat(this->lengths(), this->strides(), col_indices) { }
 
   template <typename T, int m, int n> // m x n
-  void pack_to_submatrix(T* submatrix)
+  void pack_to_submatrix(T *submatrix, int off_i, int off_j)
   {
-    const T* ptr = this->cdata();
+    const T *ptr = this->cdata();
     for (int j = 0; j < n; j++)
     {
       for (int i = 0; i < m; i++)
       {
-        submatrix[i + j * m] = ptr[this->location(i, j)];
+        submatrix[i + j * m] = ptr[this->location(i + off_i, j + off_j)];
       }
     }
   }
 
   template <typename T, int m, int n> // m x n
-  void pack_from_submatrix(T* submatrix)
+  void add_from_submatrix(T *submatrix, int off_i, int off_j)
   {
-    T* ptr = this->data();
+    T *ptr = this->data();
     for (int j = 0; j < n; j++)
     {
       for (int i = 0; i < m; i++)
       {
-        ptr[this->location(i, j)] = submatrix[i + j * m];
+        ptr[this->location(i + off_i, j + off_j)] += submatrix[i + j * m];
       }
     }
+  }
+
+  int row_size()
+  {
+    return this->rscat.size();
+  }
+
+  int col_size()
+  {
+    return this->cscat.size();
   }
 
   int location(int i, int j)
   {
     return this->rscat.at(i) + this->cscat.at(j);
-  }
-
-  std::vector<size_t> get_rscat()
-  {
-    return this->rscat.scat;
-  }
-
-  std::vector<size_t> get_cscat()
-  {
-    return this->cscat.scat;
   }
 
   ScatterVector rscat;
@@ -94,88 +98,59 @@ public:
 template <int mc, int nc, int kc>
 void gemm(ScatterMatrix *A, ScatterMatrix *B, ScatterMatrix *C)
 {
-  // B_(PJ)
-  auto rscat_I_C = C->get_rscat();
-  auto cscat_J_C = C->get_cscat();
-
-  // A_(IP)
-  auto rscat_I_A = A->get_rscat();
-  auto cscat_P_A = A->get_cscat();
-
-  // B_(PJ)
-  auto rscat_P_B = B->get_rscat();
-  auto cscat_J_B = B->get_cscat();
-
-  size_t m = rscat_I_A.size();
-  size_t k = cscat_P_A.size();
-  size_t n = cscat_J_B.size();
-
-  /*
-  TODO: Use microkernel only for full matrices. Use normal GEMM as
-  obove for the last (not full) matrices.
-  */
-
-  // TODO: Rename
-  /*
-  int frac_I = (int)(m / MC);
-  int frac_P = (int)(k / KC);
-  int frac_J = (int)(n / NC);
-
-  int rest_I = (int)(m % MC);
-  int rest_P = (int)(k % KC);
-  int rest_J = (int)(n % NC);
-
   float *A_ = A->data();
   float *B_ = B->data();
   float *C_ = C->data();
 
-  std::cout << frac_I << std::endl;
-  std::cout << frac_P << std::endl;
-  std::cout << frac_J << std::endl;
-
-  std::cout << rest_I << std::endl;
-  std::cout << rest_P << std::endl;
-  std::cout << rest_J << std::endl; */
+  size_t m = A->row_size();
+  size_t k = A->col_size();
+  size_t n = B->col_size();
 
   float *A_tilde = nullptr; // A in R^{mc x kc}
   float *B_tilde = nullptr; // B in G^{kc x nc}
-  float *C_tilde = nullptr; // B in G^{mc x nc}
+  float *C_tilde = nullptr; // C in G^{mc x nc}
+
   alloc_aligned<float>(&A_tilde, mc * kc);
   alloc_aligned<float>(&B_tilde, kc * nc);
   alloc_aligned<float>(&C_tilde, mc * nc);
 
-  for (int j_c = 0; j_c < n; j_c += nc)
+  for (int j_c = 0; j_c < int(n/nc); j_c++)
   {
-    for (int p_c = 0; p_c < k; p_c += kc)
+    for (int p_c = 0; p_c < int(k/kc); p_c++)
     {
-      B->pack_to_submatrix<float, kc, nc>(B_tilde);
-      for (int i_c = 0; i_c < m; i_c += mc)
+      B->pack_to_submatrix<float, kc, nc>(B_tilde,  p_c * kc, j_c * nc);
+      
+      for (int i_c = 0; i_c < int(m/mc); i_c++)
       {
-        A->pack_to_submatrix<float, mc, kc>(A_tilde);
-        
+        A->pack_to_submatrix<float, mc, kc>(A_tilde, i_c * mc, p_c * kc);
+
         macrokernel_simple<mc, nc, kc>(A_tilde, B_tilde, C_tilde);
 
-        C->pack_from_submatrix<float, mc, nc>(C_tilde);
+        C->add_from_submatrix<float, mc, nc>(C_tilde, i_c * mc, j_c * nc);
       }
     }
   }
 
-  /*
-  for (int i = frac_I * MC; i < rscat_I_A.size(); i++)
+  for (int i = (int(m/mc) * mc); i < m; i++)
   {
-    for (int j = frac_J * NC; j < cscat_J_B.size(); j++)
+    for (int j = (int(n/nc) * nc); j < n; j++)
     {
       float c_ij = 0.;
-      for (int p = frac_P * KC; p < cscat_P_A.size(); p++)
+      for (int p = (int(k/kc) * kc); p < k; p++)
       {
-        const float a = A_[rscat_I_A[i] + cscat_P_A[p]];
-        const float b = B_[rscat_P_B[p] + cscat_J_B[j]];
+        A->location(i, p);
+        const float a = A_[A->location(i, p)];
+        const float b = B_[B->location(p, j)];
         c_ij += a * b;
       }
 
-      C_[rscat_I_C[i] + cscat_J_C[j]] = c_ij;
+      C_[C->location(i, j)] = c_ij;
     }
-  }*/
+  }
+
+  free(A_tilde);
+  free(B_tilde);
+  free(C_tilde);
 }
 
 void contract(Tensor<float> A, std::string labelsA,
@@ -187,55 +162,80 @@ void contract(Tensor<float> A, std::string labelsA,
   auto scatterB = new ScatterMatrix(B, indexLabelFinder->Pb, indexLabelFinder->J);
   auto scatterC = new ScatterMatrix(C, indexLabelFinder->Ic, indexLabelFinder->Jc);
 
-  // B_(PJ)
-  auto rscat_I_C = scatterC->get_rscat();
-  auto cscat_J_C = scatterC->get_cscat();
-
-  // A_(IP)
-  auto rscat_I_A = scatterA->get_rscat();
-  auto cscat_P_A = scatterA->get_cscat();
-
-  // B_(PJ)
-  auto rscat_P_B = scatterB->get_rscat();
-  auto cscat_J_B = scatterB->get_cscat();
-
-  gemm<2, 2, 2>(scatterA, scatterB, scatterC);
+  gemm<5, 5, 5>(scatterA, scatterB, scatterC);
 }
 
-void test()
+void test4x4()
 {
+  std::cout << "TEST 4x4 . 4x4 = 4x4" << '\n';
   float *A_ptr = nullptr;
   float *B_ptr = nullptr;
   float *C_ptr = nullptr;
 
-  alloc_aligned<float>(&A_ptr, 2 * 2);
-  alloc_aligned<float>(&B_ptr, 2 * 2);
-  alloc_aligned<float>(&C_ptr, 2 * 2);
+  alloc_aligned<float>(&A_ptr, 4 * 4);
+  alloc_aligned<float>(&B_ptr, 4 * 4);
+  alloc_aligned<float>(&C_ptr, 4 * 4);
 
-  A_ptr[0] = 3.;
-  A_ptr[2] = 1.;
-  A_ptr[1] = 4.;
-  A_ptr[3] = 7.;
+  A_ptr[0] = 3.; A_ptr[4] = 1.; A_ptr[8] = 0.;  A_ptr[12] =  1.;
+  A_ptr[1] = 4.; A_ptr[5] = 7.; A_ptr[9] = 1.1; A_ptr[13] = 1.;
+  A_ptr[2] = 1.; A_ptr[6] = 0.; A_ptr[10] = 1.; A_ptr[14] = 1.;
+  A_ptr[3] = 1.; A_ptr[7] = 0.; A_ptr[11] = 0.; A_ptr[15] = 1.;
 
-  B_ptr[0] = 1.;
-  B_ptr[2] = 0.;
-  B_ptr[1] = 1.;
-  B_ptr[3] = 1.;
+  B_ptr[0] = 1.; B_ptr[4] = 1.; B_ptr[8] = 0.;   B_ptr[12] = 1.; 
+  B_ptr[2] = 0.; B_ptr[5] = 0.; B_ptr[9] = 1.;   B_ptr[13] = 1.7;
+  B_ptr[1] = 1.; B_ptr[6] = 1.; B_ptr[10] = 4.3; B_ptr[14] = 2.;
+  B_ptr[3] = 1.; B_ptr[7] = 3.; B_ptr[11] = 1.;  B_ptr[15] = 1.;
 
-  auto A_lengths = {2, 2};
-  auto B_lengths = {2, 2};
-  auto C_lengths = {2, 2};
-
-  std::cout << "sizeof(float) = " << sizeof(float) << std::endl;
+  auto A_lengths = {4, 4};
+  auto B_lengths = {4, 4};
+  auto C_lengths = {4, 4};
 
   auto A = Tensor<float>(A_lengths, A_ptr, MArray::COLUMN_MAJOR);
   auto B = Tensor<float>(B_lengths, B_ptr, MArray::COLUMN_MAJOR);
   auto C = Tensor<float>(C_lengths, C_ptr, MArray::COLUMN_MAJOR);
 
+  std::cout << A << std::endl;
+  std::cout << B << std::endl;
+
   contract(A, "ba", B, "bc", C, "ca");
+
+  std::cout << C << std::endl;
+}
+
+void test4x3()
+{
+  std::cout << "TEST 4x3 . 3x4" << '\n';
+  float *A_ptr = nullptr;
+  float *B_ptr = nullptr;
+  float *C_ptr = nullptr;
+
+  alloc_aligned<float>(&A_ptr, 4 * 3);
+  alloc_aligned<float>(&B_ptr, 4 * 3);
+  alloc_aligned<float>(&C_ptr, 3 * 3);
+
+  A_ptr[0] = 3.; A_ptr[4] = 1.; A_ptr[8] = 0.;  
+  A_ptr[1] = 4.; A_ptr[5] = 7.; A_ptr[9] = 1.1;
+  A_ptr[2] = 1.; A_ptr[6] = 0.; A_ptr[10] = 1.; 
+  A_ptr[3] = 1.; A_ptr[7] = 0.; A_ptr[11] = 0.;
+
+  B_ptr[0] = 1.; B_ptr[4] = 1.; B_ptr[8] = 0.;  
+  B_ptr[2] = 0.; B_ptr[5] = 0.; B_ptr[9] = 1.; 
+  B_ptr[1] = 1.; B_ptr[6] = 1.; B_ptr[10] = 4.3;
+  B_ptr[3] = 1.; B_ptr[7] = 3.; B_ptr[11] = 1.;
+
+  auto A_lengths = {4, 3};
+  auto B_lengths = {4, 3};
+  auto C_lengths = {3, 3};
+
+  auto A = Tensor<float>(A_lengths, A_ptr, MArray::COLUMN_MAJOR);
+  auto B = Tensor<float>(B_lengths, B_ptr, MArray::COLUMN_MAJOR);
+  auto C = Tensor<float>(C_lengths, C_ptr, MArray::COLUMN_MAJOR);
 
   std::cout << A << std::endl;
   std::cout << B << std::endl;
+
+  contract(A, "ba", B, "bc", C, "ca");
+
   std::cout << C << std::endl;
 }
 
@@ -292,7 +292,8 @@ void test_macrokernel_simple()
 
 int main()
 {
-  test();
+  test4x4();
+  test4x3();
   // test_macrokernel_simple();
 
   return 1;

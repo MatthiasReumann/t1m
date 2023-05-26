@@ -23,12 +23,16 @@ void print_vec(std::vector<T> &vec)
 
 void print_mat(float* mat, int rows, int columns)
 {
+  std::cout << '{' << '\n';
   for (int i = 0; i < rows; i++)
   {
-    for (int j = 0; j < columns; j++)
+    std::cout << ' ' << '{';
+    for (int j = 0; j < columns - 1; j++)
     {
-      std::cout << mat[i + j * rows] << ' ';
+      std::cout << mat[i + j * rows] << ", ";
     }
-    std::cout << '\n';
+    std::cout << mat[i + (columns - 1)*rows];
+    std::cout <<  '}' << '\n';
   }
+  std::cout << '}' << '\n';
 }
