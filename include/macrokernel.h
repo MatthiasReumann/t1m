@@ -1,3 +1,5 @@
+#pragma once
+
 /*
 A = G^{mc x kc}, B = G^{kc x nc}, C = G^{mc x nc}
 C = A . B
