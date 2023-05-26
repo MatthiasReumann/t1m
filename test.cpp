@@ -12,6 +12,8 @@ constexpr int MC = 72;
 constexpr int NC = 4080;
 constexpr int KC = 256;
 
+constexpr char NWLN = '\n';
+
 template <class T>
 using Tensor = MArray::marray_view<T>;
 
@@ -114,36 +116,49 @@ void gemm(ScatterMatrix *A, ScatterMatrix *B, ScatterMatrix *C)
   alloc_aligned<float>(&B_tilde, kc * nc);
   alloc_aligned<float>(&C_tilde, mc * nc);
 
-  for (int j_c = 0; j_c < int(n/nc); j_c++)
+  for (int j_c = 0; j_c < n - (n % nc); j_c += nc)
   {
-    for (int p_c = 0; p_c < int(k/kc); p_c++)
+    for (int p_c = 0; p_c < k - (k % kc); p_c += kc)
     {
-      B->pack_to_submatrix<float, kc, nc>(B_tilde,  p_c * kc, j_c * nc);
+      B->pack_to_submatrix<float, kc, nc>(B_tilde,  p_c, j_c);
       
-      for (int i_c = 0; i_c < int(m/mc); i_c++)
+      for (int i_c = 0; i_c < m - (m % mc); i_c += mc)
       {
-        A->pack_to_submatrix<float, mc, kc>(A_tilde, i_c * mc, p_c * kc);
+        A->pack_to_submatrix<float, mc, kc>(A_tilde, i_c, p_c);
 
         macrokernel_simple<mc, nc, kc>(A_tilde, B_tilde, C_tilde);
 
-        C->add_from_submatrix<float, mc, nc>(C_tilde, i_c * mc, j_c * nc);
+        C->add_from_submatrix<float, mc, nc>(C_tilde, i_c, j_c);
       }
     }
   }
 
-  for (int i = (int(m/mc) * mc); i < m; i++)
+  for (int i = m - (m % mc); i < m; i++)
   {
-    for (int j = (int(n/nc) * nc); j < n; j++)
+    for (int j = 0; j < n; j++)
     {
       float c_ij = 0.;
-      for (int p = (int(k/kc) * kc); p < k; p++)
+      for (int p = 0; p < k; p++)
       {
-        A->location(i, p);
         const float a = A_[A->location(i, p)];
         const float b = B_[B->location(p, j)];
         c_ij += a * b;
       }
+      C_[C->location(i, j)] = c_ij;
+    }
+  }
 
+   for (int i = 0; i < m; i++)
+    {
+    for (int j = n - (n % nc); j < n; j++)
+    {
+      float c_ij = 0.;
+      for (int p = 0; p < k; p++)
+      {
+        const float a = A_[A->location(i, p)];
+        const float b = B_[B->location(p, j)];
+        c_ij += a * b;
+      }
       C_[C->location(i, j)] = c_ij;
     }
   }
@@ -162,7 +177,7 @@ void contract(Tensor<float> A, std::string labelsA,
   auto scatterB = new ScatterMatrix(B, indexLabelFinder->Pb, indexLabelFinder->J);
   auto scatterC = new ScatterMatrix(C, indexLabelFinder->Ic, indexLabelFinder->Jc);
 
-  gemm<5, 5, 5>(scatterA, scatterB, scatterC);
+  gemm<2, 2, 2>(scatterA, scatterB, scatterC);
 }
 
 void test4x4()
@@ -204,7 +219,7 @@ void test4x4()
 
 void test4x3()
 {
-  std::cout << "TEST 4x3 . 3x4" << '\n';
+  std::cout << "TEST 3x4 . 4x3 = 3x3" << '\n';
   float *A_ptr = nullptr;
   float *B_ptr = nullptr;
   float *C_ptr = nullptr;
