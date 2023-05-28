@@ -14,23 +14,30 @@ public:
         rscat(this->lengths(), this->strides(), row_indices),
         cscat(this->lengths(), this->strides(), col_indices),
         rbs(this->rscat),
-        cbs(this->cscat)
-  {
-    print_vec(this->rscat.scat);
-    print_vec(this->rbs.bs);
-    print_vec(this->cscat.scat);
-    print_vec(this->cbs.bs);
-  }
+        cbs(this->cscat) {}
 
   template <typename T, int m, int n> // m x n
-  void pack_to_submatrix(T *submatrix, int off_i, int off_j)
+  void pack_to_cont_buffer_col(T *buffer, int off_i, int off_j)
   {
     const T *ptr = this->cdata();
     for (int j = 0; j < n; j++)
     {
       for (int i = 0; i < m; i++)
       {
-        submatrix[i + j * m] = ptr[this->location(i + off_i, j + off_j)];
+        buffer[i + j * m] = ptr[this->location(i + off_i, j + off_j)];
+      }
+    }
+  }
+
+  template <typename T, int m, int n> // m x n
+  void pack_to_cont_buffer_row(T *buffer, int off_i, int off_j)
+  {
+    const T *ptr = this->cdata();
+    for (int j = 0; j < n; j++)
+    {
+      for (int i = 0; i < m; i++)
+      {
+        buffer[i + j * m] = ptr[this->location(i + off_i, j + off_j)];
       }
     }
   }
@@ -62,10 +69,10 @@ public:
   {
     return this->rscat.at(i) + this->cscat.at(j);
   }
-
+private:
   ScatterVector rscat;
   ScatterVector cscat;
 
-  BlockScatterVector<2> rbs;
-  BlockScatterVector<2> cbs;
+  BlockScatterVector<4> rbs;
+  BlockScatterVector<4> cbs;
 };

@@ -9,31 +9,25 @@ class BlockScatterVector
 public:
   BlockScatterVector(ScatterVector &scat)
   {
-    bool isConst;
-    size_t d1, d2;
-    const auto size = scat.size() / b;
+    /*size_t stride; // s, if constant; 0, if different strides
+    const auto l = scat.size();
+    const auto size = std::ceil(l / static_cast<float>(b)); // ⌈l/b⌉
 
     this->bs.reserve(size);
-    std::cout << size << std::endl;
 
-    for (int i = 1; i < size; i += b)
+    for (int i = 0; i < scat.size(); i += b) // blocks
     {
-      isConst = true;
-      d1 = scat.at(i) - scat.at(i - 1);
-      for (int j = i + 1; j < i * b; j++)
+      stride = scat.at(i + 1) - scat.at(i);
+      for (int j = i; j < std::min(i + b, l) - 1; j++)
       {
-        std::cout << "hello" << std::endl;
-        d2 = scat.at(i) - scat.at(i - 1);
-        if (d2 != d1)
+        if (stride != scat.at(j + 1) - scat.at(j))
         {
-          isConst = false;
-          break;
+          stride = 0; break;
         }
-        d1 = scat.at(i) - scat.at(i - 1);
       }
-      this->bs.push_back(isConst);
-    }
+      this->bs.push_back(stride);
+    }*/
   }
 
-  std::vector<bool> bs;
+  std::vector<size_t> bs;
 };

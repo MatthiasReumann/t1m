@@ -23,7 +23,8 @@ void print_vec(std::vector<T> &vec)
   std::cout << ']' << '\n';
 }
 
-void print_mat(float* mat, int rows, int columns)
+template <typename T>
+void print_mat(T* mat, int rows, int columns)
 {
   std::cout << '{' << '\n';
   for (int i = 0; i < rows; i++)
