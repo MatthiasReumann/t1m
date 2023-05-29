@@ -39,3 +39,19 @@ void print_mat(T* mat, int rows, int columns)
   }
   std::cout << '}' << '\n';
 }
+
+template <typename T>
+void print_mat_row(T* mat, int rows, int columns)
+{
+  std::cout << '{' << '\n';
+  for (int i = 0; i < rows; i++)
+  {
+    std::cout << ' ' << '{';
+    for (int j = 0; j < columns; j++)
+    {
+      std::cout << mat[j + i * rows] << ", ";
+    }
+    std::cout <<  '}' << '\n';
+  }
+  std::cout << '}' << '\n';
+}

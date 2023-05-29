@@ -4,6 +4,7 @@
 #include "scatter_vector.hpp"
 #include "block_scatter_vector.hpp"
 #include "utils.hpp"
+#include "blis.h"
 #include <vector>
 
 class ScatterMatrix : public Tensor<float>
@@ -16,8 +17,8 @@ public:
         rbs(this->rscat),
         cbs(this->cscat) {}
 
-  template <typename T, int m, int n> // m x n
-  void pack_to_cont_buffer_col(T *buffer, int off_i, int off_j)
+  template <typename T> // m x n
+  void pack_to_cont_buffer_col(T *buffer, int off_i, int off_j, dim_t m, dim_t n)
   {
     const T *ptr = this->cdata();
     for (int j = 0; j < n; j++)
@@ -29,15 +30,15 @@ public:
     }
   }
 
-  template <typename T, int m, int n> // m x n
-  void pack_to_cont_buffer_row(T *buffer, int off_i, int off_j)
+  template <typename T> // m x n
+  void pack_to_cont_buffer_row(T *buffer, int off_i, int off_j, dim_t m, dim_t n)
   {
     const T *ptr = this->cdata();
     for (int j = 0; j < n; j++)
     {
       for (int i = 0; i < m; i++)
       {
-        buffer[i + j * m] = ptr[this->location(i + off_i, j + off_j)];
+        buffer[j + i * n] = ptr[this->location(i + off_i, j + off_j)];
       }
     }
   }
