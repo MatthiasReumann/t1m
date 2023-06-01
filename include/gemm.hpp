@@ -1,0 +1,148 @@
+#pragma once
+
+#include "scatter_matrix.hpp"
+#include "std_ext.hpp"
+#include "utils.hpp"
+#include "blis.h"
+
+template <typename T>
+struct gemm_context
+{
+  const cntx_t *cntx;
+  dim_t NC;
+  dim_t KC;
+  dim_t MC;
+  dim_t NR;
+  dim_t MR;
+  ScatterMatrix<T> *A;
+  ScatterMatrix<T> *B;
+  ScatterMatrix<T> *C;
+  T *alpha;
+  T *beta;
+  void (*kernel)(dim_t,
+                 dim_t,
+                 dim_t,
+                 const T *restrict,
+                 const T *restrict,
+                 const T *restrict,
+                 const T *restrict,
+                 T *restrict,
+                 inc_t,
+                 inc_t,
+                 auxinfo_t *restrict,
+                 const cntx_t *restrict);
+};
+
+template <typename T>
+void gemm_internal(const gemm_context<T> *gemm_ctx)
+{
+  ScatterMatrix<T> *A = gemm_ctx->A;
+  ScatterMatrix<T> *B = gemm_ctx->B;
+  ScatterMatrix<T> *C = gemm_ctx->C;
+
+  dim_t NC = gemm_ctx->NC;
+  dim_t KC = gemm_ctx->KC;
+  dim_t MC = gemm_ctx->MC;
+  dim_t NR = gemm_ctx->NR;
+  dim_t MR = gemm_ctx->MR;
+
+  size_t M = A->row_size();
+  size_t K = A->col_size();
+  size_t N = B->col_size();
+
+  T *A_tilde = nullptr; // A in G^{MC x KC}
+  T *B_tilde = nullptr; // B in G^{KC x NC}
+  T *C_tilde = nullptr; // C in G^{MC x NC}
+
+  // TODO: Allocate just once and adjust basepointer of *_tilde?
+  alloc_aligned<T>(&A_tilde, MC * KC);
+  alloc_aligned<T>(&B_tilde, KC * NC);
+  alloc_aligned<T>(&C_tilde, MC * NC);
+
+  dim_t m1, n1, k1;
+  inc_t rsc = 1, csc;
+
+  for (int j_c = 0; j_c < N; j_c += NC)
+  {
+    for (int p_c = 0; p_c < K; p_c += KC)
+    {
+      k1 = std_ext::min(KC, static_cast<dim_t>(K - p_c));
+      n1 = std_ext::min(NC, static_cast<dim_t>(N - j_c));
+      B->pack_to_cont_buffer_row(B_tilde, p_c, j_c, k1, n1, NR);
+
+      for (int i_c = 0; i_c < M; i_c += MC)
+      {
+        m1 = std_ext::min(MC, static_cast<dim_t>(M - i_c));
+        A->pack_to_cont_buffer_col(A_tilde, i_c, p_c, m1, k1, MR);
+
+        for (int j_r = 0; j_r < n1; j_r += NR)
+        {
+          dim_t n = std_ext::min(NR, n1 - j_r);
+
+          for (int i_r = 0; i_r < m1; i_r += MR)
+          {
+            dim_t m = std_ext::min(MR, m1 - i_r);
+            csc = m;
+
+            gemm_ctx->kernel(m,
+                             n,
+                             k1,
+                             gemm_ctx->alpha,
+                             A_tilde + i_r * k1,
+                             B_tilde + j_r * k1,
+                             gemm_ctx->beta,
+                             C_tilde, rsc, csc,
+                             NULL,
+                             gemm_ctx->cntx);
+
+            C->unpack_from_buffer(C_tilde, i_c, j_c, m, n);
+          }
+        }
+      }
+    }
+  }
+
+  free(A_tilde);
+  free(B_tilde);
+  free(C_tilde);
+}
+
+void gemm(double *alpha, ScatterMatrix<double> *A, ScatterMatrix<double> *B, double *beta, ScatterMatrix<double> *C, const cntx_t *cntx)
+{
+  const gemm_context<double> gemm_ctx = {
+      .cntx = cntx,
+      .NC = bli_cntx_get_l3_sup_blksz_def_dt(BLIS_DOUBLE, BLIS_NC, cntx),
+      .KC = bli_cntx_get_l3_sup_blksz_def_dt(BLIS_DOUBLE, BLIS_KC, cntx),
+      .MC = bli_cntx_get_l3_sup_blksz_def_dt(BLIS_DOUBLE, BLIS_MC, cntx),
+      .NR = bli_cntx_get_l3_sup_blksz_def_dt(BLIS_DOUBLE, BLIS_NR, cntx),
+      .MR = bli_cntx_get_l3_sup_blksz_def_dt(BLIS_DOUBLE, BLIS_MR, cntx),
+      .A = A,
+      .B = B,
+      .C = C,
+      .alpha = alpha,
+      .beta = beta,
+      .kernel = bli_dgemm_ukernel,
+  };
+
+  gemm_internal<double>(&gemm_ctx);
+}
+
+void gemm(float *alpha, ScatterMatrix<float> *A, ScatterMatrix<float> *B, float *beta, ScatterMatrix<float> *C, const cntx_t *cntx)
+{
+  const gemm_context<float> gemm_ctx = {
+      .cntx = cntx,
+      .NC = bli_cntx_get_l3_sup_blksz_def_dt(BLIS_FLOAT, BLIS_NC, cntx),
+      .KC = bli_cntx_get_l3_sup_blksz_def_dt(BLIS_FLOAT, BLIS_KC, cntx),
+      .MC = bli_cntx_get_l3_sup_blksz_def_dt(BLIS_FLOAT, BLIS_MC, cntx),
+      .NR = bli_cntx_get_l3_sup_blksz_def_dt(BLIS_FLOAT, BLIS_NR, cntx),
+      .MR = bli_cntx_get_l3_sup_blksz_def_dt(BLIS_FLOAT, BLIS_MR, cntx),
+      .A = A,
+      .B = B,
+      .C = C,
+      .alpha = alpha,
+      .beta = beta,
+      .kernel = bli_sgemm_ukernel,
+  };
+
+  gemm_internal<float>(&gemm_ctx);
+}

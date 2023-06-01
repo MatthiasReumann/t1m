@@ -7,20 +7,21 @@
 #include "blis.h"
 #include <vector>
 
-class ScatterMatrix : public Tensor<float>
+template <typename T>
+class ScatterMatrix : public Tensor<T>
 {
 public:
-  ScatterMatrix(Tensor<float> &t, std::vector<size_t> row_indices, std::vector<size_t> col_indices)
-      : Tensor<float>(t),
+  ScatterMatrix(Tensor<T> &t, std::vector<size_t> row_indices, std::vector<size_t> col_indices)
+      : Tensor<T>(t),
         rscat(this->lengths(), this->strides(), row_indices),
         cscat(this->lengths(), this->strides(), col_indices),
         rbs(this->rscat),
         cbs(this->cscat) {}
 
-  template <typename T>
-  void pack_to_cont_buffer_col(T *buffer, int off_i, int off_j, dim_t m, dim_t n, dim_t mr)
+  template <typename U>
+  void pack_to_cont_buffer_col(U *buffer, int off_i, int off_j, dim_t m, dim_t n, dim_t mr)
   {
-    const T *ptr = this->cdata();
+    const U *ptr = this->cdata();
 
     for (int i = 0; i < m; i += mr)
     {
@@ -40,7 +41,7 @@ public:
     }
   }
 
-  template <typename T>
+  template <typename U>
   /*
   OUTPUT: Layout of parameter *buffer
      <--nr-->
@@ -55,9 +56,9 @@ public:
   |  | >----- | /---->  |
   ⌄   ------------------
   */
-  void pack_to_cont_buffer_row(T *buffer, int off_i, int off_j, dim_t m, dim_t n, dim_t nr)
+  void pack_to_cont_buffer_row(U *buffer, int off_i, int off_j, dim_t m, dim_t n, dim_t nr)
   {
-    const T *ptr = this->cdata();
+    const U *ptr = this->cdata();
 
     for (int j = 0; j < n; j += nr)
     {
@@ -76,8 +77,8 @@ public:
     }
   }
 
-  template <typename T>
-  void unpack_from_buffer(T *buffer, int off_i, int off_j, dim_t m, dim_t n)
+  template <typename U>
+  void unpack_from_buffer(U *buffer, int off_i, int off_j, dim_t m, dim_t n)
   {
     T *ptr = this->data();
     for (int j = 0; j < n; j++)
