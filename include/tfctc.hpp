@@ -176,10 +176,10 @@ void contract(float alpha, Tensor<float> A, std::string labelsA,
               Tensor<float> B, std::string labelsB,
               float beta, Tensor<float> C, std::string labelsC)
 {
-  auto indexLabelFinder = new IndexBundleFinder(labelsA, labelsB, labelsC);
-  auto scatterA = new ScatterMatrix(A, indexLabelFinder->I, indexLabelFinder->Pa);
-  auto scatterB = new ScatterMatrix(B, indexLabelFinder->Pb, indexLabelFinder->J);
-  auto scatterC = new ScatterMatrix(C, indexLabelFinder->Ic, indexLabelFinder->Jc);
+  auto ilf = new IndexBundleFinder(labelsA, labelsB, labelsC);
+  auto scatterA = new ScatterMatrix(A, ilf->I, ilf->Pa);
+  auto scatterB = new ScatterMatrix(B, ilf->Pb, ilf->J);
+  auto scatterC = new ScatterMatrix(C, ilf->Ic, ilf->Jc);
 
   float *a = new float(alpha);
   float *b = new float(beta);

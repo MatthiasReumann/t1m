@@ -57,7 +57,7 @@ public:
         }
       }
     }
-
+    
     for (auto &idx : this->J)
     {
       for (int j = 0; j < this->labelsC.length(); j++)
