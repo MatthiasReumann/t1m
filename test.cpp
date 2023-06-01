@@ -21,30 +21,54 @@ void test4x4()
   alloc_aligned<float>(&B_ptr, 4 * 4);
   alloc_aligned<float>(&C_ptr, 4 * 4);
 
-  A_ptr[0] = 3.; A_ptr[4] = 1.; A_ptr[8] = 0.; A_ptr[12] = 1.;
-  A_ptr[1] = 4.; A_ptr[5] = 7.; A_ptr[9] = 1.1; A_ptr[13] = 1.;
-  A_ptr[2] = 1.; A_ptr[6] = 0.; A_ptr[10] = 1.; A_ptr[14] = 1.;
-  A_ptr[3] = 1.; A_ptr[7] = 0.; A_ptr[11] = 0.; A_ptr[15] = 1.;
+  A_ptr[0] = 3.;
+  A_ptr[4] = 1.;
+  A_ptr[8] = 0.;
+  A_ptr[12] = 1.;
+  A_ptr[1] = 4.;
+  A_ptr[5] = 7.;
+  A_ptr[9] = 1.1;
+  A_ptr[13] = 1.;
+  A_ptr[2] = 1.;
+  A_ptr[6] = 0.;
+  A_ptr[10] = 1.;
+  A_ptr[14] = 1.;
+  A_ptr[3] = 1.;
+  A_ptr[7] = 0.;
+  A_ptr[11] = 0.;
+  A_ptr[15] = 1.;
 
-  B_ptr[0] = 1.; B_ptr[4] = 1.; B_ptr[8] = 0.; B_ptr[12] = 1.;
-  B_ptr[1] = 0.; B_ptr[5] = 0.; B_ptr[9] = 1.; B_ptr[13] = 1.7;
-  B_ptr[2] = 1.; B_ptr[6] = 1.; B_ptr[10] = 4.3; B_ptr[14] = 2.;
-  B_ptr[3] = 1.; B_ptr[7] = 3.; B_ptr[11] = 1.; B_ptr[15] = 1.;
+  B_ptr[0] = 1.;
+  B_ptr[4] = 1.;
+  B_ptr[8] = 0.;
+  B_ptr[12] = 1.;
+  B_ptr[1] = 0.;
+  B_ptr[5] = 0.;
+  B_ptr[9] = 1.;
+  B_ptr[13] = 1.7;
+  B_ptr[2] = 1.;
+  B_ptr[6] = 1.;
+  B_ptr[10] = 4.3;
+  B_ptr[14] = 2.;
+  B_ptr[3] = 1.;
+  B_ptr[7] = 3.;
+  B_ptr[11] = 1.;
+  B_ptr[15] = 1.;
 
   auto A_lengths = {4, 4};
   auto B_lengths = {4, 4};
   auto C_lengths = {4, 4};
 
-  auto A = Tensor<float>(A_lengths, A_ptr, MArray::COLUMN_MAJOR);
-  auto B = Tensor<float>(B_lengths, B_ptr, MArray::COLUMN_MAJOR);
-  auto C = Tensor<float>(C_lengths, C_ptr, MArray::COLUMN_MAJOR);
+  auto A = Tensor<float>(A_lengths, A_ptr);
+  auto B = Tensor<float>(B_lengths, B_ptr);
+  auto C = Tensor<float>(C_lengths, C_ptr);
 
-  // std::cout << A << std::endl;
-  // std::cout << B << std::endl;
+  std::cout << A << std::endl;
+  std::cout << B << std::endl;
 
-  contract(A, "ba", B, "bc", C, "ca");
+  contract(1., A, "ab", B, "bc", 0., C, "ca");
 
-  // std::cout << C << std::endl;
+  std::cout << C << std::endl;
 }
 
 void test4x3()
@@ -88,14 +112,14 @@ void test4x3()
   auto B_lengths = {4, 3};
   auto C_lengths = {3, 3};
 
-  auto A = Tensor<float>(A_lengths, A_ptr, COLUMN_MAJOR);
-  auto B = Tensor<float>(B_lengths, B_ptr, COLUMN_MAJOR);
-  auto C = Tensor<float>(C_lengths, C_ptr, COLUMN_MAJOR);
+  auto A = Tensor<float>(A_lengths, A_ptr);
+  auto B = Tensor<float>(B_lengths, B_ptr);
+  auto C = Tensor<float>(C_lengths, C_ptr);
 
   std::cout << A << std::endl;
   std::cout << B << std::endl;
 
-  contract(A, "ba", B, "bc", C, "ca");
+  contract(1., A, "ba", B, "bc", 0., C, "ac");
 
   std::cout << C << std::endl;
 }
@@ -116,12 +140,12 @@ void testpaper()
 
   std::cout << "sizeof(float) = " << sizeof(float) << std::endl;
 
-  auto A = Tensor<float>(A_lengths, A_ptr, MArray::COLUMN_MAJOR);
-  auto B = Tensor<float>(B_lengths, B_ptr, MArray::COLUMN_MAJOR);
-  auto C = Tensor<float>(C_lengths, C_ptr, MArray::COLUMN_MAJOR);
+  auto A = Tensor<float>(A_lengths, A_ptr);
+  auto B = Tensor<float>(B_lengths, B_ptr);
+  auto C = Tensor<float>(C_lengths, C_ptr);
 
   // C_abcde = A_cfbd . B_fea
-  contract(A, "cfbd", B, "fea", C, "abcde");
+  contract(1., A, "cfbd", B, "fea", 0., C, "abcde");
 
   /*
   std::cout << A << std::endl;
@@ -164,15 +188,15 @@ void benchmark()
     alloc_aligned(&B, d2 * d3);
     alloc_aligned(&C, d1 * d3);
 
-    auto tensorA = Tensor<float>({d1, d2}, A, COLUMN_MAJOR);
-    auto tensorB = Tensor<float>({d2, d3}, B, COLUMN_MAJOR);
-    auto tensorC = Tensor<float>({d1, d3}, C, COLUMN_MAJOR);
+    auto tensorA = Tensor<float>({d1, d2}, A);
+    auto tensorB = Tensor<float>({d2, d3}, B);
+    auto tensorC = Tensor<float>({d1, d3}, C);
 
     std::vector<float> time(N);
     for (uint i = 0; i < N; i++)
     {
       auto t0 = std::chrono::high_resolution_clock::now();
-      contract(tensorA, "ab", tensorB, "cb", tensorC, "ac");
+      contract(1., tensorA, "ab", tensorB, "cb", 0., tensorC, "ac");
       auto t1 = std::chrono::high_resolution_clock::now();
       time[i] = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count();
     }
@@ -189,10 +213,10 @@ void benchmark()
 
 int main()
 {
-  test4x4();
+  // test4x4();
   // test4x3();
   // testpaper();
-  // benchmark();
+  benchmark();
 
   return 1;
 }

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "definitions.hpp"
+#include "tensor.hpp"
 #include "scatter_vector.hpp"
 #include "block_scatter_vector.hpp"
 #include "utils.hpp"
@@ -17,41 +17,74 @@ public:
         rbs(this->rscat),
         cbs(this->cscat) {}
 
-  template <typename T> // m x n
-  void pack_to_cont_buffer_col(T *buffer, int off_i, int off_j, dim_t m, dim_t n)
+  template <typename T>
+  void pack_to_cont_buffer_col(T *buffer, int off_i, int off_j, dim_t m, dim_t n, dim_t mr)
   {
     const T *ptr = this->cdata();
-    for (int j = 0; j < n; j++)
+
+    for (int i = 0; i < m; i += mr)
     {
-      for (int i = 0; i < m; i++)
+      for (int j = 0; j < n; j++)
       {
-        buffer[i + j * m] = ptr[this->location(i + off_i, j + off_j)];
+        for (int k = 0; k < mr; k++)
+        {
+          const int x = k + off_i + i;
+          const int y = j + off_j;
+
+          if (x < m)
+          {
+            buffer[i * n + k + j * mr] = ptr[this->location(x, y)];
+          }
+        }
       }
     }
   }
 
-  template <typename T> // m x n
-  void pack_to_cont_buffer_row(T *buffer, int off_i, int off_j, dim_t m, dim_t n)
+  template <typename T>
+  /*
+  OUTPUT: Layout of parameter *buffer
+     <--nr-->
+     <------ n ------->
+  ^   ------------------
+  |  | --->-⌄ | ----->  |
+  |  | >----⌄ | /---->  |
+  |  | >----⌄ | /---->  |
+  m  | >----⌄ | /---->  |
+  |  | >----⌄ | /---->  |
+  |  | >----⌄ | /---->  |
+  |  | >----- | /---->  |
+  ⌄   ------------------
+  */
+  void pack_to_cont_buffer_row(T *buffer, int off_i, int off_j, dim_t m, dim_t n, dim_t nr)
   {
     const T *ptr = this->cdata();
-    for (int j = 0; j < n; j++)
+
+    for (int j = 0; j < n; j += nr)
     {
       for (int i = 0; i < m; i++)
       {
-        buffer[j + i * n] = ptr[this->location(i + off_i, j + off_j)];
+        for (int k = 0; k < nr; k++)
+        {
+          const int x = i + off_i;
+          const int y = k + off_j + j;
+          if (y < n)
+          {
+            buffer[j * m + k + i * nr] = ptr[this->location(x, y)];
+          }
+        }
       }
     }
   }
 
-  template <typename T, int m, int n> // m x n
-  void add_from_submatrix(T *submatrix, int off_i, int off_j)
+  template <typename T>
+  void unpack_from_buffer(T *buffer, int off_i, int off_j, dim_t m, dim_t n)
   {
     T *ptr = this->data();
     for (int j = 0; j < n; j++)
     {
       for (int i = 0; i < m; i++)
       {
-        ptr[this->location(i + off_i, j + off_j)] += submatrix[i + j * m];
+        ptr[this->location(i + off_i, j + off_j)] += buffer[i + j * m];
       }
     }
   }
@@ -70,6 +103,7 @@ public:
   {
     return this->rscat.at(i) + this->cscat.at(j);
   }
+
 private:
   ScatterVector rscat;
   ScatterVector cscat;
