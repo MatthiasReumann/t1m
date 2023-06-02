@@ -53,14 +53,16 @@ void gemm_internal(const gemm_context<T> *gemm_ctx)
   const size_t K = A->col_size();
   const size_t N = B->col_size();
 
+  T *buf = nullptr;
   T *A_tilde = nullptr; // A in G^{MC x KC}
   T *B_tilde = nullptr; // B in G^{KC x NC}
   T *C_tilde = nullptr; // C in G^{MC x NC}
 
-  // TODO: Allocate just once and adjust basepointer of *_tilde?
-  alloc_aligned<T>(&A_tilde, MC * KC);
-  alloc_aligned<T>(&B_tilde, KC * NC);
-  alloc_aligned<T>(&C_tilde, MC * NC);
+  alloc_aligned<T>(&buf, MC * KC + KC * NC + MC * NC);
+
+  A_tilde = buf;
+  B_tilde = buf + MC * KC;
+  C_tilde = buf + MC * KC + KC * NC;
 
   dim_t m1, n1, k1, m, n;
   inc_t rsc = 1, csc;
@@ -106,9 +108,7 @@ void gemm_internal(const gemm_context<T> *gemm_ctx)
     }
   }
 
-  free(A_tilde);
-  free(B_tilde);
-  free(C_tilde);
+  free(buf);
 }
 
 void gemm(double *alpha, ScatterMatrix<double> *A, ScatterMatrix<double> *B, double *beta, ScatterMatrix<double> *C, const cntx_t *cntx)
