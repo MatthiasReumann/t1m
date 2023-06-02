@@ -5,6 +5,7 @@ Please give this project a better name.
 */
 #include "index_bundle_finder.hpp"
 #include "scatter_matrix.hpp"
+#include "packing.hpp"
 #include "gemm.hpp"
 
 void contract(float alpha, Tensor<float> A, std::string labelsA,

@@ -13,4 +13,4 @@ build:
 	${CCX} ${CFLAGS} benchmark.cpp ${INCLUDE} ${LIBS} -o benchmark.o
 
 clean:
-	rm test.o ||:
+	rm benchmark.o ||:

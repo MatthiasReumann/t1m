@@ -31,6 +31,9 @@ struct gemm_context
                  inc_t,
                  auxinfo_t *restrict,
                  const cntx_t *restrict);
+  void (*pack_A)(ScatterMatrix<T> *, T *, int, int, dim_t, dim_t, dim_t);
+  void (*pack_B)(ScatterMatrix<T> *, T *, int, int, dim_t, dim_t, dim_t);
+  void (*unpack_C)(ScatterMatrix<T> *, T *, int, int, dim_t, dim_t);
 };
 
 template <typename T>
@@ -40,15 +43,15 @@ void gemm_internal(const gemm_context<T> *gemm_ctx)
   ScatterMatrix<T> *B = gemm_ctx->B;
   ScatterMatrix<T> *C = gemm_ctx->C;
 
-  dim_t NC = gemm_ctx->NC;
-  dim_t KC = gemm_ctx->KC;
-  dim_t MC = gemm_ctx->MC;
-  dim_t NR = gemm_ctx->NR;
-  dim_t MR = gemm_ctx->MR;
+  const dim_t NC = gemm_ctx->NC;
+  const dim_t KC = gemm_ctx->KC;
+  const dim_t MC = gemm_ctx->MC;
+  const dim_t NR = gemm_ctx->NR;
+  const dim_t MR = gemm_ctx->MR;
 
-  size_t M = A->row_size();
-  size_t K = A->col_size();
-  size_t N = B->col_size();
+  const size_t M = A->row_size();
+  const size_t K = A->col_size();
+  const size_t N = B->col_size();
 
   T *A_tilde = nullptr; // A in G^{MC x KC}
   T *B_tilde = nullptr; // B in G^{KC x NC}
@@ -59,7 +62,7 @@ void gemm_internal(const gemm_context<T> *gemm_ctx)
   alloc_aligned<T>(&B_tilde, KC * NC);
   alloc_aligned<T>(&C_tilde, MC * NC);
 
-  dim_t m1, n1, k1;
+  dim_t m1, n1, k1, m, n;
   inc_t rsc = 1, csc;
 
   for (int j_c = 0; j_c < N; j_c += NC)
@@ -68,20 +71,22 @@ void gemm_internal(const gemm_context<T> *gemm_ctx)
     {
       k1 = std_ext::min(KC, static_cast<dim_t>(K - p_c));
       n1 = std_ext::min(NC, static_cast<dim_t>(N - j_c));
-      B->pack_to_cont_buffer_row(B_tilde, p_c, j_c, k1, n1, NR);
+
+      gemm_ctx->pack_B(B, B_tilde, p_c, j_c, k1, n1, NR);
 
       for (int i_c = 0; i_c < M; i_c += MC)
       {
         m1 = std_ext::min(MC, static_cast<dim_t>(M - i_c));
-        A->pack_to_cont_buffer_col(A_tilde, i_c, p_c, m1, k1, MR);
+
+        gemm_ctx->pack_A(A, A_tilde, i_c, p_c, m1, k1, MR);
 
         for (int j_r = 0; j_r < n1; j_r += NR)
         {
-          dim_t n = std_ext::min(NR, n1 - j_r);
+          n = std_ext::min(NR, n1 - j_r);
 
           for (int i_r = 0; i_r < m1; i_r += MR)
           {
-            dim_t m = std_ext::min(MR, m1 - i_r);
+            m = std_ext::min(MR, m1 - i_r);
             csc = m;
 
             gemm_ctx->kernel(m,
@@ -94,8 +99,7 @@ void gemm_internal(const gemm_context<T> *gemm_ctx)
                              C_tilde, rsc, csc,
                              NULL,
                              gemm_ctx->cntx);
-
-            C->unpack_from_buffer(C_tilde, i_c, j_c, m, n);
+            gemm_ctx->unpack_C(C, C_tilde, i_c, j_c, m, n);
           }
         }
       }
@@ -122,6 +126,9 @@ void gemm(double *alpha, ScatterMatrix<double> *A, ScatterMatrix<double> *B, dou
       .alpha = alpha,
       .beta = beta,
       .kernel = bli_dgemm_ukernel,
+      .pack_A = pack_A<double>,
+      .pack_B = pack_B<double>,
+      .unpack_C = unpack_C<double>,
   };
 
   gemm_internal<double>(&gemm_ctx);
@@ -142,6 +149,9 @@ void gemm(float *alpha, ScatterMatrix<float> *A, ScatterMatrix<float> *B, float 
       .alpha = alpha,
       .beta = beta,
       .kernel = bli_sgemm_ukernel,
+      .pack_A = pack_A<float>,
+      .pack_B = pack_B<float>,
+      .unpack_C = unpack_C<float>,
   };
 
   gemm_internal<float>(&gemm_ctx);

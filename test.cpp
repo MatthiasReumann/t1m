@@ -144,10 +144,43 @@ void testpaper()
   std::cout << C << std::endl;*/
 }
 
+
+void test2x2() {
+  std::cout << "TEST 2x2 . 2x2 = 2x2" << '\n';
+  float *A_ptr = nullptr;
+  float *B_ptr = nullptr;
+  float *C_ptr = nullptr;
+
+  alloc_aligned<float>(&A_ptr, 2 * 2);
+  alloc_aligned<float>(&B_ptr, 2 * 2);
+  alloc_aligned<float>(&C_ptr, 2 * 2);
+
+  A_ptr[0] = 3.; A_ptr[2] = 0.;
+  A_ptr[1] = 1.; A_ptr[3] = 1.7;
+
+  B_ptr[0] = 1.; B_ptr[2] = 3.4;
+  B_ptr[1] = 1.; B_ptr[3] = 1;
+
+  auto A_lengths = {2, 2};
+  auto B_lengths = {2, 2};
+  auto C_lengths = {2, 2};
+
+  auto A = Tensor<float>(A_lengths, A_ptr);
+  auto B = Tensor<float>(B_lengths, B_ptr);
+  auto C = Tensor<float>(C_lengths, C_ptr);
+
+  std::cout << A << std::endl;
+  std::cout << B << std::endl;
+
+  contract(1., A, "ab", B, "cb", 0., C, "ac");
+
+  std::cout << C << std::endl;
+}
 int main()
 {
+  test2x2();
   test4x4();
-  // test4x3();
+  test4x3();
   // testpaper();
 
   return 1;
