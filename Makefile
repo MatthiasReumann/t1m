@@ -10,7 +10,10 @@ LIBS     = -L./src/external/blis/lib/haswell/ -lblis2
 all: clean build
 
 build:
-	${CCX} ${CFLAGS} test.cpp ${INCLUDE} ${LIBS} -o test.o
+	${CCX} ${CFLAGS} test.cpp ${INCLUDE} ${LIBS} -mavx2 -o test.o
+
+debug:
+	${CCX} -std=c++17 -g test.cpp ${INCLUDE} ${LIBS} -mavx2 -o debug.o
 
 clean:
 	rm test.o ||:
