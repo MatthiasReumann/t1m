@@ -1,50 +1,39 @@
 #pragma once
 
 #include "scatter_matrix.hpp"
+#include "std_ext.hpp"
 #include "blis.h"
 
 template <typename T>
-void pack_A(ScatterMatrix<T> *A, T *buffer, int off_i, int off_j, dim_t m, dim_t n, dim_t mr)
+void pack_A(ScatterMatrix<T> *A, T *buffer, int off_i, int off_j, dim_t M, dim_t K, dim_t MR)
 {
-  const T *ptr = A->cdata();
-  for (int i = 0; i < m; i += mr)
+  for (int i = 0; i < M; i += MR)
   {
-    for (int j = 0; j < n; j++)
+    for (int j = 0; j < K; j++)
     {
-      const int y = j + off_j;
-
-      for (int k = 0; k < mr; k++)
+      for (int k = 0; k < std_ext::min(MR, M - i - off_i); k++)
       {
-        const int x = k + off_i + i;
-
-        if (x >= m)
-          break;
-
-        buffer[i * n + k + j * mr] = ptr[A->location(x, y)];
+        buffer[k + j * MR] = A->get(k + off_i + i, j + off_j);
       }
     }
+
+    buffer += MR * K;
   }
 }
 
 template <typename T>
-void pack_B(ScatterMatrix<T> *B, T *buffer, int off_i, int off_j, dim_t m, dim_t n, dim_t nr)
+void pack_B(ScatterMatrix<T> *B, T *buffer, int off_i, int off_j, dim_t K, dim_t N, dim_t NR)
 {
-  const T *ptr = B->cdata();
-
-  for (int j = 0; j < n; j += nr)
+  for (int j = 0; j < N; j += NR)
   {
-    for (int i = 0; i < m; i++)
-    {
-      const int x = i + off_i;
-      for (int k = 0; k < nr; k++)
+    for (int i = 0; i < K; i++)
+    { 
+      for (int k = 0; k < std_ext::min(NR, N - j - off_i); k++)
       {
-        const int y = k + off_j + j;
-        if (y >= n)
-          break;
-
-        buffer[j * m + k + i * nr] = ptr[B->location(x, y)];
+        buffer[k + i * NR] = B->get(i + off_i, k + off_j + j);
       }
     }
+    buffer += NR * K;
   }
 }
 
