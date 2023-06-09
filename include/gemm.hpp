@@ -11,21 +11,15 @@
 
 void gemm_internal_complex(const gemm_context_1m<std::complex<float>, float> *gemm_ctx)
 {
-  ScatterMatrix<std::complex<float>> *A = gemm_ctx->A;
-  ScatterMatrix<std::complex<float>> *B = gemm_ctx->B;
-  ScatterMatrix<std::complex<float>> *C = gemm_ctx->C;
+  const dim_t NC = gemm_ctx->NC;
+  const dim_t KC = gemm_ctx->KC;
+  const dim_t MC = gemm_ctx->MC;
+  const dim_t NR = gemm_ctx->NR;
+  const dim_t MR = gemm_ctx->MR;
 
-  dim_t NC = gemm_ctx->NC;
-  dim_t KC = gemm_ctx->KC;
-  dim_t MC = gemm_ctx->MC;
-  dim_t NR = gemm_ctx->NR;
-  dim_t MR = gemm_ctx->MR;
-
-  // std::cout << "NC: " << NC << "\nKC: " << KC << "\nMC: " << MC << "\nNR: " << NR << "\nMR: " << MR << '\n';
-
-  const size_t M = A->row_size();
-  const size_t K = A->col_size();
-  const size_t N = B->col_size();
+  const size_t M = gemm_ctx->A->row_size();
+  const size_t K = gemm_ctx->A->col_size();
+  const size_t N = gemm_ctx->B->col_size();
 
   dim_t m1, n1, k1, m, n;
   inc_t rsc = 1, csc;
@@ -36,6 +30,7 @@ void gemm_internal_complex(const gemm_context_1m<std::complex<float>, float> *ge
 
   float *B_tilde = nullptr; // B in G^{KC x NC}
   float *B_tilde_base = nullptr;
+
   float *C_tilde = nullptr; // C in G^{MC x NC}
 
   alloc_aligned<float>(&buf, MC * KC + KC * NC + MC * NC);
@@ -55,7 +50,7 @@ void gemm_internal_complex(const gemm_context_1m<std::complex<float>, float> *ge
       n1 = std_ext::min(NC, static_cast<dim_t>(N - j_c));
 
       memset(B_tilde, 0, KC * NC * sizeof(float));
-      gemm_ctx->pack_B(B, B_tilde, p_c, j_c, k1, n1, NR);
+      gemm_ctx->pack_B(gemm_ctx->B, B_tilde, p_c, j_c, k1, n1, NR);
 
       // B is now row-major packed into a KC * NC buffer
       // with the specialized format such that each sliver
@@ -66,17 +61,19 @@ void gemm_internal_complex(const gemm_context_1m<std::complex<float>, float> *ge
         m1 = std_ext::min(MC / 2, static_cast<dim_t>(M - i_c));
 
         memset(A_tilde, 0, MC * KC * sizeof(float));
-        gemm_ctx->pack_A(A, A_tilde, i_c, p_c, m1, k1, MR / 2);
+        gemm_ctx->pack_A(gemm_ctx->A, A_tilde, i_c, p_c, m1, k1, MR);
 
         // A is now column-major packed into a MC * KC buffer
         // with the specialized format such that each sliver
         // has stride MR
 
-        m1 = std_ext::min(MC, static_cast<dim_t>(M - i_c));
-        k1 = std_ext::min(KC, static_cast<dim_t>(K - p_c));
+        m1 = std_ext::min(MC, static_cast<dim_t>(M - i_c) * 2);
+        k1 = std_ext::min(KC, static_cast<dim_t>(K - p_c) * 2);
+        
         for (int j_r = 0; j_r < n1; j_r += NR)
         {
           n = std_ext::min(NR, n1 - j_r);
+          
           for (int i_r = 0; i_r < m1; i_r += MR)
           {
             m = csc = std_ext::min(MR, m1 - i_r);
@@ -89,9 +86,8 @@ void gemm_internal_complex(const gemm_context_1m<std::complex<float>, float> *ge
                              NULL,
                              gemm_ctx->cntx);
 
-            gemm_ctx->unpack_C(C, C_tilde, i_c + i_r / 2, j_c, m / 2, n);
+            gemm_ctx->unpack_C(gemm_ctx->C, C_tilde, i_c + i_r / 2, j_c, m / 2, n);
 
-            // Update base pointer
             A_tilde += MR * k1;
           }
           B_tilde += k1 * NR;
@@ -150,14 +146,14 @@ void gemm_internal(const gemm_context<T, U> *gemm_ctx)
       k1 = std_ext::min(KC, static_cast<dim_t>(K - p_c));
       n1 = std_ext::min(NC, static_cast<dim_t>(N - j_c));
 
-      memset(B_tilde, 0, KC * NC);
+      memset(B_tilde, 0, KC * NC * sizeof(float));
       gemm_ctx->pack_B(B, B_tilde, p_c, j_c, k1, n1, NR);
 
       for (int i_c = 0; i_c < M; i_c += MC)
       {
         m1 = std_ext::min(MC, static_cast<dim_t>(M - i_c));
 
-        memset(A_tilde, 0, MC * KC);
+        memset(A_tilde, 0, MC * KC * sizeof(float));
         gemm_ctx->pack_A(A, A_tilde, i_c, p_c, m1, k1, MR);
 
         for (int j_r = 0; j_r < n1; j_r += NR)

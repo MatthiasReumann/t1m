@@ -13,7 +13,11 @@ void pack_A(ScatterMatrix<T> *A, T *buffer, int off_i, int off_j, dim_t M, dim_t
     {
       for (int k = 0; k < std_ext::min(MR, M - i - off_i); k++)
       {
-        buffer[k + j * MR] = A->get(k + off_i + i, j + off_j);
+        const auto val = A->get(k + off_i + i, j + off_j);
+        if (val != T(0))
+        {
+          buffer[k + j * MR] = val;
+        }
       }
     }
 
@@ -27,10 +31,14 @@ void pack_B(ScatterMatrix<T> *B, T *buffer, int off_i, int off_j, dim_t K, dim_t
   for (int j = 0; j < N; j += NR)
   {
     for (int i = 0; i < K; i++)
-    { 
+    {
       for (int k = 0; k < std_ext::min(NR, N - j - off_i); k++)
       {
-        buffer[k + i * NR] = B->get(i + off_i, k + off_j + j);
+        const auto val = B->get(i + off_i, k + off_j + j);
+        if (val != T(0))
+        {
+          buffer[k + i * NR] = val;
+        }
       }
     }
     buffer += NR * K;
