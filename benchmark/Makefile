@@ -10,7 +10,7 @@ LIBS     = -L../src/external/blis/lib/haswell/ -lblis2
 all: clean build
 
 build:
-	${CCX} ${CFLAGS} benchmark.cpp ${INCLUDE} ${LIBS} -o benchmark.o
+	${CCX} ${CFLAGS} benchmark.cpp ${INCLUDE} ${LIBS} -mavx2 -o benchmark.o
 
 clean:
 	rm benchmark.o ||:
