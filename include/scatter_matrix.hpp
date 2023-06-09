@@ -16,6 +16,10 @@ public:
         rscat(this->lengths(), this->strides(), row_indices),
         cscat(this->lengths(), this->strides(), col_indices) {}
 
+  T get(int i, int j) {
+    return this->cdata()[this->location(i, j)];
+  }
+
   int row_size()
   {
     return this->rscat.size();

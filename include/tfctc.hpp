@@ -3,10 +3,31 @@
 /*
 Please give this project a better name.
 */
+#include <complex>
 #include "index_bundle_finder.hpp"
 #include "scatter_matrix.hpp"
 #include "packing.hpp"
 #include "gemm.hpp"
+
+void contract(Tensor<std::complex<float> > A, std::string labelsA,
+              Tensor<std::complex<float> > B, std::string labelsB,
+              Tensor<std::complex<float> > C, std::string labelsC)
+{
+  const cntx_t *cntx = bli_gks_query_cntx();
+
+  auto ilf = new IndexBundleFinder(labelsA, labelsB, labelsC);
+  auto scatterA = new ScatterMatrix<std::complex<float> >(A, ilf->I, ilf->Pa);
+  auto scatterB = new ScatterMatrix<std::complex<float> >(B, ilf->Pb, ilf->J);
+  auto scatterC = new ScatterMatrix<std::complex<float> >(C, ilf->Ic, ilf->Jc);
+
+  // std::complex<float> *a = new std::complex<float> (alpha);
+  // std::complex<float> *b = new std::complex<float> (beta);
+
+  gemm(scatterA, scatterB, scatterC, cntx);
+
+  // free(a);
+  // free(b);
+}
 
 void contract(float alpha, Tensor<float> A, std::string labelsA,
               Tensor<float> B, std::string labelsB,

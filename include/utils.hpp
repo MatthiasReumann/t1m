@@ -45,7 +45,7 @@ void print_mat(T *mat, int rows, int columns)
       std::cout << mat[i + j * rows] << ", ";
     }
     std::cout << mat[i + (columns - 1) * rows];
-    std::cout << '}' << '\n';
+    std::cout << '}' << ',' << '\n';
   }
   std::cout << '}' << '\n';
 }
@@ -62,7 +62,7 @@ void print_mat_row(T *mat, int rows, int columns)
       std::cout << mat[j + i * columns] << ", ";
     }
     std::cout << mat[columns - 1 + i * rows];
-    std::cout << '}' << '\n';
+    std::cout << '}' << ',' << '\n';
   }
   std::cout << '}' << '\n';
 }
