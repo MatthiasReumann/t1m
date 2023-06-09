@@ -1,14 +1,17 @@
 #pragma once
 
-namespace std_ext
+namespace tfctc
 {
-  template <typename T>
-  inline T min(T a, T b)
+  namespace std_ext
   {
-    if (a <= b)
+    template <typename T>
+    inline T min(T a, T b)
     {
-      return a;
+      if (a <= b)
+      {
+        return a;
+      }
+      return b;
     }
-    return b;
-  }
-}
+  };
+};

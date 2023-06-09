@@ -3,13 +3,14 @@
 #include <vector>
 #include "scatter_vector.hpp"
 
+/*
 template <size_t b>
 class BlockScatterVector
 {
 public:
   BlockScatterVector(ScatterVector &scat)
   {
-    /*size_t stride; // s, if constant; 0, if different strides
+    size_t stride; // s, if constant; 0, if different strides
     const auto l = scat.size();
     const auto size = std::ceil(l / static_cast<float>(b)); // ⌈l/b⌉
 
@@ -26,8 +27,9 @@ public:
         }
       }
       this->bs.push_back(stride);
-    }*/
+    }
   }
 
   std::vector<size_t> bs;
 };
+*/
