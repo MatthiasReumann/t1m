@@ -14,3 +14,4 @@ build:
 
 clean:
 	rm benchmark.o ||:
+	

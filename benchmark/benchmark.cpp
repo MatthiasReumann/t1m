@@ -38,7 +38,7 @@ void benchmark() {
 }
 
 void benchmark_complex() {
-  const int N = 1000;
+  const int N = 16;
   std::complex<float> *A = nullptr, *B = nullptr, *C = nullptr;
 
   for (int i = 0; i < 11; i++)

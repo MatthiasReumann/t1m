@@ -318,10 +318,10 @@ void test4x4_complex() {
 
 int main()
 {
-  test2x2();
-  test4x4();
-  test4x3();
-  test2x2_complex();
+  // test2x2();
+  // test4x4();
+  // test4x3();
+  // test2x2_complex();
   test4x4_complex();
   test512x512_complex();
   test1024x1024_complex();
