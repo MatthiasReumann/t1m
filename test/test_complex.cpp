@@ -22,6 +22,20 @@ inline void requireAll(FloatComplex *tensor, std::vector<FloatComplex> expected)
   }
 }
 
+inline void require(DoubleComplex a, DoubleComplex b)
+{
+  REQUIRE(a.real() == doctest::Approx(b.real()).epsilon(0.001));
+  REQUIRE(a.imag() == doctest::Approx(b.imag()).epsilon(0.001));
+}
+
+inline void requireAll(DoubleComplex *tensor, std::vector<DoubleComplex> expected)
+{
+  for(int i = 0; i < expected.size(); i++)
+  {
+    require(tensor[i], expected[i]);
+  }
+}
+
 TEST_CASE("(float) 2D . ID")
 {
   FloatComplex *A = nullptr, *B = nullptr, *C = nullptr;
@@ -227,7 +241,7 @@ TEST_CASE("float) 3D . 2D => 3D")
     });
   }
 
-  memset(C, 0, 2 * 2 * sizeof(FloatComplex));
+  memset(C, 0, 2 * 2 * 2 * sizeof(FloatComplex));
 
   SUBCASE("different label order for C")
   {
@@ -241,6 +255,235 @@ TEST_CASE("float) 3D . 2D => 3D")
       FloatComplex(0.5,0.5),
       FloatComplex(7.),
       FloatComplex(0., -3.3),
+    });
+  }
+
+  free(A);
+  free(B);
+  free(C);
+}
+
+TEST_CASE("(double) 2D . ID")
+{
+  DoubleComplex *A = nullptr, *B = nullptr, *C = nullptr;
+  tfctc::utils::alloc_aligned(&A, 2 * 2);
+  tfctc::utils::alloc_aligned(&B, 2 * 2);
+  tfctc::utils::alloc_aligned(&C, 2 * 2);
+
+  A[0] = DoubleComplex(3., 2.); A[2] = DoubleComplex(0., 1.);
+  A[1] = DoubleComplex(0, -1.); A[3] = DoubleComplex(1.);
+
+  B[0] = DoubleComplex(1.); B[2] = DoubleComplex(0.);
+  B[1] = DoubleComplex(0);  B[3] = DoubleComplex(1);
+
+  auto tensorA = tfctc::Tensor<DoubleComplex>({2, 2}, A);
+  auto tensorB = tfctc::Tensor<DoubleComplex>({2, 2}, B);
+  auto tensorC = tfctc::Tensor<DoubleComplex>({2, 2}, C);
+
+  SUBCASE("standard")
+  {
+    tfctc::contract(tensorA, "ab", tensorB, "bc", tensorC, "ac");
+    requireAll(C, {
+      DoubleComplex(3., 2.),
+      DoubleComplex(0., -1.),
+      DoubleComplex(0.,1.),
+      DoubleComplex(1.)
+    });
+  }
+
+  memset(C, 0, 2 * 2 * sizeof(DoubleComplex));
+
+  SUBCASE("transposed")
+  {
+    tfctc::contract(tensorA, "ab", tensorB, "bc", tensorC, "ca");
+    requireAll(C, {
+      DoubleComplex(3., 2.),
+      DoubleComplex(0., 1.),
+      DoubleComplex(0.,-1.),
+      DoubleComplex(1.)
+    });
+  }
+
+  free(A);
+  free(B);
+  free(C);
+}
+
+TEST_CASE("(double) 2D . 2D => 2D")
+{
+  DoubleComplex *A = nullptr, *B = nullptr, *C = nullptr;
+  tfctc::utils::alloc_aligned(&A, 2 * 2);
+  tfctc::utils::alloc_aligned(&B, 2 * 2);
+  tfctc::utils::alloc_aligned(&C, 2 * 2);
+
+  A[0] = DoubleComplex(3., 2.); A[2] = DoubleComplex(0., 1.);
+  A[1] = DoubleComplex(0, -1.); A[3] = DoubleComplex(1.);
+
+  B[0] = DoubleComplex(4.); B[2] = DoubleComplex(0., 7.);
+  B[1] = DoubleComplex(-0.5, 0.5); B[3] = DoubleComplex(3.3);
+
+  auto tensorA = tfctc::Tensor<DoubleComplex>({2, 2}, A);
+  auto tensorB = tfctc::Tensor<DoubleComplex>({2, 2}, B);
+  auto tensorC = tfctc::Tensor<DoubleComplex>({2, 2}, C);
+
+  SUBCASE("standard")
+  {
+    tfctc::contract(tensorA, "ab", tensorB, "bc", tensorC, "ac");
+
+    requireAll(C, {
+      DoubleComplex(11.5, 7.5),
+      DoubleComplex(-0.5, -3.5),
+      DoubleComplex(-14, 24.3),
+      DoubleComplex(10.3, 0.)
+    });
+  }
+
+  memset(C, 0, 2 * 2 * sizeof(DoubleComplex));
+
+  SUBCASE("")
+  {
+    tfctc::contract(tensorA, "ab", tensorB, "cb", tensorC, "ac");
+    requireAll(C, {
+      DoubleComplex(5, 8),
+      DoubleComplex(0, 3.),
+      DoubleComplex(-2.5, 3.8),
+      DoubleComplex(3.8, 0.5)
+    });
+  }
+
+  memset(C, 0, 2 * 2 * sizeof(DoubleComplex));
+
+  SUBCASE("")
+  {
+    tfctc::contract(tensorA, "ba", tensorB, "cb", tensorC, "ac");
+    requireAll(C, {
+      DoubleComplex(19., 8.),
+      DoubleComplex(0.,11.),
+      DoubleComplex(-2.5, -2.8),
+      DoubleComplex(2.8, -0.5)
+    });
+  }
+
+  memset(C, 0, 2 * 2 * sizeof(DoubleComplex));
+
+  SUBCASE("")
+  {
+    tfctc::contract(tensorA, "ba", tensorB, "bc", tensorC, "ac");
+    requireAll(C, {
+      DoubleComplex(12.5, 8.5),
+      DoubleComplex(-0.5, 4.5),
+      DoubleComplex(-14, 17.7),
+      DoubleComplex(-3.7, 0.)
+    });
+  }
+
+  free(A);
+  free(B);
+  free(C);
+}
+
+TEST_CASE("double) 3D . 3D => 2D")
+{
+  DoubleComplex *A = nullptr, *B = nullptr, *C = nullptr;
+  tfctc::utils::alloc_aligned(&A, 2 * 2 * 2);
+  tfctc::utils::alloc_aligned(&B, 2 * 2 * 2);
+  tfctc::utils::alloc_aligned(&C, 2 * 2);
+
+  A[0] = DoubleComplex(0., 1.); A[2] = DoubleComplex(0.);
+  A[1] = DoubleComplex(0.);     A[3] = DoubleComplex(0., 1.);
+  
+  A[4] = DoubleComplex(0., -1.); A[6] = DoubleComplex(0);
+  A[5] = DoubleComplex(0.);      A[7] = DoubleComplex(0., -1.);
+
+
+  B[0] = DoubleComplex(0.33); B[2] = DoubleComplex(1., 1.);
+  B[1] = DoubleComplex(0.);   B[3] = DoubleComplex(0., 1.);
+
+  B[4] = DoubleComplex(0.);      B[6] = DoubleComplex(0.47);
+  B[5] = DoubleComplex(0., 0.7); B[7] = DoubleComplex(0.1337);
+
+  auto tensorA = tfctc::Tensor<DoubleComplex>({2, 2, 2}, A);
+  auto tensorB = tfctc::Tensor<DoubleComplex>({2, 2, 2}, B);
+  auto tensorC = tfctc::Tensor<DoubleComplex>({2, 2}, C);
+
+  SUBCASE("standard")
+  {
+    tfctc::contract(tensorA, "abc", tensorB, "cbd", tensorC, "ad");
+    requireAll(C, {
+      DoubleComplex(0., 0.33),
+      DoubleComplex(0., 1.),
+      DoubleComplex(0.7, 0.),
+      DoubleComplex(0., 0.3363)
+    });
+  }
+
+  memset(C, 0, 2 * 2 * sizeof(DoubleComplex));
+
+  SUBCASE("transposed")
+  {
+    tfctc::contract(tensorA, "abc", tensorB, "cbd", tensorC, "da");
+    requireAll(C, {
+      DoubleComplex(0., 0.33),
+      DoubleComplex(0.7, 0.),
+      DoubleComplex(0., 1.),
+      DoubleComplex(0., 0.3363)
+    });
+  }
+
+  free(A);
+  free(B);
+  free(C);
+}
+
+TEST_CASE("double) 3D . 2D => 3D")
+{
+  DoubleComplex *A = nullptr, *B = nullptr, *C = nullptr;
+  tfctc::utils::alloc_aligned(&A, 2 * 2 * 2);
+  tfctc::utils::alloc_aligned(&B, 2 * 2);
+  tfctc::utils::alloc_aligned(&C, 2 * 2 * 2);
+
+  A[0] = DoubleComplex(0., 1.); A[2] = DoubleComplex(0.);
+  A[1] = DoubleComplex(0.); A[3] = DoubleComplex(0., 1.);
+
+  A[4] = DoubleComplex(0., -1.); A[6] = DoubleComplex(0);
+  A[5] = DoubleComplex(0.); A[7] = DoubleComplex(0., -1.);
+
+  B[0] = DoubleComplex(4.); B[2] = DoubleComplex(0., 7.);
+  B[1] = DoubleComplex(-0.5, 0.5); B[3] = DoubleComplex(3.3);
+
+  auto tensorA = tfctc::Tensor<DoubleComplex>({2, 2, 2}, A);
+  auto tensorB = tfctc::Tensor<DoubleComplex>({2, 2}, B);
+  auto tensorC = tfctc::Tensor<DoubleComplex>({2, 2, 2}, C);
+
+  SUBCASE("standard")
+  {
+    tfctc::contract(tensorA, "abc", tensorB, "bd", tensorC, "acd");
+    requireAll(C, {
+      DoubleComplex(0, 4),
+      DoubleComplex(-0.5, -0.5),
+      DoubleComplex(0,-4),
+      DoubleComplex(0.5, 0.5),
+      DoubleComplex(-7.),
+      DoubleComplex(0., 3.3),
+      DoubleComplex(7.),
+      DoubleComplex(0., -3.3),
+    });
+  }
+
+  memset(C, 0, 2 * 2 * 2 * sizeof(DoubleComplex));
+
+  SUBCASE("different label order for C")
+  {
+    tfctc::contract(tensorA, "abc", tensorB, "bd", tensorC, "adc");
+    requireAll(C, {
+      DoubleComplex(0, 4),
+      DoubleComplex(-0.5, -0.5),
+      DoubleComplex(-7),
+      DoubleComplex(0., 3.3),
+      DoubleComplex(0.,-4.),
+      DoubleComplex(0.5,0.5),
+      DoubleComplex(7.),
+      DoubleComplex(0., -3.3),
     });
   }
 
