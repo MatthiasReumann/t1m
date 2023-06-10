@@ -26,8 +26,6 @@ namespace tfctc
       const size_t K = gemm_ctx->A->col_size();
       const size_t N = gemm_ctx->B->col_size();
 
-      std::cout << "NC: " << NC << "\nKC: " << KC << "\nMC: " << MC << "\nNR: " << NR << "\nMR: " << MR << '\n';
-
       dim_t m1, n1, k1, m, n;
       inc_t rsc = 1, csc;
 
