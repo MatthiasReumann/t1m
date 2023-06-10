@@ -22,7 +22,7 @@ inline void requireAll(FloatComplex *tensor, std::vector<FloatComplex> expected)
   }
 }
 
-TEST_CASE("2D . ID")
+TEST_CASE("(float) 2D . ID")
 {
   FloatComplex *A = nullptr, *B = nullptr, *C = nullptr;
   tfctc::utils::alloc_aligned(&A, 2 * 2);
@@ -66,7 +66,7 @@ TEST_CASE("2D . ID")
   free(C);
 }
 
-TEST_CASE("2D . 2D => 2D")
+TEST_CASE("float) 2D . 2D => 2D")
 {
   FloatComplex *A = nullptr, *B = nullptr, *C = nullptr;
   tfctc::utils::alloc_aligned(&A, 2 * 2);
@@ -139,7 +139,7 @@ TEST_CASE("2D . 2D => 2D")
   free(C);
 }
 
-TEST_CASE("3D . 3D => 2D")
+TEST_CASE("float) 3D . 3D => 2D")
 {
   FloatComplex *A = nullptr, *B = nullptr, *C = nullptr;
   tfctc::utils::alloc_aligned(&A, 2 * 2 * 2);
@@ -192,7 +192,7 @@ TEST_CASE("3D . 3D => 2D")
   free(C);
 }
 
-TEST_CASE("3D . 2D => 3D")
+TEST_CASE("float) 3D . 2D => 3D")
 {
   FloatComplex *A = nullptr, *B = nullptr, *C = nullptr;
   tfctc::utils::alloc_aligned(&A, 2 * 2 * 2);
@@ -212,7 +212,7 @@ TEST_CASE("3D . 2D => 3D")
   auto tensorB = tfctc::Tensor<FloatComplex>({2, 2}, B);
   auto tensorC = tfctc::Tensor<FloatComplex>({2, 2, 2}, C);
 
-  SUBCASE("")
+  SUBCASE("standard")
   {
     tfctc::contract(tensorA, "abc", tensorB, "bd", tensorC, "acd");
     requireAll(C, {
@@ -228,6 +228,21 @@ TEST_CASE("3D . 2D => 3D")
   }
 
   memset(C, 0, 2 * 2 * sizeof(FloatComplex));
+
+  SUBCASE("different label order for C")
+  {
+    tfctc::contract(tensorA, "abc", tensorB, "bd", tensorC, "adc");
+    requireAll(C, {
+      FloatComplex(0, 4),
+      FloatComplex(-0.5, -0.5),
+      FloatComplex(-7),
+      FloatComplex(0., 3.3),
+      FloatComplex(0.,-4.),
+      FloatComplex(0.5,0.5),
+      FloatComplex(7.),
+      FloatComplex(0., -3.3),
+    });
+  }
 
   free(A);
   free(B);
