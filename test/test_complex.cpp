@@ -1,9 +1,7 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#include <complex>
 #include "doctest.h"
 #include "tfctc.hpp"
-
-#include <iostream>
-#include <complex>
 
 using FloatComplex = std::complex<float>;
 using DoubleComplex = std::complex<double>;
@@ -64,6 +62,8 @@ TEST_CASE("(float) 2D . ID")
     });
   }
 
+  memset(C, 0, 2 * 2 * sizeof(FloatComplex));
+
   SUBCASE("transposed")
   {
     tfctc::contract(tensorA, "ab", tensorB, "bc", tensorC, "ca");
@@ -80,7 +80,7 @@ TEST_CASE("(float) 2D . ID")
   free(C);
 }
 
-TEST_CASE("float) 2D . 2D => 2D")
+TEST_CASE("(float) 2D . 2D => 2D")
 {
   FloatComplex *A = nullptr, *B = nullptr, *C = nullptr;
   tfctc::utils::alloc_aligned(&A, 2 * 2);
@@ -382,7 +382,7 @@ TEST_CASE("(double) 2D . 2D => 2D")
   free(C);
 }
 
-TEST_CASE("double) 3D . 3D => 2D")
+TEST_CASE("(double) 3D . 3D => 2D")
 {
   DoubleComplex *A = nullptr, *B = nullptr, *C = nullptr;
   tfctc::utils::alloc_aligned(&A, 2 * 2 * 2);
@@ -435,7 +435,7 @@ TEST_CASE("double) 3D . 3D => 2D")
   free(C);
 }
 
-TEST_CASE("double) 3D . 2D => 3D")
+TEST_CASE("(double) 3D . 2D => 3D")
 {
   DoubleComplex *A = nullptr, *B = nullptr, *C = nullptr;
   tfctc::utils::alloc_aligned(&A, 2 * 2 * 2);
