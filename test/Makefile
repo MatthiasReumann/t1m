@@ -5,7 +5,7 @@ INCLUDE += -I../include
 INCLUDE += -I../src/external/marray/marray
 INCLUDE += -I../src/external/blis/include/haswell
 
-LIBS     = -lblis -lhptt
+LIBS     = -lblis
 
 all: clean complex real
 
