@@ -10,19 +10,23 @@ void benchmark() {
   {
     int d1 = pow(2, i), d2 = pow(2, i), d3 = pow(2, i);
 
-    alloc_aligned(&A, d1 * d2);
-    alloc_aligned(&B, d2 * d3);
-    alloc_aligned(&C, d1 * d3);
+    tfctc::utils::alloc_aligned(&A, d1 * d2);
+    tfctc::utils::alloc_aligned(&B, d2 * d3);
+    tfctc::utils::alloc_aligned(&C, d1 * d3);
 
-    auto tensorA = Tensor<float>({d1, d2}, A);
-    auto tensorB = Tensor<float>({d2, d3}, B);
-    auto tensorC = Tensor<float>({d1, d3}, C);
+    memset(A, 1, d1 * d2 * sizeof(float));
+    memset(B, 1, d2 * d3 * sizeof(float));
+    memset(C, 1, d1 * d3 * sizeof(float));
+
+    auto tensorA = tfctc::Tensor<float>({d1, d2}, A);
+    auto tensorB = tfctc::Tensor<float>({d2, d3}, B);
+    auto tensorC = tfctc::Tensor<float>({d1, d3}, C);
 
     std::vector<float> time(N);
     for (uint i = 0; i < N; i++)
     {
       auto t0 = std::chrono::high_resolution_clock::now();
-      contract(1., tensorA, "ab", tensorB, "cb", 0., tensorC, "ac");
+      tfctc::contract(1., tensorA, "ab", tensorB, "cb", 0., tensorC, "ac");
       auto t1 = std::chrono::high_resolution_clock::now();
       time[i] = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count();
     }
@@ -41,23 +45,27 @@ void benchmark_complex() {
   const int N = 16;
   std::complex<float> *A = nullptr, *B = nullptr, *C = nullptr;
 
-  for (int i = 0; i < 11; i++)
+  for (int i = 0; i < 12; i++)
   {
     int d1 = pow(2, i), d2 = pow(2, i), d3 = pow(2, i);
 
-    alloc_aligned(&A, d1 * d2);
-    alloc_aligned(&B, d2 * d3);
-    alloc_aligned(&C, d1 * d3);
+    tfctc::utils::alloc_aligned(&A, d1 * d2);
+    tfctc::utils::alloc_aligned(&B, d2 * d3);
+    tfctc::utils::alloc_aligned(&C, d1 * d3);
 
-    auto tensorA = Tensor<std::complex<float>>({d1, d2}, A);
-    auto tensorB = Tensor<std::complex<float>>({d2, d3}, B);
-    auto tensorC = Tensor<std::complex<float>>({d1, d3}, C);
+    memset(A, 1, d1 * d2 * sizeof(std::complex<float>));
+    memset(B, 1, d2 * d3 * sizeof(std::complex<float>));
+    memset(C, 1, d1 * d3 * sizeof(std::complex<float>));
+
+    auto tensorA = tfctc::Tensor<std::complex<float>>({d1, d2}, A);
+    auto tensorB = tfctc::Tensor<std::complex<float>>({d2, d3}, B);
+    auto tensorC = tfctc::Tensor<std::complex<float>>({d1, d3}, C);
 
     std::vector<float> time(N);
     for (uint i = 0; i < N; i++)
     {
       auto t0 = std::chrono::high_resolution_clock::now();
-      contract(tensorA, "ab", tensorB, "cb", tensorC, "ac");
+      tfctc::contract(tensorA, "ab", tensorB, "cb", tensorC, "ac");
       auto t1 = std::chrono::high_resolution_clock::now();
       time[i] = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count();
     }
