@@ -8,8 +8,8 @@ using DoubleComplex = std::complex<double>;
 
 inline void require(FloatComplex a, FloatComplex b)
 {
-  REQUIRE(a.real() == doctest::Approx(b.real()).epsilon(0.1));
-  REQUIRE(a.imag() == doctest::Approx(b.imag()).epsilon(0.1));
+  REQUIRE(a.real() == doctest::Approx(b.real()).epsilon(0.001));
+  REQUIRE(a.imag() == doctest::Approx(b.imag()).epsilon(0.001));
 }
 
 inline void requireAll(FloatComplex *tensor, std::vector<FloatComplex> expected)
@@ -22,8 +22,8 @@ inline void requireAll(FloatComplex *tensor, std::vector<FloatComplex> expected)
 
 inline void require(DoubleComplex a, DoubleComplex b)
 {
-  REQUIRE(a.real() == doctest::Approx(b.real()).epsilon(0.01));
-  REQUIRE(a.imag() == doctest::Approx(b.imag()).epsilon(0.01));
+  REQUIRE(a.real() == doctest::Approx(b.real()).epsilon(0.001));
+  REQUIRE(a.imag() == doctest::Approx(b.imag()).epsilon(0.001));
 }
 
 inline void requireAll(DoubleComplex *tensor, std::vector<DoubleComplex> expected)
