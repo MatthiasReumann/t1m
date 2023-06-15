@@ -6,8 +6,11 @@ Please give this project a better name.
 #include <complex>
 #include "index_bundle_finder.hpp"
 #include "scatter_matrix.hpp"
+#include "block_scatter_matrix.hpp"
 #include "packing.hpp"
 #include "gemm.hpp"
+
+#include "utils.hpp"
 
 namespace tfctc
 {
@@ -20,7 +23,7 @@ namespace tfctc
     auto ilf = new internal::IndexBundleFinder(labelsA, labelsB, labelsC);
     auto scatterA = new internal::ScatterMatrix<std::complex<float>>(A, ilf->I, ilf->Pa);
     auto scatterB = new internal::ScatterMatrix<std::complex<float>>(B, ilf->Pb, ilf->J);
-    auto scatterC = new internal::ScatterMatrix<std::complex<float>>(C, ilf->Ic, ilf->Jc);
+    auto scatterC = new internal::BlockScatterMatrix<std::complex<float>>(C, ilf->Ic, ilf->Jc);
 
     internal::gemm(scatterA, scatterB, scatterC, cntx);
   }
@@ -34,7 +37,7 @@ namespace tfctc
     auto ilf = new internal::IndexBundleFinder(labelsA, labelsB, labelsC);
     auto scatterA = new internal::ScatterMatrix<std::complex<double>>(A, ilf->I, ilf->Pa);
     auto scatterB = new internal::ScatterMatrix<std::complex<double>>(B, ilf->Pb, ilf->J);
-    auto scatterC = new internal::ScatterMatrix<std::complex<double>>(C, ilf->Ic, ilf->Jc);
+    auto scatterC = new internal::BlockScatterMatrix<std::complex<double>>(C, ilf->Ic, ilf->Jc);
 
     internal::gemm(scatterA, scatterB, scatterC, cntx);
   }
@@ -48,7 +51,7 @@ namespace tfctc
     auto ilf = new internal::IndexBundleFinder(labelsA, labelsB, labelsC);
     auto scatterA = new internal::ScatterMatrix<float>(A, ilf->I, ilf->Pa);
     auto scatterB = new internal::ScatterMatrix<float>(B, ilf->Pb, ilf->J);
-    auto scatterC = new internal::ScatterMatrix<float>(C, ilf->Ic, ilf->Jc);
+    auto scatterC = new internal::BlockScatterMatrix<float>(C, ilf->Ic, ilf->Jc);
 
     float *a = new float(alpha);
     float *b = new float(beta);
@@ -68,7 +71,7 @@ namespace tfctc
     auto ilf = new internal::IndexBundleFinder(labelsA, labelsB, labelsC);
     auto scatterA = new internal::ScatterMatrix<double>(A, ilf->I, ilf->Pa);
     auto scatterB = new internal::ScatterMatrix<double>(B, ilf->Pb, ilf->J);
-    auto scatterC = new internal::ScatterMatrix<double>(C, ilf->Ic, ilf->Jc);
+    auto scatterC = new internal::BlockScatterMatrix<double>(C, ilf->Ic, ilf->Jc);
 
     double *a = new double(alpha);
     double *b = new double(beta);

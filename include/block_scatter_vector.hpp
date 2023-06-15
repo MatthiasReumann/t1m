@@ -3,33 +3,37 @@
 #include <vector>
 #include "scatter_vector.hpp"
 
-/*
-template <size_t b>
-class BlockScatterVector
+namespace tfctc
 {
-public:
-  BlockScatterVector(ScatterVector &scat)
+  namespace internal
   {
-    size_t stride; // s, if constant; 0, if different strides
-    const auto l = scat.size();
-    const auto size = std::ceil(l / static_cast<float>(b)); // ⌈l/b⌉
-
-    this->bs.reserve(size);
-
-    for (int i = 0; i < scat.size(); i += b) // blocks
+    template <size_t b>
+    class BlockScatterVector
     {
-      stride = scat.at(i + 1) - scat.at(i);
-      for (int j = i; j < std::min(i + b, l) - 1; j++)
+    public:
+      BlockScatterVector(ScatterVector& scat)
       {
-        if (stride != scat.at(j + 1) - scat.at(j))
+        size_t stride; // s, if constant; 0, if different strides
+        const size_t l = scat.size();
+        const size_t size = std::ceil(l / static_cast<float>(b)); // ⌈l/b⌉
+
+        this->bs.reserve(size);
+
+        for (int i = 0; i < scat.size(); i += b) // blocks
         {
-          stride = 0; break;
+          stride = scat.at(i + 1) - scat.at(i);
+          for (int j = i; j < std::min(i + b, l) - 1; j++)
+          {
+            if (stride != scat.at(j + 1) - scat.at(j))
+            {
+              stride = 0; break;
+            }
+          }
+          this->bs.push_back(stride);
         }
       }
-      this->bs.push_back(stride);
-    }
-  }
-
-  std::vector<size_t> bs;
+    private:
+      std::vector<size_t> bs;
+    };
+  };
 };
-*/
