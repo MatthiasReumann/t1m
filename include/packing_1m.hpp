@@ -13,25 +13,27 @@ namespace tfctc
     template <typename U>
     inline void pack_A_1m(ScatterMatrix<std::complex<U>> *A, U *buffer, int off_i, int off_j, dim_t M, dim_t K, dim_t MR)
     {
+      U *base = buffer;
       for (int i = 0; i < M; i += MR / 2) // iterate over rows in MR/2 steps
       {
         for (int j = 0; j < K; j++) // iterate over columns
         {
-          for (int k = 0; k < tfctc::std_ext::min(MR / 2, M - i - off_i); k++) // iterate over current row with width MR [k, k+MR)
+          for (int k = 0; k < tfctc::std_ext::min(MR / 2, M - i - off_i); k++) // iterate over current row with width MR/2 [k, k+MR)
           {
             const auto val = A->get(k + i + off_i, j + off_j);
 
             if (val != std::complex<U>(0))
             {
-              buffer[2 * k + 2 * j * MR] = val.real();
-              buffer[2 * k + 2 * j * MR + MR] = -val.imag();
-              buffer[2 * k + 2 * j * MR + 1] = val.imag();
-              buffer[2 * k + 2 * j * MR + MR + 1] = val.real();
+              buffer[0] = val.real(); buffer[MR] = -val.imag();
+              buffer[1] = val.imag(); buffer[1 + MR] = val.real();
             }
-          }
-        }
 
-        buffer += MR * (2 * K);
+            buffer += 2;
+          }
+
+          base += 2 * MR;
+          buffer = base;
+        }
       }
     }
 
