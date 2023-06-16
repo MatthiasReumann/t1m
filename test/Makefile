@@ -16,7 +16,7 @@ real:
 	${CCX} ${CFLAGS} test_real.cpp ${INCLUDE} ${LIBS} -o $@.test.o
 
 debug:
-	${CCX} -std=c++17 test.cpp ${INCLUDE} ${LIBS} -o $@.o
+	${CCX} -std=c++17 test_real.cpp ${INCLUDE} ${LIBS} -o $@.o
 
 clean:
 	rm *.o ||:
