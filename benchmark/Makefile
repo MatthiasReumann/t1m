@@ -7,11 +7,14 @@ INCLUDE += -I../src/external/blis/include/haswell
 
 LIBS     = -L../src/external/blis/lib/haswell/ -lblis2
 
-all: clean build
+all: clean real complex
 
-build:
-	${CCX} ${CFLAGS} benchmark.cpp ${INCLUDE} ${LIBS} -o benchmark.o
+real:
+	${CCX} ${CFLAGS} benchmark_real.cpp ${INCLUDE} ${LIBS} -o  $@.benchmark.o
+
+complex:
+	${CCX} ${CFLAGS} benchmark_complex.cpp ${INCLUDE} ${LIBS} -o  $@.benchmark.o
 
 clean:
-	rm benchmark.o ||:
+	rm *.o ||:
 	
