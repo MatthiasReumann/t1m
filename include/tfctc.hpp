@@ -72,8 +72,8 @@ namespace tfctc
 
     internal::gemm(a, scatterA, scatterB, b, scatterC, cntx);
 
-    free(a);
-    free(b);
+    delete a;
+    delete b;
   }
 
   void contract(double alpha, Tensor<double> A, std::string labelsA,
@@ -96,7 +96,7 @@ namespace tfctc
 
     internal::gemm(a, scatterA, scatterB, b, scatterC, cntx);
 
-    free(a);
-    free(b);
+    delete a;
+    delete b;
   }
 };
