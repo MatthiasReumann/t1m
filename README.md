@@ -62,9 +62,7 @@ int main()
 ## TODO / Open 👷🏻‍♂️
 
 - [ ] Find a better name for the project
-- [ ] Implement Block Scatter for Output Matrix `C`
 - [ ] Search for inefficiencies using `perf` or similiar
-- [ ] Memory leakage checks using `valgrind`
 - [ ] Add a CMakeLists.txt
 
 ## Citation
