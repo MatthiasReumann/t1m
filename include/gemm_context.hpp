@@ -1,5 +1,7 @@
 #pragma once
 
+#include "scatter_matrix.hpp"
+#include "block_scatter_matrix.hpp"
 #include "blis.h"
 
 namespace tfctc
@@ -17,7 +19,7 @@ namespace tfctc
       dim_t MR;
       ScatterMatrix<T> *A;
       ScatterMatrix<T> *B;
-      ScatterMatrix<T> *C;
+      BlockScatterMatrix<T> *C;
       T *alpha;
       T *beta;
       void (*kernel)(dim_t,
@@ -34,7 +36,7 @@ namespace tfctc
                      const cntx_t *restrict);
       void (*pack_A)(ScatterMatrix<T> *, T *, int, int, dim_t, dim_t, dim_t);
       void (*pack_B)(ScatterMatrix<T> *, T *, int, int, dim_t, dim_t, dim_t);
-      void (*unpack_C)(ScatterMatrix<T> *, T *, int, int, dim_t, dim_t);
+      void (*unpack_C)(BlockScatterMatrix<T> *, T *, int, int, dim_t, dim_t);
     };
 
     template <typename T, typename U>
@@ -48,7 +50,7 @@ namespace tfctc
       dim_t MR;
       ScatterMatrix<T> *A;
       ScatterMatrix<T> *B;
-      ScatterMatrix<T> *C;
+      BlockScatterMatrix<T> *C;
       U *alpha;
       U *beta;
       void (*kernel)(dim_t,
@@ -65,7 +67,7 @@ namespace tfctc
                      const cntx_t *restrict);
       void (*pack_A)(ScatterMatrix<T> *, U *, int, int, dim_t, dim_t, dim_t);
       void (*pack_B)(ScatterMatrix<T> *, U *, int, int, dim_t, dim_t, dim_t);
-      void (*unpack_C)(ScatterMatrix<T> *, U *, int, int, dim_t, dim_t);
+      void (*unpack_C)(BlockScatterMatrix<T> *, U *, int, int, dim_t, dim_t);
     };
   };
 };

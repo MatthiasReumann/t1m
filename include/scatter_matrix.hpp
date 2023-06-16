@@ -22,6 +22,11 @@ namespace tfctc
         return this->cdata()[this->location(i, j)];
       }
 
+      T* pointer_at_loc(int i, int j)
+      {
+        return &(this->data()[this->location(i, j)]);
+      }
+
       int row_size()
       {
         return this->rscat.size();
@@ -36,7 +41,7 @@ namespace tfctc
       {
         return this->rscat.at(i) + this->cscat.at(j);
       }
-    private:
+    protected:
       ScatterVector rscat;
       ScatterVector cscat;
     };

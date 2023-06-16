@@ -50,7 +50,7 @@ namespace tfctc
     }
 
     template <typename T>
-    void unpack_C(ScatterMatrix<T> *C, T *buffer, int off_i, int off_j, dim_t m, dim_t n)
+    void unpack_C(BlockScatterMatrix<T> *C, T *buffer, int off_i, int off_j, dim_t m, dim_t n)
     {
       T *ptr = C->data();
       for (int j = 0; j < n; j++)

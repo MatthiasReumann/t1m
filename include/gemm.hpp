@@ -3,6 +3,7 @@
 #include <complex>
 #include "gemm_context.hpp"
 #include "scatter_matrix.hpp"
+#include "block_scatter_matrix.hpp"
 #include "packing.hpp"
 #include "packing_1m.hpp"
 #include "std_ext.hpp"
@@ -14,29 +15,33 @@ namespace tfctc
   namespace internal
   {
     template <typename T>
-    void gemm_1m(const gemm_context_1m<std::complex<T>, T> *gemm_ctx)
+    void gemm_1m(const gemm_context_1m<std::complex<T>, T>* gemm_ctx)
     {
+      ScatterMatrix<std::complex<T>>* A = gemm_ctx->A;
+      ScatterMatrix<std::complex<T>>* B = gemm_ctx->B;
+      BlockScatterMatrix<std::complex<T>>* C = gemm_ctx->C;
+
       const dim_t NC = gemm_ctx->NC;
       const dim_t KC = gemm_ctx->KC;
       const dim_t MC = gemm_ctx->MC;
       const dim_t NR = gemm_ctx->NR;
       const dim_t MR = gemm_ctx->MR;
 
-      const size_t M = gemm_ctx->A->row_size();
-      const size_t K = gemm_ctx->A->col_size();
-      const size_t N = gemm_ctx->B->col_size();
+      const size_t M = A->row_size();
+      const size_t K = A->col_size();
+      const size_t N = B->col_size();
 
       dim_t m1, n1, k1, m, n;
       inc_t rsc = 1, csc;
 
-      T *buf = nullptr;
-      T *A_tilde = nullptr; // A in G^{MC x KC}
-      T *A_tilde_base = nullptr;
+      T* buf = nullptr;
+      T* A_tilde = nullptr; // A in G^{MC x KC}
+      T* A_tilde_base = nullptr;
 
-      T *B_tilde = nullptr; // B in G^{KC x NC}
-      T *B_tilde_base = nullptr;
+      T* B_tilde = nullptr; // B in G^{KC x NC}
+      T* B_tilde_base = nullptr;
 
-      T *C_tilde = nullptr; // C in G^{MC x NC}
+      T* C_tilde = nullptr; // C in G^{MC x NC}
 
       tfctc::utils::alloc_aligned<T>(&buf, MC * KC + KC * NC + MC * NC);
 
@@ -52,7 +57,7 @@ namespace tfctc
           n1 = tfctc::std_ext::min(NC, static_cast<dim_t>(N - j_c));
 
           memset(B_tilde, 0, KC * NC * sizeof(T));
-          gemm_ctx->pack_B(gemm_ctx->B, B_tilde, p_c, j_c, k1, n1, NR);
+          gemm_ctx->pack_B(B, B_tilde, p_c, j_c, k1, n1, NR);
 
           // B is now row-major packed into a KC * NC buffer
           // with the specialized format such that each sliver
@@ -63,14 +68,14 @@ namespace tfctc
             m1 = tfctc::std_ext::min(MC / 2, static_cast<dim_t>(M - i_c));
 
             memset(A_tilde, 0, MC * KC * sizeof(T));
-            gemm_ctx->pack_A(gemm_ctx->A, A_tilde, i_c, p_c, m1, k1, MR);
+            gemm_ctx->pack_A(A, A_tilde, i_c, p_c, m1, k1, MR);
 
             // A is now column-major packed into a MC * KC buffer
             // with the specialized format such that each sliver
             // has stride MR
 
             // Now treat everything as real-valued:
-            // Multiplication by two bc. 1 complex = 2 (float/doubles)
+            // Multiplication by two since: 1 complex = 2 real
             // Use NR, MR as with real-valued mm
             m1 = tfctc::std_ext::min(MC, static_cast<dim_t>(M - i_c) * 2);
             k1 = tfctc::std_ext::min(KC, static_cast<dim_t>(K - p_c) * 2);
@@ -81,18 +86,39 @@ namespace tfctc
 
               for (int i_r = 0; i_r < m1; i_r += MR)
               {
-                m = csc = tfctc::std_ext::min(MR, m1 - i_r);
+                m = tfctc::std_ext::min(MR, m1 - i_r);
 
-                gemm_ctx->kernel(m, n, k1,
-                                 gemm_ctx->alpha,
-                                 A_tilde,
-                                 B_tilde,
-                                 gemm_ctx->beta,
-                                 C_tilde, rsc, csc,
-                                 NULL,
-                                 gemm_ctx->cntx);
+                // Find strides for current I, J
+                // Divide stride by two since: 1 complex = 2 real
+                // Use row and column strides as BLIS-Kernel parameters
+                rsc = C->row_stride_in_block(i_c / MC / 2 + i_r / MR / 2) / 2;
+                csc = C->col_stride_in_block(j_c / NC + j_r / NR) / 2;
 
-                gemm_ctx->unpack_C(gemm_ctx->C, C_tilde, i_c + i_r/2, j_c + j_r, m, n);
+                if (rsc > 0 && csc > 0)
+                {
+                  gemm_ctx->kernel(m, n, k1,
+                    gemm_ctx->alpha,
+                    A_tilde,
+                    B_tilde,
+                    gemm_ctx->beta,
+                    reinterpret_cast<T*>(C->pointer_at_loc(i_c + (i_r / 2), j_c + j_r)), rsc, csc,
+                    nullptr,
+                    gemm_ctx->cntx);
+                }
+                else {
+                  rsc = 1; csc = m;
+                  
+                  gemm_ctx->kernel(m, n, k1,
+                    gemm_ctx->alpha,
+                    A_tilde,
+                    B_tilde,
+                    gemm_ctx->beta,
+                    C_tilde, rsc, csc,
+                    nullptr,
+                    gemm_ctx->cntx);
+                  
+                  gemm_ctx->unpack_C(C, C_tilde, i_c + (i_r / 2), j_c + j_r, m, n);
+                }
 
                 A_tilde += MR * k1;
               }
@@ -109,11 +135,11 @@ namespace tfctc
     }
 
     template <typename T>
-    void gemm(const gemm_context<T> *gemm_ctx)
+    void gemm(const gemm_context<T>* gemm_ctx)
     {
-      ScatterMatrix<T> *A = gemm_ctx->A;
-      ScatterMatrix<T> *B = gemm_ctx->B;
-      ScatterMatrix<T> *C = gemm_ctx->C;
+      ScatterMatrix<T>* A = gemm_ctx->A;
+      ScatterMatrix<T>* B = gemm_ctx->B;
+      BlockScatterMatrix<T>* C = gemm_ctx->C;
 
       const dim_t NC = gemm_ctx->NC;
       const dim_t KC = gemm_ctx->KC;
@@ -125,15 +151,15 @@ namespace tfctc
       const size_t K = A->col_size();
       const size_t N = B->col_size();
 
-      T *buf = nullptr;
-      T *A_tilde = nullptr; // A in G^{MC x KC}
-      T *A_tilde_base = nullptr;
+      T* buf = nullptr;
+      T* A_tilde = nullptr; // A in G^{MC x KC}
+      T* A_tilde_base = nullptr;
 
-      T *B_tilde = nullptr; // B in G^{KC x NC}
-      T *B_tilde_base = nullptr;
+      T* B_tilde = nullptr; // B in G^{KC x NC}
+      T* B_tilde_base = nullptr;
 
-      T *C_tilde = nullptr; // C in G^{MC x NC}
-      T *C_tilde_base = nullptr;
+      T* C_tilde = nullptr; // C in G^{MC x NC}
+      T* C_tilde_base = nullptr;
 
       tfctc::utils::alloc_aligned<T>(&buf, MC * KC + KC * NC + MC * NC);
 
@@ -167,18 +193,36 @@ namespace tfctc
 
               for (int i_r = 0; i_r < m1; i_r += MR)
               {
-                m = csc = tfctc::std_ext::min(MR, m1 - i_r);
-                gemm_ctx->kernel(m,
-                                 n,
-                                 k1,
-                                 gemm_ctx->alpha,
-                                 A_tilde,
-                                 B_tilde,
-                                 gemm_ctx->beta,
-                                 C_tilde, rsc, csc,
-                                 NULL,
-                                 gemm_ctx->cntx);
-                gemm_ctx->unpack_C(C, C_tilde, i_c + i_r, j_c + j_r, m, n); // (?) Move two loops out?
+                m = tfctc::std_ext::min(MR, m1 - i_r);
+
+                rsc = C->row_stride_in_block(i_c / MC + i_r / MR);
+                csc = C->col_stride_in_block(j_c / NC + j_r / NR);
+
+                if (rsc > 0 && csc > 0)
+                {
+                  gemm_ctx->kernel(m, n, k1,
+                    gemm_ctx->alpha,
+                    A_tilde,
+                    B_tilde,
+                    gemm_ctx->beta,
+                    C->pointer_at_loc(i_c + i_r, j_c + j_r), rsc, csc,
+                    nullptr,
+                    gemm_ctx->cntx);
+                }
+                else {
+                  rsc = 1; csc = m;
+                  
+                  gemm_ctx->kernel(m, n, k1,
+                    gemm_ctx->alpha,
+                    A_tilde,
+                    B_tilde,
+                    gemm_ctx->beta,
+                    C_tilde, rsc, csc,
+                    nullptr,
+                    gemm_ctx->cntx);
+                  
+                  gemm_ctx->unpack_C(C, C_tilde, i_c + i_r, j_c + j_r, m, n);
+                }
 
                 A_tilde += MR * k1;
               }
@@ -194,14 +238,14 @@ namespace tfctc
       free(buf);
     }
 
-    void gemm(ScatterMatrix<std::complex<double>> *A,
-              ScatterMatrix<std::complex<double>> *B,
-              ScatterMatrix<std::complex<double>> *C,
-              const cntx_t *cntx)
+    void gemm(ScatterMatrix<std::complex<double>>* A,
+      ScatterMatrix<std::complex<double>>* B,
+      BlockScatterMatrix<std::complex<double>>* C,
+      const cntx_t* cntx)
     {
       // 1M doesn't allow different values
-      double *a = new double(1.);
-      double *b = new double(0.);
+      double* a = new double(1.);
+      double* b = new double(0.);
 
       const gemm_context_1m<std::complex<double>, double> gemm_ctx = {
           .cntx = cntx,
@@ -227,14 +271,14 @@ namespace tfctc
       free(b);
     }
 
-    void gemm(ScatterMatrix<std::complex<float>> *A,
-              ScatterMatrix<std::complex<float>> *B,
-              ScatterMatrix<std::complex<float>> *C,
-              const cntx_t *cntx)
+    void gemm(ScatterMatrix<std::complex<float>>* A,
+      ScatterMatrix<std::complex<float>>* B,
+      BlockScatterMatrix<std::complex<float>>* C,
+      const cntx_t* cntx)
     {
       // How to fix this?
-      float *a = new float(1.);
-      float *b = new float(0.);
+      float* a = new float(1.);
+      float* b = new float(0.);
 
       const gemm_context_1m<std::complex<float>, float> gemm_ctx = {
           .cntx = cntx,
@@ -260,10 +304,10 @@ namespace tfctc
       free(b);
     }
 
-    void gemm(double *alpha, ScatterMatrix<double> *A,
-              ScatterMatrix<double> *B,
-              double *beta, ScatterMatrix<double> *C,
-              const cntx_t *cntx)
+    void gemm(double* alpha, ScatterMatrix<double>* A,
+      ScatterMatrix<double>* B,
+      double* beta, BlockScatterMatrix<double>* C,
+      const cntx_t* cntx)
     {
       const gemm_context<double> gemm_ctx = {
           .cntx = cntx,
@@ -286,10 +330,10 @@ namespace tfctc
       gemm(&gemm_ctx);
     }
 
-    void gemm(float *alpha, ScatterMatrix<float> *A,
-              ScatterMatrix<float> *B,
-              float *beta, ScatterMatrix<float> *C,
-              const cntx_t *cntx)
+    void gemm(float* alpha, ScatterMatrix<float>* A,
+      ScatterMatrix<float>* B,
+      float* beta, BlockScatterMatrix<float>* C,
+      const cntx_t* cntx)
     {
       const gemm_context<float> gemm_ctx = {
           .cntx = cntx,

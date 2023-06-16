@@ -62,7 +62,7 @@ namespace tfctc
     }
 
     template <typename U>
-    inline void unpack_C_1m(ScatterMatrix<std::complex<U>> *C, U *buffer, int off_i, int off_j, dim_t M, dim_t N)
+    inline void unpack_C_1m(BlockScatterMatrix<std::complex<U>> *C, U *buffer, int off_i, int off_j, dim_t M, dim_t N)
     {
       std::complex<U> *buffer_complex = reinterpret_cast<std::complex<U> *>(buffer);
       std::complex<U> *ptr = C->data();

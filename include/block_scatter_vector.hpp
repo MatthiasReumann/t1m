@@ -7,11 +7,10 @@ namespace tfctc
 {
   namespace internal
   {
-    template <size_t b>
     class BlockScatterVector
     {
     public:
-      BlockScatterVector(ScatterVector& scat)
+      BlockScatterVector(ScatterVector& scat, size_t b)
       {
         size_t stride; // s, if constant; 0, if different strides
         const size_t l = scat.size();
@@ -19,9 +18,10 @@ namespace tfctc
 
         this->bs.reserve(size);
 
-        for (int i = 0; i < scat.size(); i += b) // blocks
+        for (int i = 0; i < l; i += b) // blocks
         {
           stride = scat.at(i + 1) - scat.at(i);
+
           for (int j = i; j < std::min(i + b, l) - 1; j++)
           {
             if (stride != scat.at(j + 1) - scat.at(j))
@@ -29,10 +29,15 @@ namespace tfctc
               stride = 0; break;
             }
           }
+
           this->bs.push_back(stride);
         }
       }
-    private:
+
+      size_t at(size_t i)
+      {
+        return this->bs.at(i);
+      }
       std::vector<size_t> bs;
     };
   };
