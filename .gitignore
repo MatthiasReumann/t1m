@@ -31,5 +31,12 @@
 *.out
 *.app
 
+# Debugging
+*.dSYM/
+
 # VS-Code Stuff
 .vscode
+.editorconfig
+
+# Local dependencies
+src/
