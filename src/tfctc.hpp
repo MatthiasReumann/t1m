@@ -4,13 +4,11 @@
 Please give this project a better name.
 */
 #include <complex>
-#include "index_bundle_finder.hpp"
-#include "scatter_matrix.hpp"
-#include "block_scatter_matrix.hpp"
-#include "packing.hpp"
-#include "gemm.hpp"
-
-#include "utils.hpp"
+#include "internal/index_bundle_finder.hpp"
+#include "internal/scatter_matrix.hpp"
+#include "internal/block_scatter_matrix.hpp"
+#include "internal/packing.hpp"
+#include "internal/gemm.hpp"
 
 namespace tfctc
 {
@@ -20,7 +18,6 @@ namespace tfctc
   {
     const cntx_t *cntx = bli_gks_query_cntx();
 
-    // TODO: CORRECT BLOCKINGS SIZE FOR 1M?
     const dim_t NR = bli_cntx_get_l3_sup_blksz_def_dt(BLIS_FLOAT, BLIS_NR, cntx);
     const dim_t MR = bli_cntx_get_l3_sup_blksz_def_dt(BLIS_FLOAT, BLIS_MR, cntx);
 
@@ -39,7 +36,6 @@ namespace tfctc
   {
     const cntx_t *cntx = bli_gks_query_cntx();
 
-    // TODO: CORRECT BLOCKING SIZES FOR 1M?
     const dim_t NR = bli_cntx_get_l3_sup_blksz_def_dt(BLIS_DOUBLE, BLIS_NR, cntx);
     const dim_t MR = bli_cntx_get_l3_sup_blksz_def_dt(BLIS_DOUBLE, BLIS_MR, cntx);
 

@@ -7,17 +7,30 @@ namespace tfctc
   namespace utils
   {
     template <typename T>
-    void alloc_aligned(T **ptr, size_t n)
+    void alloc_aligned(T** ptr, size_t n)
     {
       // TODO: Memory Alignment?
-      if (posix_memalign((void **)ptr, 32, n * sizeof(T)))
+      if (posix_memalign((void**)ptr, 32, n * sizeof(T)))
       {
         std::throw_with_nested(std::bad_alloc());
       }
     }
 
     template <typename T>
-    void print_vec(std::vector<T> &vec)
+    inline T* alloc_aligned2(size_t n)
+    {
+      if (n == 0) return nullptr;
+
+      void* ptr;
+      if (posix_memalign(&ptr, 32, n * sizeof(T)))
+      {
+        std::throw_with_nested(std::bad_alloc());
+      }
+      return static_cast<T*>(ptr);
+    }
+
+    template <typename T>
+    void print_vec(std::vector<T>& vec)
     {
       std::cout << "[ ";
       for (auto v : vec)
@@ -28,7 +41,7 @@ namespace tfctc
     }
 
     template <typename T>
-    void print_linear(T *mat, int m, int n)
+    void print_linear(T* mat, int m, int n)
     {
       for (int i = 0; i < m * n - 1; i++)
       {
@@ -38,7 +51,7 @@ namespace tfctc
     }
 
     template <typename T>
-    void print_mat(T *mat, int rows, int columns)
+    void print_mat(T* mat, int rows, int columns)
     {
       std::cout << '{' << '\n';
       for (int i = 0; i < rows; i++)
@@ -55,7 +68,7 @@ namespace tfctc
     }
 
     template <typename T>
-    void print_mat_row(T *mat, int rows, int columns)
+    void print_mat_row(T* mat, int rows, int columns)
     {
       std::cout << '{' << '\n';
       for (int i = 0; i < rows; i++)
