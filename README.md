@@ -59,12 +59,6 @@ int main()
 }
 ```
 
-## TODO / Open 👷🏻‍♂️
-
-- [ ] Find a better name for the project
-- [ ] Search for inefficiencies using `perf` or similiar
-- [ ] Add a CMakeLists.txt
-
 ## Citation
 
 In case you want refer to TFCTC as part of a research paper, please cite appropriately (pdf):
