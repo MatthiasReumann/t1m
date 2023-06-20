@@ -5,7 +5,6 @@
 - BLIS Library ([URL](https://github.com/flame/blis))
 - MArray Library ([URL](https://github.com/devinamatthews/marray))
 
-## Installation
 
 ## API 
 
