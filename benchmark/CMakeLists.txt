@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 3.26)
-include(CMakePrintHelpers)
 
 project(tfctc)
 
@@ -9,12 +8,13 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -mavx2")
 
 find_library(BLIS_LIB "libblis.a" REQUIRED) # find library; store in BLIS_LIB
 find_file(BLIS_H blis REQUIRED) # find path to blis.h file; store in BLIS_H
+find_path(MARRAY_H "marray.hpp" REQUIRED)
 
 include_directories(
   "${BLIS_H}"
+  "${MARRAY_H}"
   "${CMAKE_CURRENT_SOURCE_DIR}/../src"
   "${CMAKE_CURRENT_SOURCE_DIR}/../src/internal"
-  "${CMAKE_CURRENT_SOURCE_DIR}/../src/external/marray"
 )
 
 add_executable(complex.benchmark.o benchmark_complex.cpp)
