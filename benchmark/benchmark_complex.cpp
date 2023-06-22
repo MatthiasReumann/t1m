@@ -1,4 +1,5 @@
 #include <iostream>
+#include <numeric>
 #include <complex>
 #include "tfctc.hpp"
 
@@ -21,7 +22,7 @@ int main()
   std::complex<float>* A = nullptr, * B = nullptr, * C = nullptr;
   
   std::cout << "d1=d2=d3;min(μs);avg(μs)"<< '\n';
-  for (int i = 2; i < 12; i++)
+  for (int i = 10; i < 11; i++)
   {
     d1 = d2 = d3 = pow(2, i);
 

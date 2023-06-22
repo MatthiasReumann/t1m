@@ -1,4 +1,5 @@
 #include <iostream>
+#include <numeric>
 #include "tfctc.hpp"
 
 const int N = 1000;

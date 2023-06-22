@@ -1,13 +1,16 @@
 #pragma once
 
 #include <complex>
+
+#include "utils/utils.hpp"
+
+#include "std_ext/std_ext.hpp"
+
 #include "gemm_context.hpp"
 #include "scatter_matrix.hpp"
 #include "block_scatter_matrix.hpp"
 #include "packing.hpp"
 #include "packing_1m.hpp"
-#include "std_ext.hpp"
-#include "utils.hpp"
 #include "blis.h"
 
 namespace tfctc

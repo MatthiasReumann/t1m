@@ -1,9 +1,11 @@
 #pragma once
 
 #include <complex>
+
+#include "std_ext/std_ext.hpp"
+
 #include "scatter_matrix.hpp"
 #include "packing.hpp"
-#include "std_ext.hpp"
 #include "blis.h"
 
 namespace tfctc

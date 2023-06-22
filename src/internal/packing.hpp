@@ -1,7 +1,8 @@
 #pragma once
 
+#include "std_ext/std_ext.hpp"
+
 #include "scatter_matrix.hpp"
-#include "std_ext.hpp"
 #include "blis.h"
 
 namespace tfctc

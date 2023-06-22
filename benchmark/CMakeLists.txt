@@ -17,8 +17,11 @@ include_directories(
   "${CMAKE_CURRENT_SOURCE_DIR}/../src/internal"
 )
 
-add_executable(complex.benchmark.o benchmark_complex.cpp)
-add_executable(real.benchmark.o benchmark_real.cpp)
+set(SOURCES_COMPLEX benchmark_complex.cpp "${CMAKE_CURRENT_SOURCE_DIR}/../src/tfctc.cpp")
+set(SOURCES_REAL benchmark_complex.cpp "${CMAKE_CURRENT_SOURCE_DIR}/../src/tfctc.cpp")
+
+add_executable(complex.benchmark.o "${SOURCES_COMPLEX}")
+add_executable(real.benchmark.o "${SOURCES_REAL}")
 
 target_link_libraries(complex.benchmark.o PUBLIC "${BLIS_LIB}")
 target_link_libraries(real.benchmark.o PUBLIC "${BLIS_LIB}")

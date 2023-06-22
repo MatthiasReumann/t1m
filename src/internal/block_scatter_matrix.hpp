@@ -26,6 +26,7 @@ namespace tfctc
       {
         return this->cbs.at(j);
       }
+    private:
       BlockScatterVector rbs;
       BlockScatterVector cbs;
     };
