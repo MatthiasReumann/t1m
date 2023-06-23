@@ -120,7 +120,7 @@ namespace tfctc
                     C_tilde, 1, m,
                     nullptr,
                     gemm_ctx->cntx);
-                  
+
                   gemm_ctx->unpack_C(C, C_tilde, x, y, m, n);
                 }
 
@@ -195,7 +195,6 @@ namespace tfctc
             for (size_t j_r = 0; j_r < n1; j_r += NR)
             {
               n = tfctc::std_ext::min(NR, static_cast<dim_t>(n1 - j_r));
-
               for (size_t i_r = 0; i_r < m1; i_r += MR)
               {
                 m = tfctc::std_ext::min(MR, static_cast<dim_t>(m1 - i_r));
@@ -217,7 +216,7 @@ namespace tfctc
                     nullptr,
                     gemm_ctx->cntx);
                 }
-                else {        
+                else {
                   gemm_ctx->kernel(m, n, k1,
                     gemm_ctx->alpha,
                     A_tilde,
@@ -226,7 +225,7 @@ namespace tfctc
                     C_tilde, 1, m,
                     nullptr,
                     gemm_ctx->cntx);
-                  
+
                   gemm_ctx->unpack_C(C, C_tilde, x, y, m, n);
                 }
 

@@ -17,7 +17,7 @@ namespace tfctc
       ScatterVector(MArray::len_vector lengths, MArray::len_vector strides, std::vector<size_t> indices)
       {
         std::vector<size_t> l, s;
-        for (auto &idx : indices)
+        for (auto& idx : indices)
         {
           l.push_back(static_cast<size_t>(lengths.at(idx)));
           s.push_back(static_cast<size_t>(strides.at(idx)));
@@ -50,7 +50,7 @@ namespace tfctc
       std::vector<std::vector<size_t>> res;
       res.reserve(values1.size());
 
-      for (auto &summand : values1)
+      for (auto& summand : values1)
         res.push_back(one_to_many(values2, summand));
 
       return res;
@@ -69,9 +69,9 @@ namespace tfctc
       auto combined = many_to_many(lv1, lv2);
 
       std::vector<std::vector<size_t>> l;
-      for (auto &comb_it : combined)
+      for (auto& comb_it : combined)
       {
-        auto minus2 = std::vector<std::vector<size_t>>{{comb_it}};
+        auto minus2 = std::vector<std::vector<size_t>>{ {comb_it} };
         minus2.insert(minus2.end(), levels.begin() + 2, levels.end());
         auto ml = multi_level(minus2);
         l.insert(l.end(), ml.begin(), ml.end());
@@ -105,9 +105,9 @@ namespace tfctc
       auto ml = multi_level(levels);
 
       // flatten
-      for (auto &x : ml)
+      for (auto& x : ml)
       {
-        for (auto &y : x)
+        for (auto& y : x)
         {
           scat_vec.push_back(y);
         }
