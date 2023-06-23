@@ -1,9 +1,7 @@
 #pragma once
 
 #include <complex>
-
-#include "std_ext/std_ext.hpp"
-
+#include "std_ext.hpp"
 #include "scatter_matrix.hpp"
 #include "packing.hpp"
 #include "blis.h"
@@ -13,7 +11,7 @@ namespace tfctc
   namespace internal
   {
     template <typename U>
-    inline void pack_A_1m(ScatterMatrix<std::complex<U>> *A, U *buffer, int off_i, int off_j, dim_t M, dim_t K, dim_t MR)
+    void pack_A_1m(ScatterMatrix<std::complex<U>> *A, U *buffer, int off_i, int off_j, dim_t M, dim_t K, dim_t MR)
     {
       U *base = buffer;
       for (int i = 0; i < M; i += MR / 2) // iterate over rows in MR/2 steps
@@ -40,7 +38,7 @@ namespace tfctc
     }
 
     template <typename U>
-    inline void pack_B_1m(ScatterMatrix<std::complex<U>> *B, U *buffer, int off_i, int off_j, dim_t K, dim_t N, dim_t NR)
+    void pack_B_1m(ScatterMatrix<std::complex<U>> *B, U *buffer, int off_i, int off_j, dim_t K, dim_t N, dim_t NR)
     {
       const dim_t NR2 = 2 * NR;
 
@@ -64,7 +62,7 @@ namespace tfctc
     }
 
     template <typename U>
-    inline void unpack_C_1m(BlockScatterMatrix<std::complex<U>> *C, U *buffer, int off_i, int off_j, dim_t M, dim_t N)
+    void unpack_C_1m(BlockScatterMatrix<std::complex<U>> *C, U *buffer, int off_i, int off_j, dim_t M, dim_t N)
     {
       std::complex<U> *buffer_complex = reinterpret_cast<std::complex<U> *>(buffer);
       std::complex<U> *ptr = C->data();

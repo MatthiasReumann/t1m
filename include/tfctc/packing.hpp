@@ -1,7 +1,6 @@
 #pragma once
 
-#include "std_ext/std_ext.hpp"
-
+#include "std_ext.hpp"
 #include "scatter_matrix.hpp"
 #include "blis.h"
 

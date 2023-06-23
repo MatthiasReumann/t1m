@@ -1,6 +1,6 @@
 #include <iostream>
 #include <numeric>
-#include "tfctc.hpp"
+#include "tfctc/tfctc.hpp"
 
 const int N = 1000;
 const int POWER = 11;
@@ -16,7 +16,7 @@ void set_random(T *tensor, size_t size)
 
 int main()
 {
-  int d1, d2, d3;
+  size_t d1, d2, d3;
   float *A = nullptr, *B = nullptr, *C = nullptr;
 
   std::cout << "d1=d2=d3;min(μs);avg(μs)"<< '\n';
@@ -32,9 +32,13 @@ int main()
     set_random(B, d2 * d3);
     set_random(C, d1 * d3);
 
-    auto tensorA = tfctc::Tensor<float>({d1, d2}, A);
-    auto tensorB = tfctc::Tensor<float>({d2, d3}, B);
-    auto tensorC = tfctc::Tensor<float>({d1, d3}, C);
+    const std::vector<size_t> lengthsA = { d1, d2 };
+    const std::vector<size_t> lengthsB = { d2, d3 };
+    const std::vector<size_t> lengthsC = { d1, d3 };
+
+    auto tensorA = tfctc::Tensor<float>(lengthsA, A);
+    auto tensorB = tfctc::Tensor<float>(lengthsB, B);
+    auto tensorC = tfctc::Tensor<float>(lengthsC, C);
 
     std::vector<float> time(N);
     for (uint i = 0; i < N; i++)

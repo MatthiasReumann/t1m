@@ -1,7 +1,7 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <complex>
 #include "doctest.h"
-#include "tfctc.hpp"
+#include "tfctc/tfctc.hpp"
 
 using FloatComplex = std::complex<float>;
 using DoubleComplex = std::complex<double>;

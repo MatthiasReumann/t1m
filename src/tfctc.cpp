@@ -1,10 +1,10 @@
 #include <complex>
-#include "internal/tensor.hpp"
-#include "internal/index_bundle_finder.hpp"
-#include "internal/scatter_matrix.hpp"
-#include "internal/block_scatter_matrix.hpp"
-#include "internal/packing.hpp"
-#include "internal/gemm.hpp"
+#include "tfctc/tensor.hpp"
+#include "tfctc/index_bundle_finder.hpp"
+#include "tfctc/scatter_matrix.hpp"
+#include "tfctc/block_scatter_matrix.hpp"
+#include "tfctc/packing.hpp"
+#include "tfctc/gemm.hpp"
 
 namespace tfctc
 {

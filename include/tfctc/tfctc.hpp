@@ -1,9 +1,8 @@
 #pragma once
 
 #include <complex>
-#include "internal/tensor.hpp"
-
-#include "utils/utils.hpp"
+#include "tensor.hpp"
+#include "utils.hpp"
 
 namespace tfctc
 {

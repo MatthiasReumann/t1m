@@ -1,6 +1,6 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "doctest.h"
-#include "tfctc.hpp"
+#include "tfctc/tfctc.hpp"
 
 template<typename T>
 inline void requireAll(T *tensor, std::vector<T> expected)
