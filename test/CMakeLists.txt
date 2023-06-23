@@ -21,7 +21,7 @@ target_compile_features(testcomplex PRIVATE cxx_std_17)
 target_link_libraries(testcomplex PRIVATE tfctc)
 add_test(NAME testcomplextest COMMAND testcomplex)
 
-add_executable(testreal test_complex.cpp)
+add_executable(testreal test_real.cpp)
 target_include_directories(testreal PUBLIC ${DOCTEST_INCLUDE_DIR})
 target_compile_features(testreal PRIVATE cxx_std_17)
 target_link_libraries(testreal PRIVATE tfctc)
