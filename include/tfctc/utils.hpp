@@ -78,7 +78,7 @@ namespace tfctc
         {
           std::cout << mat[j + i * columns] << ", ";
         }
-        std::cout << mat[columns - 1 + i * rows];
+        std::cout << mat[columns - 1 + i * columns];
         std::cout << '}' << ',' << '\n';
       }
       std::cout << '}' << '\n';
