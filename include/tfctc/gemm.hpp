@@ -141,8 +141,8 @@ namespace tfctc
     template <typename T>
     void gemm(const gemm_context<T>* gemm_ctx)
     {
-      ScatterMatrix<T>* A = gemm_ctx->A;
-      ScatterMatrix<T>* B = gemm_ctx->B;
+      BlockScatterMatrix<T>* A = gemm_ctx->A;
+      BlockScatterMatrix<T>* B = gemm_ctx->B;
       BlockScatterMatrix<T>* C = gemm_ctx->C;
 
       const dim_t NC = gemm_ctx->NC;
@@ -177,24 +177,26 @@ namespace tfctc
 
       for (size_t j_c = 0; j_c < N; j_c += NC)
       {
+        n1 = tfctc::std_ext::min(NC, static_cast<dim_t>(N - j_c));
+
         for (size_t p_c = 0; p_c < K; p_c += KC)
         {
           k1 = tfctc::std_ext::min(KC, static_cast<dim_t>(K - p_c));
-          n1 = tfctc::std_ext::min(NC, static_cast<dim_t>(N - j_c));
 
           memset(B_tilde, 0, KC * NC * sizeof(T));
-          gemm_ctx->pack_B(B, B_tilde, p_c, j_c, k1, n1, NR);
+          internal::pack_b(B, B_tilde, p_c, j_c, k1, n1, NR, 4);
 
           for (size_t i_c = 0; i_c < M; i_c += MC)
           {
             m1 = tfctc::std_ext::min(MC, static_cast<dim_t>(M - i_c));
 
             memset(A_tilde, 0, MC * KC * sizeof(T));
-            gemm_ctx->pack_A(A, A_tilde, i_c, p_c, m1, k1, MR);
+            internal::pack_a(A, A_tilde, i_c, p_c, m1, k1, MR, 4);
 
             for (size_t j_r = 0; j_r < n1; j_r += NR)
             {
               n = tfctc::std_ext::min(NR, static_cast<dim_t>(n1 - j_r));
+              
               for (size_t i_r = 0; i_r < m1; i_r += MR)
               {
                 m = tfctc::std_ext::min(MR, static_cast<dim_t>(m1 - i_r));
@@ -226,7 +228,7 @@ namespace tfctc
                     nullptr,
                     gemm_ctx->cntx);
 
-                  gemm_ctx->unpack_C(C, C_tilde, x, y, m, n);
+                  internal::unpack_c_scat(C, C_tilde, x, y, m, n);
                 }
 
                 A_tilde += MR * k1;
@@ -242,122 +244,5 @@ namespace tfctc
 
       free(buf);
     }
-
-    void gemm(ScatterMatrix<std::complex<double>>* A,
-      ScatterMatrix<std::complex<double>>* B,
-      BlockScatterMatrix<std::complex<double>>* C,
-      const cntx_t* cntx)
-    {
-      double* a = new double(1.);
-      double* b = new double(0.);
-
-      const gemm_context_1m<std::complex<double>, double> gemm_ctx = {
-          .cntx = cntx,
-          .NC = bli_cntx_get_l3_sup_blksz_def_dt(BLIS_DOUBLE, BLIS_NC, cntx),
-          .KC = bli_cntx_get_l3_sup_blksz_def_dt(BLIS_DOUBLE, BLIS_KC, cntx),
-          .MC = bli_cntx_get_l3_sup_blksz_def_dt(BLIS_DOUBLE, BLIS_MC, cntx),
-          .NR = bli_cntx_get_l3_sup_blksz_def_dt(BLIS_DOUBLE, BLIS_NR, cntx),
-          .MR = bli_cntx_get_l3_sup_blksz_def_dt(BLIS_DOUBLE, BLIS_MR, cntx),
-          .A = A,
-          .B = B,
-          .C = C,
-          .alpha = a,
-          .beta = b,
-          .kernel = bli_dgemm_ukernel,
-          .pack_A = pack_A_1m<double>,
-          .pack_B = pack_B_1m<double>,
-          .unpack_C = unpack_C_1m<double>,
-      };
-
-      gemm_1m(&gemm_ctx);
-
-      delete a;
-      delete b;
-    }
-
-    void gemm(ScatterMatrix<std::complex<float>>* A,
-      ScatterMatrix<std::complex<float>>* B,
-      BlockScatterMatrix<std::complex<float>>* C,
-      const cntx_t* cntx)
-    {
-      float* a = new float(1.);
-      float* b = new float(0.);
-
-      const gemm_context_1m<std::complex<float>, float> gemm_ctx = {
-          .cntx = cntx,
-          .NC = bli_cntx_get_l3_sup_blksz_def_dt(BLIS_FLOAT, BLIS_NC, cntx),
-          .KC = bli_cntx_get_l3_sup_blksz_def_dt(BLIS_FLOAT, BLIS_KC, cntx),
-          .MC = bli_cntx_get_l3_sup_blksz_def_dt(BLIS_FLOAT, BLIS_MC, cntx),
-          .NR = bli_cntx_get_l3_sup_blksz_def_dt(BLIS_FLOAT, BLIS_NR, cntx),
-          .MR = bli_cntx_get_l3_sup_blksz_def_dt(BLIS_FLOAT, BLIS_MR, cntx),
-          .A = A,
-          .B = B,
-          .C = C,
-          .alpha = a,
-          .beta = b,
-          .kernel = bli_sgemm_ukernel,
-          .pack_A = pack_A_1m<float>,
-          .pack_B = pack_B_1m<float>,
-          .unpack_C = unpack_C_1m<float>,
-      };
-
-      gemm_1m(&gemm_ctx);
-
-      delete a;
-      delete b;
-    }
-
-    void gemm(double* alpha, ScatterMatrix<double>* A,
-      ScatterMatrix<double>* B,
-      double* beta, BlockScatterMatrix<double>* C,
-      const cntx_t* cntx)
-    {
-      const gemm_context<double> gemm_ctx = {
-          .cntx = cntx,
-          .NC = bli_cntx_get_l3_sup_blksz_def_dt(BLIS_DOUBLE, BLIS_NC, cntx),
-          .KC = bli_cntx_get_l3_sup_blksz_def_dt(BLIS_DOUBLE, BLIS_KC, cntx),
-          .MC = bli_cntx_get_l3_sup_blksz_def_dt(BLIS_DOUBLE, BLIS_MC, cntx),
-          .NR = bli_cntx_get_l3_sup_blksz_def_dt(BLIS_DOUBLE, BLIS_NR, cntx),
-          .MR = bli_cntx_get_l3_sup_blksz_def_dt(BLIS_DOUBLE, BLIS_MR, cntx),
-          .A = A,
-          .B = B,
-          .C = C,
-          .alpha = alpha,
-          .beta = beta,
-          .kernel = bli_dgemm_ukernel,
-          .pack_A = pack_A<double>,
-          .pack_B = pack_B<double>,
-          .unpack_C = unpack_C<double>,
-      };
-
-      gemm(&gemm_ctx);
-    }
-
-    void gemm(float* alpha, ScatterMatrix<float>* A,
-      ScatterMatrix<float>* B,
-      float* beta, BlockScatterMatrix<float>* C,
-      const cntx_t* cntx)
-    {
-      const gemm_context<float> gemm_ctx = {
-          .cntx = cntx,
-          .NC = bli_cntx_get_l3_sup_blksz_def_dt(BLIS_FLOAT, BLIS_NC, cntx),
-          .KC = bli_cntx_get_l3_sup_blksz_def_dt(BLIS_FLOAT, BLIS_KC, cntx),
-          .MC = bli_cntx_get_l3_sup_blksz_def_dt(BLIS_FLOAT, BLIS_MC, cntx),
-          .NR = bli_cntx_get_l3_sup_blksz_def_dt(BLIS_FLOAT, BLIS_NR, cntx),
-          .MR = bli_cntx_get_l3_sup_blksz_def_dt(BLIS_FLOAT, BLIS_MR, cntx),
-          .A = A,
-          .B = B,
-          .C = C,
-          .alpha = alpha,
-          .beta = beta,
-          .kernel = bli_sgemm_ukernel,
-          .pack_A = pack_A<float>,
-          .pack_B = pack_B<float>,
-          .unpack_C = unpack_C<float>,
-      };
-
-      gemm(&gemm_ctx);
-    }
-
-  };
+  }
 };

@@ -2,8 +2,7 @@
 #include <numeric>
 #include "tfctc/tfctc.hpp"
 
-const int N = 1000;
-const int POWER = 11;
+const int N = 10;
 
 template<typename T>
 void set_random(T *tensor, size_t size)
@@ -16,47 +15,44 @@ void set_random(T *tensor, size_t size)
 
 int main()
 {
-  size_t d1, d2, d3;
-  float *A = nullptr, *B = nullptr, *C = nullptr;
+  float* A = nullptr, * B = nullptr, * C = nullptr;
+  
+  std::cout << "d,m,a"<< '\n';
 
-  std::cout << "d1=d2=d3;min(μs);avg(μs)"<< '\n';
-  for (int i = 2; i < POWER; i++)
+  size_t workspace_size = 45l * 45l * 45l * 45l;
+  tfctc::utils::alloc_aligned(&A, workspace_size);
+  tfctc::utils::alloc_aligned(&B, workspace_size);
+  tfctc::utils::alloc_aligned(&C, workspace_size);
+
+  set_random(A, workspace_size);
+  set_random(B, workspace_size);
+  set_random(C, workspace_size);
+
+  for (size_t i = 2; i < 45; i++)
   {
-    d1 = d2 = d3 = pow(2, i);
-
-    tfctc::utils::alloc_aligned(&A, d1 * d2);
-    tfctc::utils::alloc_aligned(&B, d2 * d3);
-    tfctc::utils::alloc_aligned(&C, d1 * d3);
-
-    set_random(A, d1 * d2);
-    set_random(B, d2 * d3);
-    set_random(C, d1 * d3);
-
-    const std::vector<size_t> lengthsA = { d1, d2 };
-    const std::vector<size_t> lengthsB = { d2, d3 };
-    const std::vector<size_t> lengthsC = { d1, d3 };
+    const std::vector<size_t> lengthsA = { i, i, i, i };
+    const std::vector<size_t> lengthsB = { i, i, i, i };
+    const std::vector<size_t> lengthsC = { i, i, i, i };
 
     auto tensorA = tfctc::Tensor<float>(lengthsA, A);
     auto tensorB = tfctc::Tensor<float>(lengthsB, B);
     auto tensorC = tfctc::Tensor<float>(lengthsC, C);
 
     std::vector<float> time(N);
-    for (uint i = 0; i < N; i++)
+    for (uint j = 0; j < N; j++)
     {
       auto t0 = std::chrono::high_resolution_clock::now();
-      
-      tfctc::contract(1., tensorA, "ab", tensorB, "cb", 0., tensorC, "ac");
-      
+      tfctc::contract(1., tensorA, "abcd", tensorB, "ebcf", 0., tensorC, "fade");
       auto t1 = std::chrono::high_resolution_clock::now();
-      time[i] = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count();
+      time[j] = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count();
     }
 
-    std::cout << d1 << ';';
-    std::cout << *min_element(time.begin(), time.end()) << ';';
+    std::cout << int(i * i) << ',';
+    std::cout << *min_element(time.begin(), time.end()) << ',';
     std::cout << accumulate(time.begin(), time.end(), 0.0) * 1.0 / N << std::endl;
-
-    free(A);
-    free(B);
-    free(C);
   }
+
+  free(A);
+  free(B);
+  free(C);
 }

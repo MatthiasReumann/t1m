@@ -21,7 +21,7 @@ int main()
   
   std::cout << "m=n=k;min(μs);avg(μs)"<< '\n';
 
-  size_t workspace_size = 62l * 62l * 62l * 62l;
+  size_t workspace_size = 45l * 45l * 45l * 45l;
   tfctc::utils::alloc_aligned(&A, workspace_size);
   tfctc::utils::alloc_aligned(&B, workspace_size);
   tfctc::utils::alloc_aligned(&C, workspace_size);
@@ -30,7 +30,7 @@ int main()
   set_random(B, workspace_size);
   set_random(C, workspace_size);
 
-  for (size_t i = 2; i < 62; i++)
+  for (size_t i = 2; i < 45; i++)
   {
     const std::vector<size_t> lengthsA = { i, i, i, i };
     const std::vector<size_t> lengthsB = { i, i, i, i };
