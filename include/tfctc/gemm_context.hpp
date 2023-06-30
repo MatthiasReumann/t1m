@@ -17,6 +17,7 @@ namespace tfctc
       dim_t MC;
       dim_t NR;
       dim_t MR;
+      dim_t KP;
       BlockScatterMatrix<T> *A;
       BlockScatterMatrix<T> *B;
       BlockScatterMatrix<T> *C;
@@ -45,8 +46,9 @@ namespace tfctc
       dim_t MC;
       dim_t NR;
       dim_t MR;
-      ScatterMatrix<T> *A;
-      ScatterMatrix<T> *B;
+      dim_t KP;
+      BlockScatterMatrix<T> *A;
+      BlockScatterMatrix<T> *B;
       BlockScatterMatrix<T> *C;
       U *alpha;
       U *beta;
@@ -62,9 +64,6 @@ namespace tfctc
                      inc_t,
                      auxinfo_t *restrict,
                      const cntx_t *restrict);
-      void (*pack_A)(ScatterMatrix<T> *, U *, int, int, dim_t, dim_t, dim_t);
-      void (*pack_B)(ScatterMatrix<T> *, U *, int, int, dim_t, dim_t, dim_t);
-      void (*unpack_C)(BlockScatterMatrix<T> *, U *, int, int, dim_t, dim_t);
     };
   };
 };

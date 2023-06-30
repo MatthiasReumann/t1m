@@ -17,8 +17,8 @@ namespace tfctc
     template <typename T>
     void gemm_1m(const gemm_context_1m<std::complex<T>, T>* gemm_ctx)
     {
-      ScatterMatrix<std::complex<T>>* A = gemm_ctx->A;
-      ScatterMatrix<std::complex<T>>* B = gemm_ctx->B;
+      BlockScatterMatrix<std::complex<T>>* A = gemm_ctx->A;
+      BlockScatterMatrix<std::complex<T>>* B = gemm_ctx->B;
       BlockScatterMatrix<std::complex<T>>* C = gemm_ctx->C;
 
       const dim_t NC = gemm_ctx->NC;
@@ -26,6 +26,7 @@ namespace tfctc
       const dim_t MC = gemm_ctx->MC;
       const dim_t NR = gemm_ctx->NR;
       const dim_t MR = gemm_ctx->MR;
+      const dim_t KP = gemm_ctx->KP;
 
       const size_t M = A->row_size();
       const size_t K = A->col_size();
@@ -53,13 +54,14 @@ namespace tfctc
       for (size_t j_c = 0; j_c < N; j_c += NC)
       {
         J = j_c / NC;
+        n1 = tfctc::std_ext::min(NC, static_cast<dim_t>(N - j_c));
+
         for (size_t p_c = 0; p_c < K; p_c += KC / 2)
         {
           k1 = tfctc::std_ext::min(KC / 2, static_cast<dim_t>(K - p_c));
-          n1 = tfctc::std_ext::min(NC, static_cast<dim_t>(N - j_c));
 
           memset(B_tilde, 0, KC * NC * sizeof(T));
-          gemm_ctx->pack_B(B, B_tilde, p_c, j_c, k1, n1, NR);
+          internal::pack_1m_b(B, B_tilde, p_c, j_c, k1, n1, NR, KP);
 
           // B is now row-major packed into a KC * NC buffer
           // with the specialized format such that each sliver
@@ -71,7 +73,7 @@ namespace tfctc
             m1 = tfctc::std_ext::min(MC / 2, static_cast<dim_t>(M - i_c));
 
             memset(A_tilde, 0, MC * KC * sizeof(T));
-            gemm_ctx->pack_A(A, A_tilde, i_c, p_c, m1, k1, MR);
+            internal::pack_1m_a(A, A_tilde, i_c, p_c, m1, k1, MR);
 
             // A is now column-major packed into a MC * KC buffer
             // with the specialized format such that each sliver
@@ -121,7 +123,7 @@ namespace tfctc
                     nullptr,
                     gemm_ctx->cntx);
 
-                  gemm_ctx->unpack_C(C, C_tilde, x, y, m, n);
+                  internal::unpack_1m_c(C, C_tilde, x, y, m, n);
                 }
 
                 A_tilde += MR * k1;
@@ -150,6 +152,7 @@ namespace tfctc
       const dim_t MC = gemm_ctx->MC;
       const dim_t NR = gemm_ctx->NR;
       const dim_t MR = gemm_ctx->MR;
+      const dim_t KP = gemm_ctx->KP;
 
       const size_t M = A->row_size();
       const size_t K = A->col_size();
@@ -184,14 +187,14 @@ namespace tfctc
           k1 = tfctc::std_ext::min(KC, static_cast<dim_t>(K - p_c));
 
           memset(B_tilde, 0, KC * NC * sizeof(T));
-          internal::pack_b(B, B_tilde, p_c, j_c, k1, n1, NR, 4);
+          internal::pack_b(B, B_tilde, p_c, j_c, k1, n1, NR, KP);
 
           for (size_t i_c = 0; i_c < M; i_c += MC)
           {
             m1 = tfctc::std_ext::min(MC, static_cast<dim_t>(M - i_c));
 
             memset(A_tilde, 0, MC * KC * sizeof(T));
-            internal::pack_a(A, A_tilde, i_c, p_c, m1, k1, MR, 4);
+            internal::pack_a(A, A_tilde, i_c, p_c, m1, k1, MR, KP);
 
             for (size_t j_r = 0; j_r < n1; j_r += NR)
             {
