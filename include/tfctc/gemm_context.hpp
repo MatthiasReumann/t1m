@@ -12,12 +12,12 @@ namespace tfctc
     struct gemm_context
     {
       const cntx_t *cntx;
-      dim_t NC;
-      dim_t KC;
-      dim_t MC;
-      dim_t NR;
-      dim_t MR;
-      dim_t KP;
+      const dim_t NC;
+      const dim_t KC;
+      const dim_t MC;
+      const dim_t NR;
+      const dim_t MR;
+      const dim_t KP;
       BlockScatterMatrix<T> *A;
       BlockScatterMatrix<T> *B;
       BlockScatterMatrix<T> *C;
@@ -41,12 +41,12 @@ namespace tfctc
     struct gemm_context_1m
     {
       const cntx_t *cntx;
-      dim_t NC;
-      dim_t KC;
-      dim_t MC;
-      dim_t NR;
-      dim_t MR;
-      dim_t KP;
+      const dim_t NC;
+      const dim_t KC;
+      const dim_t MC;
+      const dim_t NR;
+      const dim_t MR;
+      const dim_t KP;
       BlockScatterMatrix<T> *A;
       BlockScatterMatrix<T> *B;
       BlockScatterMatrix<T> *C;

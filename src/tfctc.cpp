@@ -16,11 +16,12 @@ namespace tfctc
 
     const dim_t NR = bli_cntx_get_l3_sup_blksz_def_dt(BLIS_FLOAT, BLIS_NR, cntx);
     const dim_t MR = bli_cntx_get_l3_sup_blksz_def_dt(BLIS_FLOAT, BLIS_MR, cntx);
+    const dim_t KP = 4;
 
     const auto ilf = new internal::IndexBundleFinder(labelsA, labelsB, labelsC);
 
-    auto scatterA = new internal::ScatterMatrix<std::complex<float>>(A, ilf->I, ilf->Pa);
-    auto scatterB = new internal::ScatterMatrix<std::complex<float>>(B, ilf->Pb, ilf->J);
+    auto scatterA = new internal::BlockScatterMatrix<std::complex<float>>(A, ilf->I, ilf->Pa, MR, KP);
+    auto scatterB = new internal::BlockScatterMatrix<std::complex<float>>(B, ilf->Pb, ilf->J, KP, NR);
     auto scatterC = new internal::BlockScatterMatrix<std::complex<float>>(C, ilf->Ic, ilf->Jc, MR, NR);
 
     float* a = new float(1.);
@@ -33,15 +34,13 @@ namespace tfctc
         .MC = bli_cntx_get_l3_sup_blksz_def_dt(BLIS_FLOAT, BLIS_MC, cntx),
         .NR = NR,
         .MR = MR,
+        .KP = KP,
         .A = scatterA,
         .B = scatterB,
         .C = scatterC,
         .alpha = a,
         .beta = b,
-        .kernel = bli_sgemm_ukernel,
-        .pack_A = internal::pack_A_1m<float>,
-        .pack_B = internal::pack_B_1m<float>,
-        .unpack_C = internal::unpack_C_1m<float>,
+        .kernel = bli_sgemm_ukernel
     };
 
     internal::gemm_1m(&gemm_ctx);
@@ -58,11 +57,12 @@ namespace tfctc
 
     const dim_t NR = bli_cntx_get_l3_sup_blksz_def_dt(BLIS_DOUBLE, BLIS_NR, cntx);
     const dim_t MR = bli_cntx_get_l3_sup_blksz_def_dt(BLIS_DOUBLE, BLIS_MR, cntx);
+    const dim_t KP = 4;
 
     const auto ilf = new internal::IndexBundleFinder(labelsA, labelsB, labelsC);
 
-    auto scatterA = new internal::ScatterMatrix<std::complex<double>>(A, ilf->I, ilf->Pa);
-    auto scatterB = new internal::ScatterMatrix<std::complex<double>>(B, ilf->Pb, ilf->J);
+    auto scatterA = new internal::BlockScatterMatrix<std::complex<double>>(A, ilf->I, ilf->Pa, MR, KP);
+    auto scatterB = new internal::BlockScatterMatrix<std::complex<double>>(B, ilf->Pb, ilf->J, KP, MR);
     auto scatterC = new internal::BlockScatterMatrix<std::complex<double>>(C, ilf->Ic, ilf->Jc, MR, NR);
 
     double* a = new double(1.);
@@ -75,15 +75,13 @@ namespace tfctc
         .MC = bli_cntx_get_l3_sup_blksz_def_dt(BLIS_DOUBLE, BLIS_MC, cntx),
         .NR = NR,
         .MR = MR,
+        .KP = KP,
         .A = scatterA,
         .B = scatterB,
         .C = scatterC,
         .alpha = a,
         .beta = b,
-        .kernel = bli_dgemm_ukernel,
-        .pack_A = internal::pack_A_1m<double>,
-        .pack_B = internal::pack_B_1m<double>,
-        .unpack_C = internal::unpack_C_1m<double>,
+        .kernel = bli_dgemm_ukernel
     };
 
     internal::gemm_1m(&gemm_ctx);
@@ -118,6 +116,7 @@ namespace tfctc
           .MC = bli_cntx_get_l3_sup_blksz_def_dt(BLIS_FLOAT, BLIS_MC, cntx),
           .NR = NR,
           .MR = MR,
+          .KP = KP,
           .A = scatterA,
           .B = scatterB,
           .C = scatterC,
@@ -158,6 +157,7 @@ namespace tfctc
           .MC = bli_cntx_get_l3_sup_blksz_def_dt(BLIS_DOUBLE, BLIS_MC, cntx),
           .NR = NR,
           .MR = MR,
+          .KP = KP,
           .A = scatterA,
           .B = scatterB,
           .C = scatterC,

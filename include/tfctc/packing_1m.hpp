@@ -2,7 +2,7 @@
 
 #include <complex>
 #include "std_ext.hpp"
-#include "scatter_matrix.hpp"
+#include "block_scatter_matrix.hpp"
 #include "packing.hpp"
 #include "blis.h"
 
@@ -11,7 +11,7 @@ namespace tfctc
   namespace internal
   {
     template <typename U>
-    void pack_1m_a(ScatterMatrix<std::complex<U>>* A, U* buffer, int off_i, int off_j, dim_t M, dim_t K, dim_t MR)
+    void pack_1m_az(ScatterMatrix<std::complex<U>>* A, U* buffer, int off_i, int off_j, dim_t M, dim_t K, dim_t MR)
     {
       U* base = buffer;
       for (int i = 0; i < M; i += MR / 2) // iterate over rows in MR/2 steps
@@ -42,20 +42,185 @@ namespace tfctc
     }
 
     template <typename U>
-    void pack_1m_b(BlockScatterMatrix<std::complex<U>>* B, U* buffer, int off_i, int off_j, dim_t K, dim_t N, dim_t NR, dim_t KP)
+    void pack_1m_a(BlockScatterMatrix<std::complex<U>>* A, U* buffer, int off_i, int off_j, dim_t M, dim_t K, const dim_t MR, const dim_t KP)
+    {
+      const size_t M_blocks = size_t(M / MR);
+      const size_t K_blocks = size_t(K / KP);
+
+      const size_t m1 = M % MR;
+      const size_t k1 = K % KP;
+
+      const size_t off_j_bak = off_j;
+      const size_t start_b_m = size_t(off_i / MR);
+      const size_t start_b_k = size_t(off_j / KP);
+
+      size_t m, k, bm;
+      inc_t rsa, csa;
+
+      for (m = start_b_m; m < M_blocks; m++)
+      {
+        rsa = A->row_stride_in_block(m);
+
+        for (bm = 0; bm < 2; bm++) // MR / 2; TODO: Make function instead of loop (?)
+        {
+          for (k = start_b_k; k < K_blocks; k++)
+          {
+            csa = A->col_stride_in_block(k);
+
+            if (rsa > 0 && csa > 0)
+            {
+              pack_1m_as_cont(A, buffer, MR / 2, KP, MR, off_i, off_j, rsa, csa);
+            }
+            else {
+              pack_1m_as_scat(A, buffer, MR / 2, KP, MR, off_i, off_j);
+            }
+
+            buffer += 2 * MR * KP;
+            off_j += KP;
+          }
+
+          if (k1 > 0)
+          {
+            csa = A->col_stride_in_block(k);
+
+            if (rsa > 0 && csa > 0)
+            {
+              pack_1m_as_cont(A, buffer, MR / 2, k1, MR, off_i, off_j, rsa, csa);
+            }
+            else {
+              pack_1m_as_scat(A, buffer, MR / 2, k1, MR, off_i, off_j);
+            }
+
+            buffer += 2 * MR * k1;
+          }
+
+          off_i += MR / 2;
+          off_j = off_j_bak;
+        }
+      }
+
+      off_j = off_j_bak;
+      if (m1 > 0)
+      {
+        rsa = A->row_stride_in_block(m);
+
+        if (m1 > MR / 2)
+        {
+          for (k = start_b_k; k < K_blocks; k++)
+          {
+            csa = A->col_stride_in_block(k);
+
+            if (rsa > 0 && csa > 0)
+            {
+              pack_1m_as_cont(A, buffer, MR / 2, KP, MR, off_i, off_j, rsa, csa);
+            }
+            else {
+              pack_1m_as_scat(A, buffer, MR / 2, KP, MR, off_i, off_j);
+            }
+
+            buffer += 2 * MR * KP;
+            off_j += KP;
+          }
+
+          if (k1 > 0)
+          {
+            csa = A->col_stride_in_block(k);
+
+            if (rsa > 0 && csa > 0)
+            {
+              pack_1m_as_cont(A, buffer, MR / 2, k1, MR, off_i, off_j, rsa, csa);
+            }
+            else {
+              pack_1m_as_scat(A, buffer, MR / 2, k1, MR, off_i, off_j);
+            }
+
+            buffer += 2 * MR * k1;
+          }
+
+          off_i += MR / 2;
+          off_j = off_j_bak;
+
+          for (k = start_b_k; k < K_blocks; k++)
+          {
+            csa = A->col_stride_in_block(k);
+
+            if (rsa > 0 && csa > 0)
+            {
+              pack_1m_as_cont(A, buffer, m1 - MR / 2, KP, MR, off_i, off_j, rsa, csa);
+            }
+            else {
+              pack_1m_as_scat(A, buffer, m1 - MR / 2, KP, MR, off_i, off_j);
+            }
+
+            buffer += 2 * MR * KP;
+            off_j += KP;
+          }
+
+          if (k1 > 0)
+          {
+            csa = A->col_stride_in_block(k);
+
+            if (rsa > 0 && csa > 0)
+            {
+              pack_1m_as_cont(A, buffer, m1 - MR / 2, k1, MR, off_i, off_j, rsa, csa);
+            }
+            else {
+              pack_1m_as_scat(A, buffer, m1 - MR / 2, k1, MR, off_i, off_j);
+            }
+          }
+        }
+        else
+        {
+          for (k = start_b_k; k < K_blocks; k++)
+          {
+            csa = A->col_stride_in_block(k);
+
+            if (rsa > 0 && csa > 0)
+            {
+              pack_1m_as_cont(A, buffer, m1, KP, MR, off_i, off_j, rsa, csa);
+            }
+            else {
+              pack_1m_as_scat(A, buffer, m1, KP, MR, off_i, off_j);
+            }
+
+            buffer += 2 * MR * KP;
+            off_j += KP;
+          }
+
+          if (k1 > 0)
+          {
+            csa = A->col_stride_in_block(k);
+
+            if (rsa > 0 && csa > 0)
+            {
+              pack_1m_as_cont(A, buffer, m1, k1, MR, off_i, off_j, rsa, csa);
+            }
+            else {
+              pack_1m_as_scat(A, buffer, m1, k1, MR, off_i, off_j);
+            }
+          }
+        }
+      }
+    }
+
+    template <typename U>
+    void pack_1m_b(BlockScatterMatrix<std::complex<U>>* B, U* buffer, int off_i, int off_j, dim_t K, dim_t N, const dim_t NR, const dim_t KP)
     {
       const dim_t k1 = K % KP;
       const dim_t n1 = N % NR;
       const size_t off_i_bak = off_i;
 
+      const size_t start_b_k = size_t(off_i / KP);
+      const size_t start_b_n = size_t(off_j / NR);
+
       size_t k, n;
       inc_t rsb, csb;
 
-      for (n = 0; n < size_t(N / NR); n++)
+      for (n = start_b_n; n < size_t(N / NR); n++)
       {
         csb = B->col_stride_in_block(n);
 
-        for (k = 0; k < size_t(K / KP); k++)
+        for (k = start_b_k; k < size_t(K / KP); k++)
         {
           rsb = B->row_stride_in_block(k);
 
@@ -94,7 +259,7 @@ namespace tfctc
       {
         csb = B->col_stride_in_block(n);
 
-        for (k = 0; k < size_t(K / KP); k++)
+        for (k = start_b_k; k < size_t(K / KP); k++)
         {
           rsb = B->row_stride_in_block(k);
 
@@ -141,7 +306,53 @@ namespace tfctc
     }
 
     template <typename U>
-    inline void pack_1m_bs_cont(BlockScatterMatrix<std::complex<U>>* B, U* buffer, dim_t k, dim_t n, dim_t NR, size_t off_i, size_t off_j, inc_t rs, inc_t cs)
+    void pack_1m_as_cont(BlockScatterMatrix<std::complex<U>>* A, U* buffer, dim_t m, dim_t k, const dim_t MR, size_t off_i, size_t off_j, inc_t rs, inc_t cs)
+    {
+      const auto ptr = A->pointer_at_loc(off_i, off_j);
+      U* base = buffer;
+
+      for (size_t j = 0; j < k; j++)
+      {
+        for (size_t i = 0; i < m; i++)
+        {
+          const auto val = ptr[j * cs + i * rs];
+          if (val != std::complex<U>(0))
+          {
+            buffer[0] = val.real(); buffer[MR] = -val.imag();
+            buffer[1] = val.imag(); buffer[MR + 1] = val.real();
+          }
+          buffer += 2;
+        }
+
+        base += 2 * MR;
+        buffer = base;
+      }
+    }
+
+    template <typename U>
+    void pack_1m_as_scat(BlockScatterMatrix<std::complex<U>>* A, U* buffer, dim_t m, dim_t k, const dim_t MR, size_t off_i, size_t off_j)
+    {
+      U* base = buffer;
+      for (size_t j = 0; j < k; j++)
+      {
+        for (size_t i = 0; i < m; i++)
+        {
+          const auto val = A->get(i + off_i, j + off_j);
+          if (val != std::complex<U>(0))
+          {
+            buffer[0] = val.real(); buffer[MR] = -val.imag();
+            buffer[1] = val.imag(); buffer[MR + 1] = val.real();
+          }
+          buffer += 2;
+        }
+
+        base += 2 * MR;
+        buffer = base;
+      }
+    }
+
+    template <typename U>
+    void pack_1m_bs_cont(BlockScatterMatrix<std::complex<U>>* B, U* buffer, dim_t k, dim_t n, const dim_t NR, size_t off_i, size_t off_j, inc_t rs, inc_t cs)
     {
       const dim_t NR2 = 2 * NR;
       const auto ptr = B->pointer_at_loc(off_i, off_j);
@@ -160,7 +371,7 @@ namespace tfctc
     }
 
     template <typename U>
-    inline void pack_1m_bs_scat(BlockScatterMatrix<std::complex<U>>* B, U* buffer, dim_t k, dim_t n, dim_t NR, size_t off_i, size_t off_j)
+    void pack_1m_bs_scat(BlockScatterMatrix<std::complex<U>>* B, U* buffer, dim_t k, dim_t n, const dim_t NR, size_t off_i, size_t off_j)
     {
       const dim_t NR2 = 2 * NR;
       for (size_t i = 0; i < k; i++)

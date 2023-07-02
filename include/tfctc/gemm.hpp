@@ -33,7 +33,7 @@ namespace tfctc
       const size_t N = B->col_size();
 
       size_t I, J, x, y;
-      dim_t m1, n1, k1, m, n;
+      dim_t m1, n1, k1, m, n, mreal, kreal;
       inc_t rsc = 1, csc;
 
       T* buf = nullptr;
@@ -59,6 +59,7 @@ namespace tfctc
         for (size_t p_c = 0; p_c < K; p_c += KC / 2)
         {
           k1 = tfctc::std_ext::min(KC / 2, static_cast<dim_t>(K - p_c));
+          kreal = k1 * 2;
 
           memset(B_tilde, 0, KC * NC * sizeof(T));
           internal::pack_1m_b(B, B_tilde, p_c, j_c, k1, n1, NR, KP);
@@ -71,9 +72,10 @@ namespace tfctc
           {
             I = i_c / MC / 2;
             m1 = tfctc::std_ext::min(MC / 2, static_cast<dim_t>(M - i_c));
+            mreal = m1 * 2;
 
             memset(A_tilde, 0, MC * KC * sizeof(T));
-            internal::pack_1m_a(A, A_tilde, i_c, p_c, m1, k1, MR);
+            internal::pack_1m_a(A, A_tilde, i_c, p_c, m1, k1, MR, KP);
 
             // A is now column-major packed into a MC * KC buffer
             // with the specialized format such that each sliver
@@ -82,16 +84,14 @@ namespace tfctc
             // Now treat everything as real-valued:
             // Multiplication by two since: 1 complex = 2 real
             // Use NR, MR as with real-valued mm
-            m1 = tfctc::std_ext::min(MC, static_cast<dim_t>(M - i_c) * 2);
-            k1 = tfctc::std_ext::min(KC, static_cast<dim_t>(K - p_c) * 2);
 
             for (size_t j_r = 0; j_r < n1; j_r += NR)
             {
               n = tfctc::std_ext::min(NR, static_cast<dim_t>(n1 - j_r));
 
-              for (size_t i_r = 0; i_r < m1; i_r += MR)
+              for (size_t i_r = 0; i_r < mreal; i_r += MR)
               {
-                m = tfctc::std_ext::min(MR, static_cast<dim_t>(m1 - i_r));
+                m = tfctc::std_ext::min(MR, static_cast<dim_t>(mreal - i_r));
 
                 // Find strides for current I, J
                 // Divide stride by two since: 1 complex = 2 real
@@ -104,7 +104,7 @@ namespace tfctc
 
                 if (rsc > 0 && csc > 0)
                 {
-                  gemm_ctx->kernel(m, n, k1,
+                  gemm_ctx->kernel(m, n, kreal,
                     gemm_ctx->alpha,
                     A_tilde,
                     B_tilde,
@@ -114,7 +114,7 @@ namespace tfctc
                     gemm_ctx->cntx);
                 }
                 else {
-                  gemm_ctx->kernel(m, n, k1,
+                  gemm_ctx->kernel(m, n, kreal,
                     gemm_ctx->alpha,
                     A_tilde,
                     B_tilde,
@@ -126,9 +126,9 @@ namespace tfctc
                   internal::unpack_1m_c(C, C_tilde, x, y, m, n);
                 }
 
-                A_tilde += MR * k1;
+                A_tilde += MR * kreal;
               }
-              B_tilde += k1 * NR;
+              B_tilde += kreal * NR;
 
               A_tilde = A_tilde_base;
             }
