@@ -11,37 +11,6 @@ namespace tfctc
   namespace internal
   {
     template <typename U>
-    void pack_1m_az(ScatterMatrix<std::complex<U>>* A, U* buffer, int off_i, int off_j, dim_t M, dim_t K, dim_t MR)
-    {
-      U* base = buffer;
-      for (int i = 0; i < M; i += MR / 2) // iterate over rows in MR/2 steps
-      {
-        for (int j = 0; j < K; j++) // iterate over columns
-        {
-          if (j + off_j >= A->col_size()) break;
-
-          for (int k = 0; k < MR / 2; k++) // iterate over current row with width MR/2 [k, k+MR)
-          {
-            if (k + i + off_i >= A->row_size()) break;
-
-            const auto val = A->get(k + i + off_i, j + off_j);
-
-            if (val != std::complex<U>(0))
-            {
-              buffer[0] = val.real(); buffer[MR] = -val.imag();
-              buffer[1] = val.imag(); buffer[1 + MR] = val.real();
-            }
-
-            buffer += 2;
-          }
-
-          base += 2 * MR;
-          buffer = base;
-        }
-      }
-    }
-
-    template <typename U>
     void pack_1m_a(BlockScatterMatrix<std::complex<U>>* A, U* buffer, int off_i, int off_j, dim_t M, dim_t K, const dim_t MR, const dim_t KP)
     {
       const size_t M_blocks = size_t(M / MR);
@@ -54,6 +23,10 @@ namespace tfctc
       const size_t start_b_m = size_t(off_i / MR);
       const size_t start_b_k = size_t(off_j / KP);
 
+      const size_t offns = (K - off_j) * 2 * MR + 2 * k1 * MR; // next sliver offset
+
+      const dim_t HALFMR = MR / 2;
+
       size_t m, k, bm;
       inc_t rsa, csa;
 
@@ -61,50 +34,54 @@ namespace tfctc
       {
         rsa = A->row_stride_in_block(m);
 
-        for (bm = 0; bm < 2; bm++) // MR / 2; TODO: Make function instead of loop (?)
+        for (k = start_b_k; k < K_blocks; k++)
         {
-          for (k = start_b_k; k < K_blocks; k++)
+          csa = A->col_stride_in_block(k);
+
+          if (rsa > 0 && csa > 0)
           {
-            csa = A->col_stride_in_block(k);
-
-            if (rsa > 0 && csa > 0)
-            {
-              pack_1m_as_cont(A, buffer, MR / 2, KP, MR, off_i, off_j, rsa, csa);
-            }
-            else {
-              pack_1m_as_scat(A, buffer, MR / 2, KP, MR, off_i, off_j);
-            }
-
-            buffer += 2 * MR * KP;
-            off_j += KP;
+            pack_1m_as_cont(A, buffer, HALFMR, KP, MR, off_i, off_j, rsa, csa);
+            pack_1m_as_cont(A, buffer + offns, HALFMR, KP, MR, off_i + HALFMR, off_j, rsa, csa);
+          }
+          else {
+            pack_1m_as_scat(A, buffer, HALFMR, KP, MR, off_i, off_j);
+            pack_1m_as_scat(A, buffer + offns, HALFMR, KP, MR, off_i + HALFMR, off_j);
           }
 
-          if (k1 > 0)
-          {
-            csa = A->col_stride_in_block(k);
-
-            if (rsa > 0 && csa > 0)
-            {
-              pack_1m_as_cont(A, buffer, MR / 2, k1, MR, off_i, off_j, rsa, csa);
-            }
-            else {
-              pack_1m_as_scat(A, buffer, MR / 2, k1, MR, off_i, off_j);
-            }
-
-            buffer += 2 * MR * k1;
-          }
-
-          off_i += MR / 2;
-          off_j = off_j_bak;
+          buffer += 2 * MR * KP;
+          off_j += KP;
         }
+
+        if (k1 > 0)
+        {
+          csa = A->col_stride_in_block(k);
+
+          if (rsa > 0 && csa > 0)
+          {
+            pack_1m_as_cont(A, buffer, HALFMR, k1, MR, off_i, off_j, rsa, csa);
+            pack_1m_as_cont(A, buffer + offns, HALFMR, k1, MR, off_i + HALFMR, off_j, rsa, csa);
+          }
+          else {
+            pack_1m_as_scat(A, buffer, HALFMR, k1, MR, off_i, off_j);
+            pack_1m_as_scat(A, buffer + offns, HALFMR, k1, MR, off_i + HALFMR, off_j);
+          }
+
+          buffer += 2 * MR * k1;
+        }
+
+        off_i += MR;
+        off_j = off_j_bak;
+
+        buffer += offns;
       }
 
       off_j = off_j_bak;
+
       if (m1 > 0)
       {
         rsa = A->row_stride_in_block(m);
 
-        if (m1 > MR / 2)
+        if (m1 > HALFMR)
         {
           for (k = start_b_k; k < K_blocks; k++)
           {
