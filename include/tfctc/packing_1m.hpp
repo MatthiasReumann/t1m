@@ -23,7 +23,9 @@ namespace tfctc
       const size_t start_b_m = size_t(off_i / MR);
       const size_t start_b_k = size_t(off_j / KP);
 
-      const size_t offns = (K - off_j) * 2 * MR + 2 * k1 * MR; // next sliver offset
+      // next sliver offsets
+      const size_t offns_fullblocks = (K - off_j_bak) * 2 * MR;
+      const size_t offns = offns_fullblocks + 2 * k1 * MR;
 
       const dim_t HALFMR = MR / 2;
 
@@ -75,8 +77,6 @@ namespace tfctc
         buffer += offns;
       }
 
-      off_j = off_j_bak;
-
       if (m1 > 0)
       {
         rsa = A->row_stride_in_block(m);
@@ -89,10 +89,12 @@ namespace tfctc
 
             if (rsa > 0 && csa > 0)
             {
-              pack_1m_as_cont(A, buffer, MR / 2, KP, MR, off_i, off_j, rsa, csa);
+              pack_1m_as_cont(A, buffer, HALFMR, KP, MR, off_i, off_j, rsa, csa);
+              pack_1m_as_cont(A, buffer + offns, m1 - HALFMR, KP, MR, off_i + HALFMR, off_j, rsa, csa);
             }
             else {
-              pack_1m_as_scat(A, buffer, MR / 2, KP, MR, off_i, off_j);
+              pack_1m_as_scat(A, buffer, HALFMR, KP, MR, off_i, off_j);
+              pack_1m_as_scat(A, buffer, m1 - HALFMR, KP, MR, off_i + HALFMR, off_j);
             }
 
             buffer += 2 * MR * KP;
@@ -105,44 +107,12 @@ namespace tfctc
 
             if (rsa > 0 && csa > 0)
             {
-              pack_1m_as_cont(A, buffer, MR / 2, k1, MR, off_i, off_j, rsa, csa);
+              pack_1m_as_cont(A, buffer, HALFMR, k1, MR, off_i, off_j, rsa, csa);
+              pack_1m_as_cont(A, buffer + offns_fullblocks, m1 - HALFMR, k1, MR, off_i + HALFMR, off_j, rsa, csa);
             }
             else {
-              pack_1m_as_scat(A, buffer, MR / 2, k1, MR, off_i, off_j);
-            }
-
-            buffer += 2 * MR * k1;
-          }
-
-          off_i += MR / 2;
-          off_j = off_j_bak;
-
-          for (k = start_b_k; k < K_blocks; k++)
-          {
-            csa = A->col_stride_in_block(k);
-
-            if (rsa > 0 && csa > 0)
-            {
-              pack_1m_as_cont(A, buffer, m1 - MR / 2, KP, MR, off_i, off_j, rsa, csa);
-            }
-            else {
-              pack_1m_as_scat(A, buffer, m1 - MR / 2, KP, MR, off_i, off_j);
-            }
-
-            buffer += 2 * MR * KP;
-            off_j += KP;
-          }
-
-          if (k1 > 0)
-          {
-            csa = A->col_stride_in_block(k);
-
-            if (rsa > 0 && csa > 0)
-            {
-              pack_1m_as_cont(A, buffer, m1 - MR / 2, k1, MR, off_i, off_j, rsa, csa);
-            }
-            else {
-              pack_1m_as_scat(A, buffer, m1 - MR / 2, k1, MR, off_i, off_j);
+              pack_1m_as_scat(A, buffer, HALFMR, k1, MR, off_i, off_j);
+              pack_1m_as_scat(A, buffer + offns_fullblocks, m1 - HALFMR, k1, MR, off_i + HALFMR, off_j);
             }
           }
         }
