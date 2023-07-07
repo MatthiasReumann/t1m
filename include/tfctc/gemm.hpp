@@ -60,7 +60,6 @@ namespace tfctc
           kc_k_complex = std_ext::min(KC / 2, static_cast<dim_t>(K - p_c));
           k = kc_k_complex * 2;
 
-          memset(b_packed, 0, KC * NC * sizeof(T));
           pack_1m_b(B, b_packed, p_c, j_c, kc_k_complex, nc_n, NR, KP);
 
           // B is now row-major packed into a KC * NC buffer
@@ -71,7 +70,6 @@ namespace tfctc
             mc_m_complex = std_ext::min(MC / 2, static_cast<dim_t>(M - i_c));
             mc_m_real = mc_m_complex * 2;
 
-            memset(a_packed, 0, MC * KC * sizeof(T));
             pack_1m_a(A, a_packed, i_c, p_c, mc_m_complex, kc_k_complex, MR, KP);
 
             // A is now column-major packed into a MC * KC buffer

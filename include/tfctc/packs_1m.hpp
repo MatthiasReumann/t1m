@@ -37,11 +37,8 @@ namespace tfctc
         for (size_t i = 0; i < m; i++)
         {
           const auto val = A->get(i + off_i, j + off_j);
-          if (val != std::complex<U>(0))
-          {
-            buffer[0] = val.real(); buffer[MR] = -val.imag();
-            buffer[1] = val.imag(); buffer[MR + 1] = val.real();
-          }
+          buffer[0] = val.real(); buffer[MR] = -val.imag();
+          buffer[1] = val.imag(); buffer[MR + 1] = val.real();
           buffer += 2;
         }
 
