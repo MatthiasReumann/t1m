@@ -172,7 +172,7 @@ namespace tfctc
 
           if (rsb > 0 && csb > 0)
           {
-            pack_1m_bs_cont(B, buffer, KP, NR, NR, off_i, off_j, rsb, csb);
+            pack_1m_bs_cont(B->pointer_at_loc(off_i, off_j), buffer, KP, NR, NR, rsb, csb);
           }
           else {
             pack_1m_bs_scat(B, buffer, KP, NR, NR, off_i, off_j);
@@ -188,7 +188,7 @@ namespace tfctc
 
           if (rsb > 0 && csb > 0)
           {
-            pack_1m_bs_cont(B, buffer, k1, NR, NR, off_i, off_j, rsb, csb);
+            pack_1m_bs_cont(B->pointer_at_loc(off_i, off_j), buffer, k1, NR, NR, rsb, csb);
           }
           else {
             pack_1m_bs_scat(B, buffer, k1, NR, NR, off_i, off_j);
@@ -211,7 +211,7 @@ namespace tfctc
 
           if (rsb > 0 && csb > 0)
           {
-            pack_1m_bs_cont(B, buffer, KP, n1, NR, off_i, off_j, rsb, csb);
+            pack_1m_bs_cont(B->pointer_at_loc(off_i, off_j), buffer, KP, n1, NR, rsb, csb);
           }
           else {
             pack_1m_bs_scat(B, buffer, KP, n1, NR, off_i, off_j);
@@ -227,7 +227,7 @@ namespace tfctc
 
           if (rsb > 0 && csb > 0)
           {
-            pack_1m_bs_cont(B, buffer, k1, n1, NR, off_i, off_j, rsb, csb);
+            pack_1m_bs_cont(B->pointer_at_loc(off_i, off_j), buffer, k1, n1, NR, rsb, csb);
           }
           else {
             pack_1m_bs_scat(B, buffer, k1, n1, NR, off_i, off_j);
