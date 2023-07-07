@@ -18,27 +18,32 @@ namespace tfctc
         rscat(this->lengths(), this->strides(), row_indices),
         cscat(this->lengths(), this->strides(), col_indices) {}
 
-      T get(int i, int j)
+      const T operator() (size_t i, size_t j)
+      {
+        return this->get(i, j);
+      }
+
+      T get(size_t i, size_t j)
       {
         return this->cdata()[this->location(i, j)];
       }
-      
-      T* pointer_at_loc(int i, int j)
+
+      T* pointer_at_loc(size_t i, size_t j)
       {
         return &(this->data()[this->location(i, j)]);
       }
 
-      int row_size()
+      size_t row_size()
       {
         return this->rscat.size();
       }
 
-      int col_size()
+      size_t col_size()
       {
         return this->cscat.size();
       }
 
-      int location(int i, int j)
+      size_t location(size_t i, size_t j)
       {
         return this->rscat.at(i) + this->cscat.at(j);
       }
