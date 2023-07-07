@@ -1,13 +1,11 @@
 #pragma once
 
-#include "std_ext.hpp"
+#include "packs.hpp"
 #include "scatter_matrix.hpp"
 #include "blis.h"
 
-namespace tfctc
-{
-  namespace internal
-  {
+namespace tfctc {
+  namespace internal {
     template <typename T>
     void pack_a(BlockScatterMatrix<T>* A, T* buffer, size_t off_i, size_t off_j, dim_t M, dim_t K, const dim_t MR, const dim_t KP)
     {
@@ -34,7 +32,7 @@ namespace tfctc
 
           if (rsa > 0 && csa > 0)
           {
-            pack_as_cont(A, buffer, MR, KP, MR, off_i, off_j, rsa, csa);
+            pack_as_cont(A->pointer_at_loc(off_i, off_j), buffer, MR, KP, MR, rsa, csa);
           }
           else {
             pack_as_scat(A, buffer, MR, KP, MR, off_i, off_j);
@@ -50,7 +48,7 @@ namespace tfctc
 
           if (rsa > 0 && csa > 0)
           {
-            pack_as_cont(A, buffer, MR, k1, MR, off_i, off_j, rsa, csa);
+            pack_as_cont(A->pointer_at_loc(off_i, off_j), buffer, MR, k1, MR, rsa, csa);
           }
           else {
             pack_as_scat(A, buffer, MR, k1, MR, off_i, off_j);
@@ -73,7 +71,7 @@ namespace tfctc
 
           if (rsa > 0 && csa > 0)
           {
-            pack_as_cont(A, buffer, m1, KP, MR, off_i, off_j, rsa, csa);
+            pack_as_cont(A->pointer_at_loc(off_i, off_j), buffer, m1, KP, MR, rsa, csa);
           }
           else {
             pack_as_scat(A, buffer, m1, KP, MR, off_i, off_j);
@@ -89,7 +87,7 @@ namespace tfctc
 
           if (rsa > 0 && csa > 0)
           {
-            pack_as_cont(A, buffer, m1, k1, MR, off_i, off_j, rsa, csa);
+            pack_as_cont(A->pointer_at_loc(off_i, off_j), buffer, m1, k1, MR, rsa, csa);
           }
           else {
             pack_as_scat(A, buffer, m1, k1, MR, off_i, off_j);
@@ -121,7 +119,7 @@ namespace tfctc
 
           if (rsb > 0 && csb > 0)
           {
-            pack_bs_cont(B, buffer, KP, NR, NR, off_i, off_j, rsb, csb);
+            pack_bs_cont(B->pointer_at_loc(off_i, off_j), buffer, KP, NR, NR, rsb, csb);
           }
           else {
             pack_bs_scat(B, buffer, KP, NR, NR, off_i, off_j);
@@ -137,7 +135,7 @@ namespace tfctc
 
           if (rsb > 0 && csb > 0)
           {
-            pack_bs_cont(B, buffer, k1, NR, NR, off_i, off_j, rsb, csb);
+            pack_bs_cont(B->pointer_at_loc(off_i, off_j), buffer, k1, NR, NR, rsb, csb);
           }
           else {
             pack_bs_scat(B, buffer, k1, NR, NR, off_i, off_j);
@@ -160,7 +158,7 @@ namespace tfctc
 
           if (rsb > 0 && csb > 0)
           {
-            pack_bs_cont(B, buffer, KP, n1, NR, off_i, off_j, rsb, csb);
+            pack_bs_cont(B->pointer_at_loc(off_i, off_j), buffer, KP, n1, NR, rsb, csb);
           }
           else {
             pack_bs_scat(B, buffer, KP, n1, NR, off_i, off_j);
@@ -176,7 +174,7 @@ namespace tfctc
 
           if (rsb > 0 && csb > 0)
           {
-            pack_bs_cont(B, buffer, k1, n1, NR, off_i, off_j, rsb, csb);
+            pack_bs_cont(B->pointer_at_loc(off_i, off_j), buffer, k1, n1, NR, rsb, csb);
           }
           else {
             pack_bs_scat(B, buffer, k1, n1, NR, off_i, off_j);
@@ -194,61 +192,6 @@ namespace tfctc
         for (size_t i = 0; i < m; i++)
         {
           ptr[C->location(i + off_i, j + off_j)] += buffer[i + j * m];
-        }
-      }
-    }
-
-    template <typename T>
-    void pack_as_cont(BlockScatterMatrix<T>* A, T* buffer, dim_t m1, dim_t k1, const dim_t MR, size_t off_i, size_t off_j, inc_t rs, inc_t cs)
-    {
-      const auto ptr = A->pointer_at_loc(off_i, off_j);
-      for (size_t j = 0; j < k1; j++)
-      {
-        for (size_t i = 0; i < m1; i++)
-        {
-          const auto val = ptr[j * cs + i * rs];
-          if (val != T(0)) buffer[i + j * MR] = val;
-        }
-      }
-    }
-
-    template <typename T>
-    void pack_as_scat(BlockScatterMatrix<T>* A, T* buffer, dim_t m1, dim_t k1, const dim_t MR, size_t off_i, size_t off_j)
-    {
-      for (size_t i = 0; i < m1; i++)
-      {
-        for (size_t j = 0; j < k1; j++)
-        {
-          const auto val = A->get(i + off_i, j + off_j);
-          if (val != T(0)) buffer[i + j * MR] = val;
-        }
-      }
-    }
-
-    template <typename T>
-    void pack_bs_cont(BlockScatterMatrix<T>* B, T* buffer, dim_t k1, dim_t n1, const dim_t NR, size_t off_i, size_t off_j, inc_t rs, inc_t cs)
-    {
-      const auto ptr = B->pointer_at_loc(off_i, off_j);
-      for (size_t j = 0; j < n1; j++)
-      {
-        for (size_t i = 0; i < k1; i++)
-        {
-          const auto val = ptr[j * cs + i * rs];
-          if (val != T(0)) buffer[j + i * NR] = val;
-        }
-      }
-    }
-
-
-    template <typename T>
-    void pack_bs_scat(BlockScatterMatrix<T>* B, T* buffer, dim_t k1, dim_t n1, const dim_t NR, size_t off_i, size_t off_j)
-    {
-      for (size_t i = 0; i < k1; i++)
-      {
-        for (size_t j = 0; j < n1; j++)
-        {
-          const auto val = B->get(i + off_i, j + off_j);
-          if (val != T(0)) buffer[j + i * NR] = val;
         }
       }
     }

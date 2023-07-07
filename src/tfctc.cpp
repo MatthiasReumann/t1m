@@ -3,7 +3,6 @@
 #include "tfctc/index_bundle_finder.hpp"
 #include "tfctc/scatter_matrix.hpp"
 #include "tfctc/block_scatter_matrix.hpp"
-#include "tfctc/packing.hpp"
 #include "tfctc/gemm.hpp"
 
 namespace tfctc

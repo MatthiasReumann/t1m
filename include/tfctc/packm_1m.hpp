@@ -1,9 +1,8 @@
-#pragma once
+# pragma once 
 
 #include <complex>
-#include "std_ext.hpp"
 #include "block_scatter_matrix.hpp"
-#include "packing.hpp"
+#include "packs_1m.hpp"
 #include "blis.h"
 
 namespace tfctc
@@ -42,8 +41,8 @@ namespace tfctc
 
           if (rsa > 0 && csa > 0)
           {
-            pack_1m_as_cont(A, buffer, HALFMR, KP, MR, off_i, off_j, rsa, csa);
-            pack_1m_as_cont(A, buffer + offns, HALFMR, KP, MR, off_i + HALFMR, off_j, rsa, csa);
+            pack_1m_as_cont(A->pointer_at_loc(off_i, off_j), buffer, HALFMR, KP, MR, rsa, csa);
+            pack_1m_as_cont(A->pointer_at_loc(off_i + HALFMR, off_j), buffer + offns, HALFMR, KP, MR, rsa, csa);
           }
           else {
             pack_1m_as_scat(A, buffer, HALFMR, KP, MR, off_i, off_j);
@@ -60,8 +59,8 @@ namespace tfctc
 
           if (rsa > 0 && csa > 0)
           {
-            pack_1m_as_cont(A, buffer, HALFMR, k1, MR, off_i, off_j, rsa, csa);
-            pack_1m_as_cont(A, buffer + offns, HALFMR, k1, MR, off_i + HALFMR, off_j, rsa, csa);
+            pack_1m_as_cont(A->pointer_at_loc(off_i, off_j), buffer, HALFMR, k1, MR, rsa, csa);
+            pack_1m_as_cont(A->pointer_at_loc(off_i + HALFMR, off_j), buffer + offns, HALFMR, k1, MR, rsa, csa);
           }
           else {
             pack_1m_as_scat(A, buffer, HALFMR, k1, MR, off_i, off_j);
@@ -89,8 +88,8 @@ namespace tfctc
 
             if (rsa > 0 && csa > 0)
             {
-              pack_1m_as_cont(A, buffer, HALFMR, KP, MR, off_i, off_j, rsa, csa);
-              pack_1m_as_cont(A, buffer + offns, m1 - HALFMR, KP, MR, off_i + HALFMR, off_j, rsa, csa);
+              pack_1m_as_cont(A->pointer_at_loc(off_i, off_j), buffer, HALFMR, KP, MR, rsa, csa);
+              pack_1m_as_cont(A->pointer_at_loc(off_i + HALFMR, off_j), buffer + offns, m1 - HALFMR, KP, MR, rsa, csa);
             }
             else {
               pack_1m_as_scat(A, buffer, HALFMR, KP, MR, off_i, off_j);
@@ -107,8 +106,8 @@ namespace tfctc
 
             if (rsa > 0 && csa > 0)
             {
-              pack_1m_as_cont(A, buffer, HALFMR, k1, MR, off_i, off_j, rsa, csa);
-              pack_1m_as_cont(A, buffer + offns_fullblocks, m1 - HALFMR, k1, MR, off_i + HALFMR, off_j, rsa, csa);
+              pack_1m_as_cont(A->pointer_at_loc(off_i, off_j), buffer, HALFMR, k1, MR, rsa, csa);
+              pack_1m_as_cont(A->pointer_at_loc(off_i + HALFMR, off_j), buffer + offns_fullblocks, m1 - HALFMR, k1, MR, rsa, csa);
             }
             else {
               pack_1m_as_scat(A, buffer, HALFMR, k1, MR, off_i, off_j);
@@ -124,7 +123,7 @@ namespace tfctc
 
             if (rsa > 0 && csa > 0)
             {
-              pack_1m_as_cont(A, buffer, m1, KP, MR, off_i, off_j, rsa, csa);
+              pack_1m_as_cont(A->pointer_at_loc(off_i, off_j), buffer, m1, KP, MR, rsa, csa);
             }
             else {
               pack_1m_as_scat(A, buffer, m1, KP, MR, off_i, off_j);
@@ -140,7 +139,7 @@ namespace tfctc
 
             if (rsa > 0 && csa > 0)
             {
-              pack_1m_as_cont(A, buffer, m1, k1, MR, off_i, off_j, rsa, csa);
+              pack_1m_as_cont(A->pointer_at_loc(off_i, off_j), buffer, m1, k1, MR, rsa, csa);
             }
             else {
               pack_1m_as_scat(A, buffer, m1, k1, MR, off_i, off_j);
@@ -238,127 +237,10 @@ namespace tfctc
     }
 
     template <typename U>
-    void unpack_1m_c_scat(BlockScatterMatrix<std::complex<U>>* C, U* out, size_t off_i, size_t off_j, dim_t M, dim_t N)
-    {
-      const auto buffer_complex = reinterpret_cast<std::complex<U> *>(out);
-
-      std::complex<U>* ptr = C->data();
-
-      M /= 2;
-
-      for (int j = 0; j < N; j++)
-      {
-        for (int i = 0; i < M; i++)
-        {
-          ptr[C->location(i + off_i, j + off_j)] += buffer_complex[i + j * M];
-        }
-      }
-    }
-
-    template <typename U>
-    void unpack_1m_c_cont(std::complex<U>* C, U* out, size_t off_i, size_t off_j, dim_t M, dim_t N, inc_t rs, inc_t cs)
-    {
-      const auto buffer_complex = reinterpret_cast<std::complex<U>*>(out);
-
-      M /= 2;
-
-      for (int j = 0; j < N; j++)
-      {
-        for (int i = 0; i < M; i++)
-        {
-          C[i * rs + j * cs] += buffer_complex[i + j * M];
-        }
-      }
-    }
-
-    template <typename U>
     void unpack_1m_c(BlockScatterMatrix<std::complex<U>>* C, U* c_result, size_t off_i, size_t off_j, dim_t M, dim_t N, inc_t rs, inc_t cs)
     {
-      if (rs > 0 && cs > 0) unpack_1m_c_cont(C->pointer_at_loc(off_i, off_j), c_result, off_i, off_j, M, N, rs, cs);
+      if (rs > 0 && cs > 0) unpack_1m_c_cont(C->pointer_at_loc(off_i, off_j), c_result, M, N, rs, cs);
       else unpack_1m_c_scat(C, c_result, off_i, off_j, M, N);
-    }
-
-    template <typename U>
-    void pack_1m_as_cont(BlockScatterMatrix<std::complex<U>>* A, U* buffer, dim_t m, dim_t k, const dim_t MR, size_t off_i, size_t off_j, inc_t rs, inc_t cs)
-    {
-      const auto ptr = A->pointer_at_loc(off_i, off_j);
-      U* base = buffer;
-
-      for (size_t j = 0; j < k; j++)
-      {
-        for (size_t i = 0; i < m; i++)
-        {
-          const auto val = ptr[j * cs + i * rs];
-          if (val != std::complex<U>(0))
-          {
-            buffer[0] = val.real(); buffer[MR] = -val.imag();
-            buffer[1] = val.imag(); buffer[MR + 1] = val.real();
-          }
-          buffer += 2;
-        }
-
-        base += 2 * MR;
-        buffer = base;
-      }
-    }
-
-    template <typename U>
-    void pack_1m_as_scat(BlockScatterMatrix<std::complex<U>>* A, U* buffer, dim_t m, dim_t k, const dim_t MR, size_t off_i, size_t off_j)
-    {
-      U* base = buffer;
-      for (size_t j = 0; j < k; j++)
-      {
-        for (size_t i = 0; i < m; i++)
-        {
-          const auto val = A->get(i + off_i, j + off_j);
-          if (val != std::complex<U>(0))
-          {
-            buffer[0] = val.real(); buffer[MR] = -val.imag();
-            buffer[1] = val.imag(); buffer[MR + 1] = val.real();
-          }
-          buffer += 2;
-        }
-
-        base += 2 * MR;
-        buffer = base;
-      }
-    }
-
-    template <typename U>
-    void pack_1m_bs_cont(BlockScatterMatrix<std::complex<U>>* B, U* buffer, dim_t k, dim_t n, const dim_t NR, size_t off_i, size_t off_j, inc_t rs, inc_t cs)
-    {
-      const auto ptr = B->pointer_at_loc(off_i, off_j);
-      const dim_t NR2 = 2 * NR;
-      for (size_t j = 0; j < n; j++)
-      {
-        for (size_t i = 0; i < k; i++)
-        {
-          const auto val = ptr[j * cs + i * rs];
-          if (val != std::complex<U>(0))
-          {
-            buffer[j + i * NR2] = val.real();
-            buffer[j + i * NR2 + NR] = val.imag();
-          }
-        }
-      }
-    }
-
-    template <typename U>
-    void pack_1m_bs_scat(BlockScatterMatrix<std::complex<U>>* B, U* buffer, dim_t k, dim_t n, const dim_t NR, size_t off_i, size_t off_j)
-    {
-      const dim_t NR2 = 2 * NR;
-      for (size_t i = 0; i < k; i++)
-      {
-        for (size_t j = 0; j < n; j++)
-        {
-          const auto val = B->get(i + off_i, j + off_j);
-          if (val != std::complex<U>(0))
-          {
-            buffer[j + i * NR2] = val.real();
-            buffer[j + i * NR2 + NR] = val.imag();
-          }
-        }
-      }
     }
   };
 };

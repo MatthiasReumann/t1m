@@ -6,8 +6,8 @@
 #include "gemm_context.hpp"
 #include "scatter_matrix.hpp"
 #include "block_scatter_matrix.hpp"
-#include "packing.hpp"
-#include "packing_1m.hpp"
+#include "packm.hpp"
+#include "packm_1m.hpp"
 #include "blis.h"
 
 namespace tfctc
@@ -45,7 +45,7 @@ namespace tfctc
 
       T* c_result = nullptr; // C in G^{MC x NC}
 
-      tfctc::utils::alloc_aligned<T>(&workspace, MC * KC + KC * NC + MC * NC);
+      utils::alloc_aligned<T>(&workspace, MC * KC + KC * NC + MC * NC);
 
       a_packed = a_packed_base = workspace;
       b_packed = b_packed_base = workspace + MC * KC;
@@ -53,26 +53,26 @@ namespace tfctc
 
       for (size_t j_c = 0; j_c < N; j_c += NC)
       {
-        nc_n = tfctc::std_ext::min(NC, static_cast<dim_t>(N - j_c));
+        nc_n = std_ext::min(NC, static_cast<dim_t>(N - j_c));
 
         for (size_t p_c = 0; p_c < K; p_c += KC / 2)
         {
-          kc_k_complex = tfctc::std_ext::min(KC / 2, static_cast<dim_t>(K - p_c));
+          kc_k_complex = std_ext::min(KC / 2, static_cast<dim_t>(K - p_c));
           k = kc_k_complex * 2;
 
           memset(b_packed, 0, KC * NC * sizeof(T));
-          internal::pack_1m_b(B, b_packed, p_c, j_c, kc_k_complex, nc_n, NR, KP);
+          pack_1m_b(B, b_packed, p_c, j_c, kc_k_complex, nc_n, NR, KP);
 
           // B is now row-major packed into a KC * NC buffer
           // with the specialized format such that each sliver
           // has stride NR
           for (size_t i_c = 0; i_c < M; i_c += MC / 2)
           {
-            mc_m_complex = tfctc::std_ext::min(MC / 2, static_cast<dim_t>(M - i_c));
+            mc_m_complex = std_ext::min(MC / 2, static_cast<dim_t>(M - i_c));
             mc_m_real = mc_m_complex * 2;
 
             memset(a_packed, 0, MC * KC * sizeof(T));
-            internal::pack_1m_a(A, a_packed, i_c, p_c, mc_m_complex, kc_k_complex, MR, KP);
+            pack_1m_a(A, a_packed, i_c, p_c, mc_m_complex, kc_k_complex, MR, KP);
 
             // A is now column-major packed into a MC * KC buffer
             // with the specialized format such that each sliver
@@ -83,18 +83,18 @@ namespace tfctc
             for (size_t j_r = 0; j_r < nc_n; j_r += NR)
             {
               off_j = j_c + j_r;
-              n = tfctc::std_ext::min(NR, static_cast<dim_t>(nc_n - j_r));
+              n = std_ext::min(NR, static_cast<dim_t>(nc_n - j_r));
               csc = C->col_stride_in_block(off_j / NR);
 
               for (size_t i_r = 0; i_r < mc_m_real; i_r += MR)
               {
-                m = tfctc::std_ext::min(MR, static_cast<dim_t>(mc_m_real - i_r));
+                m = std_ext::min(MR, static_cast<dim_t>(mc_m_real - i_r));
                 off_i = i_c + (i_r / 2);
                 rsc = C->row_stride_in_block(off_i / MR);
 
                 ctx->kernel(m, n, k, ctx->alpha, a_packed, b_packed, ctx->beta, c_result, 1, m, nullptr, ctx->cntx);
 
-                internal::unpack_1m_c(C, c_result, off_i, off_j, m, n, rsc, csc);
+                unpack_1m_c(C, c_result, off_i, off_j, m, n, rsc, csc);
 
                 a_packed += MR * k;
               }
@@ -137,7 +137,7 @@ namespace tfctc
 
       T* c_result = nullptr; // C in G^{MC x NC}
 
-      tfctc::utils::alloc_aligned<T>(&workspace, MC * KC + KC * NC + MC * NC);
+      utils::alloc_aligned<T>(&workspace, MC * KC + KC * NC + MC * NC);
 
       a_packed = a_packed_base = workspace;
       b_packed = b_packed_base = workspace + MC * KC;
@@ -149,31 +149,27 @@ namespace tfctc
 
       for (size_t j_c = 0; j_c < N; j_c += NC)
       {
-        nc_n = tfctc::std_ext::min(NC, static_cast<dim_t>(N - j_c));
+        nc_n = std_ext::min(NC, static_cast<dim_t>(N - j_c));
 
         for (size_t p_c = 0; p_c < K; p_c += KC)
         {
-          k = tfctc::std_ext::min(KC, static_cast<dim_t>(K - p_c));
-
-          memset(b_packed, 0, KC * NC * sizeof(T));
-          internal::pack_b(B, b_packed, p_c, j_c, k, nc_n, NR, KP);
+          k = std_ext::min(KC, static_cast<dim_t>(K - p_c));
+          pack_b(B, b_packed, p_c, j_c, k, nc_n, NR, KP);
 
           for (size_t i_c = 0; i_c < M; i_c += MC)
           {
-            mc_m = tfctc::std_ext::min(MC, static_cast<dim_t>(M - i_c));
-
-            memset(a_packed, 0, MC * KC * sizeof(T));
-            internal::pack_a(A, a_packed, i_c, p_c, mc_m, k, MR, KP);
+            mc_m = std_ext::min(MC, static_cast<dim_t>(M - i_c));
+            pack_a(A, a_packed, i_c, p_c, mc_m, k, MR, KP);
 
             for (size_t j_r = 0; j_r < nc_n; j_r += NR)
             {
-              n = tfctc::std_ext::min(NR, static_cast<dim_t>(nc_n - j_r));
+              n = std_ext::min(NR, static_cast<dim_t>(nc_n - j_r));
               off_j = j_c + j_r;
               csc = C->col_stride_in_block(off_j / NR);
 
               for (size_t i_r = 0; i_r < mc_m; i_r += MR)
               {
-                m = tfctc::std_ext::min(MR, static_cast<dim_t>(mc_m - i_r));
+                m = std_ext::min(MR, static_cast<dim_t>(mc_m - i_r));
                 off_i = i_c + i_r;
                 rsc = C->row_stride_in_block(off_i / MR);
 
@@ -198,7 +194,7 @@ namespace tfctc
                     nullptr,
                     ctx->cntx);
 
-                  internal::unpack_c_scat(C, c_result, off_i, off_j, m, n);
+                  unpack_c_scat(C, c_result, off_i, off_j, m, n);
                 }
 
                 a_packed += MR * k;
