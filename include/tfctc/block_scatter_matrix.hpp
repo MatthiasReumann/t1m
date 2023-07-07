@@ -3,6 +3,7 @@
 #include "tensor.hpp"
 #include "scatter_matrix.hpp"
 #include "block_scatter_vector.hpp"
+#include "utils.hpp"
 
 namespace tfctc
 {

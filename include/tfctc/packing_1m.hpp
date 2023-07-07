@@ -240,14 +240,35 @@ namespace tfctc
     template <typename U>
     void unpack_1m_c(BlockScatterMatrix<std::complex<U>>* C, U* buffer, int off_i, int off_j, dim_t M, dim_t N)
     {
-      std::complex<U>* buffer_complex = reinterpret_cast<std::complex<U> *>(buffer);
+      const auto buffer_complex = reinterpret_cast<std::complex<U> *>(buffer);
+
       std::complex<U>* ptr = C->data();
+
+      M /= 2;
 
       for (int j = 0; j < N; j++)
       {
-        for (int i = 0; i < M / 2; i++)
+        for (int i = 0; i < M; i++)
         {
-          ptr[C->location(i + off_i, j + off_j)] += buffer_complex[i + j * M / 2];
+          ptr[C->location(i + off_i, j + off_j)] += buffer_complex[i + j * M];
+        }
+      }
+    }
+
+    template <typename U>
+    void unpack_1m_c_cont(BlockScatterMatrix<std::complex<U>>* C, U* buffer, int off_i, int off_j, dim_t M, dim_t N, inc_t rs, inc_t cs)
+    {
+      const auto ptr = C->pointer_at_loc(off_i, off_j);
+
+      const auto buffer_complex = reinterpret_cast<std::complex<U>*>(buffer);
+
+      M /= 2;
+
+      for (int j = 0; j < N; j++)
+      {
+        for (int i = 0; i < M; i++)
+        {
+          ptr[i * rs + j * cs] += buffer_complex[i + j * M];
         }
       }
     }
@@ -301,8 +322,8 @@ namespace tfctc
     template <typename U>
     void pack_1m_bs_cont(BlockScatterMatrix<std::complex<U>>* B, U* buffer, dim_t k, dim_t n, const dim_t NR, size_t off_i, size_t off_j, inc_t rs, inc_t cs)
     {
-      const dim_t NR2 = 2 * NR;
       const auto ptr = B->pointer_at_loc(off_i, off_j);
+      const dim_t NR2 = 2 * NR;
       for (size_t j = 0; j < n; j++)
       {
         for (size_t i = 0; i < k; i++)

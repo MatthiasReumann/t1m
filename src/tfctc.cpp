@@ -20,9 +20,9 @@ namespace tfctc
 
     const auto ilf = new internal::IndexBundleFinder(labelsA, labelsB, labelsC);
 
-    auto scatterA = new internal::BlockScatterMatrix<std::complex<float>>(A, ilf->I, ilf->Pa, MR, KP);
-    auto scatterB = new internal::BlockScatterMatrix<std::complex<float>>(B, ilf->Pb, ilf->J, KP, NR);
-    auto scatterC = new internal::BlockScatterMatrix<std::complex<float>>(C, ilf->Ic, ilf->Jc, MR, NR);
+    auto scatterA = new internal::BlockScatterMatrix(A, ilf->I, ilf->Pa, MR, KP);
+    auto scatterB = new internal::BlockScatterMatrix(B, ilf->Pb, ilf->J, KP, NR);
+    auto scatterC = new internal::BlockScatterMatrix(C, ilf->Ic, ilf->Jc, MR, NR);
 
     float* a = new float(1.);
     float* b = new float(0.);
@@ -61,9 +61,9 @@ namespace tfctc
 
     const auto ilf = new internal::IndexBundleFinder(labelsA, labelsB, labelsC);
 
-    auto scatterA = new internal::BlockScatterMatrix<std::complex<double>>(A, ilf->I, ilf->Pa, MR, KP);
-    auto scatterB = new internal::BlockScatterMatrix<std::complex<double>>(B, ilf->Pb, ilf->J, KP, MR);
-    auto scatterC = new internal::BlockScatterMatrix<std::complex<double>>(C, ilf->Ic, ilf->Jc, MR, NR);
+    auto scatterA = new internal::BlockScatterMatrix(A, ilf->I, ilf->Pa, MR, KP);
+    auto scatterB = new internal::BlockScatterMatrix(B, ilf->Pb, ilf->J, KP, MR);
+    auto scatterC = new internal::BlockScatterMatrix(C, ilf->Ic, ilf->Jc, MR, NR);
 
     double* a = new double(1.);
     double* b = new double(0.);
@@ -83,9 +83,7 @@ namespace tfctc
         .beta = b,
         .kernel = bli_dgemm_ukernel
     };
-
     internal::gemm_1m(&gemm_ctx);
-
     delete a;
     delete b;
   }

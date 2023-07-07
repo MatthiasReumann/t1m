@@ -3,6 +3,7 @@
 #include "tensor.hpp"
 #include "scatter_vector.hpp"
 #include <vector>
+#include "utils.hpp"
 
 namespace tfctc
 {
@@ -14,14 +15,14 @@ namespace tfctc
     public:
       ScatterMatrix(Tensor<T>& t, std::vector<size_t> row_indices, std::vector<size_t> col_indices)
         : Tensor<T>(t),
-          rscat(this->lengths(), this->strides(), row_indices),
-          cscat(this->lengths(), this->strides(), col_indices) {}
+        rscat(this->lengths(), this->strides(), row_indices),
+        cscat(this->lengths(), this->strides(), col_indices) {}
 
       T get(int i, int j)
       {
         return this->cdata()[this->location(i, j)];
       }
-
+      
       T* pointer_at_loc(int i, int j)
       {
         return &(this->data()[this->location(i, j)]);

@@ -22,7 +22,7 @@ namespace tfctc
         for (i = 0; i < size_t(l / b) * b; i += b) // blocks
         {
           stride = scat.at(i + 1) - scat.at(i);
-          
+
           for (size_t j = i + 2; j < i + b; j++) {
             if ((scat.at(j) - scat.at(j - 1)) != stride)
             {
@@ -32,18 +32,19 @@ namespace tfctc
           }
           this->bs.push_back(stride);
         }
-        
+
         stride = 0;
         if (i + 1 < l)
         {
           stride = scat.at(i + 1) - scat.at(i);
-        
+
           for (size_t j = i + 2; j < l; j++) {
             if ((scat.at(j) - scat.at(j - 1)) != stride)
             {
               stride = 0;
               break;
             }
+
           }
         }
         this->bs.push_back(stride);

@@ -3,6 +3,7 @@
 #include <vector>
 #include <algorithm>
 #include <numeric>
+#include "utils.hpp"
 #include "marray.hpp"
 
 namespace tfctc
@@ -14,6 +15,7 @@ namespace tfctc
     class ScatterVector
     {
     public:
+      ScatterVector() {}
       ScatterVector(MArray::len_vector lengths, MArray::len_vector strides, std::vector<size_t> indices)
       {
         std::vector<size_t> l, s;
