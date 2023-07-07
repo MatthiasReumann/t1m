@@ -32,48 +32,47 @@ namespace tfctc
       const size_t K = A->col_size();
       const size_t N = B->col_size();
 
-      size_t x, y;
-      dim_t m1, n1, k1, m, n, mreal, kreal;
+      size_t off_i, off_j;
+      dim_t mc_m_complex, nc_n, kc_k_complex, mc_m_real, k, m, n;
       inc_t rsc = 1, csc;
 
-      T* buf = nullptr;
-      T* A_tilde = nullptr; // A in G^{MC x KC}
-      T* A_tilde_base = nullptr;
+      T* workspace = nullptr;
+      T* a_packed = nullptr; // A in G^{MC x KC}
+      T* a_packed_base = nullptr;
 
-      T* B_tilde = nullptr; // B in G^{KC x NC}
-      T* B_tilde_base = nullptr;
+      T* b_packed = nullptr; // B in G^{KC x NC}
+      T* b_packed_base = nullptr;
 
-      T* C_tilde = nullptr; // C in G^{MC x NC}
+      T* c_result = nullptr; // C in G^{MC x NC}
 
-      tfctc::utils::alloc_aligned<T>(&buf, MC * KC + KC * NC + MC * NC);
+      tfctc::utils::alloc_aligned<T>(&workspace, MC * KC + KC * NC + MC * NC);
 
-      A_tilde = A_tilde_base = buf;
-      B_tilde = B_tilde_base = buf + MC * KC;
-      C_tilde = buf + MC * KC + KC * NC;
+      a_packed = a_packed_base = workspace;
+      b_packed = b_packed_base = workspace + MC * KC;
+      c_result = workspace + MC * KC + KC * NC;
 
       for (size_t j_c = 0; j_c < N; j_c += NC)
       {
-        n1 = tfctc::std_ext::min(NC, static_cast<dim_t>(N - j_c));
+        nc_n = tfctc::std_ext::min(NC, static_cast<dim_t>(N - j_c));
 
         for (size_t p_c = 0; p_c < K; p_c += KC / 2)
         {
-          k1 = tfctc::std_ext::min(KC / 2, static_cast<dim_t>(K - p_c));
-          kreal = k1 * 2;
+          kc_k_complex = tfctc::std_ext::min(KC / 2, static_cast<dim_t>(K - p_c));
+          k = kc_k_complex * 2;
 
-          memset(B_tilde, 0, KC * NC * sizeof(T));
-          internal::pack_1m_b(B, B_tilde, p_c, j_c, k1, n1, NR, KP);
+          memset(b_packed, 0, KC * NC * sizeof(T));
+          internal::pack_1m_b(B, b_packed, p_c, j_c, kc_k_complex, nc_n, NR, KP);
 
           // B is now row-major packed into a KC * NC buffer
           // with the specialized format such that each sliver
           // has stride NR
-
           for (size_t i_c = 0; i_c < M; i_c += MC / 2)
           {
-            m1 = tfctc::std_ext::min(MC / 2, static_cast<dim_t>(M - i_c));
-            mreal = m1 * 2;
+            mc_m_complex = tfctc::std_ext::min(MC / 2, static_cast<dim_t>(M - i_c));
+            mc_m_real = mc_m_complex * 2;
 
-            memset(A_tilde, 0, MC * KC * sizeof(T));
-            internal::pack_1m_a(A, A_tilde, i_c, p_c, m1, k1, MR, KP);
+            memset(a_packed, 0, MC * KC * sizeof(T));
+            internal::pack_1m_a(A, a_packed, i_c, p_c, mc_m_complex, kc_k_complex, MR, KP);
 
             // A is now column-major packed into a MC * KC buffer
             // with the specialized format such that each sliver
@@ -81,44 +80,34 @@ namespace tfctc
 
             // Now treat everything as real-valued:
             // Use NR, MR as with real-valued mm
-            for (size_t j_r = 0; j_r < n1; j_r += NR)
+            for (size_t j_r = 0; j_r < nc_n; j_r += NR)
             {
-              y = j_c + j_r;
-              n = tfctc::std_ext::min(NR, static_cast<dim_t>(n1 - j_r));
-              csc = C->col_stride_in_block(y / NR);
+              off_j = j_c + j_r;
+              n = tfctc::std_ext::min(NR, static_cast<dim_t>(nc_n - j_r));
+              csc = C->col_stride_in_block(off_j / NR);
 
-              for (size_t i_r = 0; i_r < mreal; i_r += MR)
+              for (size_t i_r = 0; i_r < mc_m_real; i_r += MR)
               {
-                m = tfctc::std_ext::min(MR, static_cast<dim_t>(mreal - i_r));
-                x = i_c + (i_r / 2);
-                rsc = C->row_stride_in_block(x / MR);
+                m = tfctc::std_ext::min(MR, static_cast<dim_t>(mc_m_real - i_r));
+                off_i = i_c + (i_r / 2);
+                rsc = C->row_stride_in_block(off_i / MR);
 
-                ctx->kernel(m, n, kreal,
-                  ctx->alpha,
-                  A_tilde,
-                  B_tilde,
-                  ctx->beta,
-                  C_tilde, 1, m,
-                  nullptr,
-                  ctx->cntx);
+                ctx->kernel(m, n, k, ctx->alpha, a_packed, b_packed, ctx->beta, c_result, 1, m, nullptr, ctx->cntx);
 
-                if (rsc > 0 && csc > 0)
-                  internal::unpack_1m_c_cont(C, C_tilde, x, y, m, n, rsc, csc);
-                else
-                  internal::unpack_1m_c(C, C_tilde, x, y, m, n);
+                internal::unpack_1m_c(C, c_result, off_i, off_j, m, n, rsc, csc);
 
-                A_tilde += MR * kreal;
+                a_packed += MR * k;
               }
-              B_tilde += kreal * NR;
+              b_packed += k * NR;
 
-              A_tilde = A_tilde_base;
+              a_packed = a_packed_base;
             }
-            B_tilde = B_tilde_base;
+            b_packed = b_packed_base;
           }
         }
       }
 
-      free(buf);
+      free(workspace);
     }
 
     template <typename T>
@@ -139,92 +128,91 @@ namespace tfctc
       const size_t K = A->col_size();
       const size_t N = B->col_size();
 
-      T* buf = nullptr;
-      T* A_tilde = nullptr; // A in G^{MC x KC}
-      T* A_tilde_base = nullptr;
+      T* workspace = nullptr;
+      T* a_packed = nullptr; // A in G^{MC x KC}
+      T* a_packed_base = nullptr;
 
-      T* B_tilde = nullptr; // B in G^{KC x NC}
-      T* B_tilde_base = nullptr;
+      T* b_packed = nullptr; // B in G^{KC x NC}
+      T* b_packed_base = nullptr;
 
-      T* C_tilde = nullptr; // C in G^{MC x NC}
-      T* C_tilde_base = nullptr;
+      T* c_result = nullptr; // C in G^{MC x NC}
 
-      tfctc::utils::alloc_aligned<T>(&buf, MC * KC + KC * NC + MC * NC);
+      tfctc::utils::alloc_aligned<T>(&workspace, MC * KC + KC * NC + MC * NC);
 
-      A_tilde = A_tilde_base = buf;
-      B_tilde = B_tilde_base = buf + MC * KC;
-      C_tilde = C_tilde_base = buf + MC * KC + KC * NC;
+      a_packed = a_packed_base = workspace;
+      b_packed = b_packed_base = workspace + MC * KC;
+      c_result = workspace + MC * KC + KC * NC;
 
-      size_t x, y;
-      dim_t m1, n1, k1, m, n;
+      size_t off_i, off_j;
+      dim_t mc_m, nc_n, k, m, n;
       inc_t rsc = 1, csc;
 
       for (size_t j_c = 0; j_c < N; j_c += NC)
       {
-        n1 = tfctc::std_ext::min(NC, static_cast<dim_t>(N - j_c));
+        nc_n = tfctc::std_ext::min(NC, static_cast<dim_t>(N - j_c));
 
         for (size_t p_c = 0; p_c < K; p_c += KC)
         {
-          k1 = tfctc::std_ext::min(KC, static_cast<dim_t>(K - p_c));
+          k = tfctc::std_ext::min(KC, static_cast<dim_t>(K - p_c));
 
-          memset(B_tilde, 0, KC * NC * sizeof(T));
-          internal::pack_b(B, B_tilde, p_c, j_c, k1, n1, NR, KP);
+          memset(b_packed, 0, KC * NC * sizeof(T));
+          internal::pack_b(B, b_packed, p_c, j_c, k, nc_n, NR, KP);
 
           for (size_t i_c = 0; i_c < M; i_c += MC)
           {
-            m1 = tfctc::std_ext::min(MC, static_cast<dim_t>(M - i_c));
+            mc_m = tfctc::std_ext::min(MC, static_cast<dim_t>(M - i_c));
 
-            memset(A_tilde, 0, MC * KC * sizeof(T));
-            internal::pack_a(A, A_tilde, i_c, p_c, m1, k1, MR, KP);
+            memset(a_packed, 0, MC * KC * sizeof(T));
+            internal::pack_a(A, a_packed, i_c, p_c, mc_m, k, MR, KP);
 
-            for (size_t j_r = 0; j_r < n1; j_r += NR)
+            for (size_t j_r = 0; j_r < nc_n; j_r += NR)
             {
-              n = tfctc::std_ext::min(NR, static_cast<dim_t>(n1 - j_r));
-              y = j_c + j_r;
-              csc = C->col_stride_in_block(y / NR);
+              n = tfctc::std_ext::min(NR, static_cast<dim_t>(nc_n - j_r));
+              off_j = j_c + j_r;
+              csc = C->col_stride_in_block(off_j / NR);
 
-              for (size_t i_r = 0; i_r < m1; i_r += MR)
+              for (size_t i_r = 0; i_r < mc_m; i_r += MR)
               {
-                m = tfctc::std_ext::min(MR, static_cast<dim_t>(m1 - i_r));
-                x = i_c + i_r;
-                rsc = C->row_stride_in_block(x / MR);
+                m = tfctc::std_ext::min(MR, static_cast<dim_t>(mc_m - i_r));
+                off_i = i_c + i_r;
+                rsc = C->row_stride_in_block(off_i / MR);
 
                 if (rsc > 0 && csc > 0)
                 {
-                  ctx->kernel(m, n, k1,
+                  ctx->kernel(m, n, k,
                     ctx->alpha,
-                    A_tilde,
-                    B_tilde,
+                    a_packed,
+                    b_packed,
                     ctx->beta,
-                    C->pointer_at_loc(x, y), rsc, csc,
+                    C->pointer_at_loc(off_i, off_j), rsc, csc,
                     nullptr,
                     ctx->cntx);
                 }
                 else {
-                  ctx->kernel(m, n, k1,
+                  ctx->kernel(m, n, k,
                     ctx->alpha,
-                    A_tilde,
-                    B_tilde,
+                    a_packed,
+                    b_packed,
                     ctx->beta,
-                    C_tilde, 1, m,
+                    c_result, 1, m,
                     nullptr,
                     ctx->cntx);
 
-                  internal::unpack_c_scat(C, C_tilde, x, y, m, n);
+                  internal::unpack_c_scat(C, c_result, off_i, off_j, m, n);
                 }
 
-                A_tilde += MR * k1;
+                a_packed += MR * k;
               }
-              B_tilde += k1 * NR;
+              b_packed += k * NR;
 
-              A_tilde = A_tilde_base;
+              a_packed = a_packed_base;
             }
-            B_tilde = B_tilde_base;
+            b_packed = b_packed_base;
           }
         }
       }
 
-      free(buf);
+      free(workspace);
     }
   }
 };
