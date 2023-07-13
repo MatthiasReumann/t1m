@@ -18,9 +18,9 @@ void test(float* A, std::string labelsA, float* B, std::string labelsB, float* C
 {
   for (size_t i = 2; i < 45; i++)
   {
-    const std::vector<size_t> lengthsA = { i, i, i, i, i};
-    const std::vector<size_t> lengthsB = { i, i, i, i, i};
-    const std::vector<size_t> lengthsC = { i, i, i, i, i, i};
+    const std::vector<size_t> lengthsA = { i, i, i, i};
+    const std::vector<size_t> lengthsB = { i, i, i, i};
+    const std::vector<size_t> lengthsC = { i, i, i, i};
 
     auto tensorA = tfctc::Tensor<float>(lengthsA, A);
     auto tensorB = tfctc::Tensor<float>(lengthsB, B);
@@ -47,18 +47,17 @@ int main()
 
   std::cout << "d,m,a" << '\n';
 
-  size_t workspace_size = 45l * 45l * 45l * 45l * 45l * 45l;
+  size_t workspace_size = 45l * 45l * 45l * 45l;
   tfctc::utils::alloc_aligned(&A, workspace_size);
   tfctc::utils::alloc_aligned(&B, workspace_size);
   tfctc::utils::alloc_aligned(&C, workspace_size);
 
   // set_random(A, workspace_size);
   // set_random(B, workspace_size);
-  // set_random(C, workspace_size);
 
-  auto a = std::string("abcde");
-  auto b = std::string("cijkd");
-  auto c = std::string("abeijk");
+  auto a = std::string("abcd");
+  auto b = std::string("ebcf");
+  auto c = std::string("adef");
 
   test(A, a, B, b, C, c);
 }

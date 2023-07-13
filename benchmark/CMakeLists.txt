@@ -2,6 +2,10 @@ add_executable(benchmarkcomplex benchmark_complex.cpp)
 target_compile_features(benchmarkcomplex PRIVATE cxx_std_17)
 target_link_libraries(benchmarkcomplex PRIVATE tfctc)
 
+add_executable(benchmarkcomplexexpl benchmark_complex_explicit.cpp)
+target_compile_features(benchmarkcomplexexpl PRIVATE cxx_std_17)
+target_link_libraries(benchmarkcomplexexpl PRIVATE tfctc)
+
 add_executable(benchmarkreal benchmark_real.cpp)
 target_compile_features(benchmarkreal PRIVATE cxx_std_17)
 target_link_libraries(benchmarkreal PRIVATE tfctc)

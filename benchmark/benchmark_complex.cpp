@@ -29,11 +29,10 @@ int main()
 
   // set_random(A, workspace_size);
   // set_random(B, workspace_size);
-  // set_random(C, workspace_size);
 
   auto a = std::string("abcde");
   auto b = std::string("cijkd");
-  auto c = std::string("abeijk");
+  auto c = std::string("kjieba");
 
   for (size_t i = 2; i < 30; i++)
   {
