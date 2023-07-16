@@ -6,7 +6,7 @@
 #include "tfctc/tfctc.hpp"
 
 const int N = 10;
-const size_t L = 6L;
+const size_t L = 22L;
 
 template<typename T>
 void set_random(std::complex<T>* tensor, size_t size)
@@ -20,8 +20,7 @@ void set_random(std::complex<T>* tensor, size_t size)
 
 int main()
 {
-  std::complex<float>* A = nullptr, * B = nullptr, * C = nullptr;
-  size_t workspace_size = L * L * L * L * L * L * L * L * L * L * L * L * L * L;
+  std::complex<double>* A = nullptr, * B = nullptr, * C = nullptr;
 
   const std::vector<std::tuple<std::string, std::string, std::string>> contractions = {
         {"abcde", "efbad", "cf"},
@@ -50,9 +49,9 @@ int main()
         {"abcd", "aebf", "dfce"}
   };
 
-  tfctc::utils::alloc_aligned(&A, workspace_size);
-  tfctc::utils::alloc_aligned(&B, workspace_size);
-  tfctc::utils::alloc_aligned(&C, workspace_size);
+  tfctc::utils::alloc_aligned(&A, L * L * L * L * L * L);
+  tfctc::utils::alloc_aligned(&B, L * L * L * L * L);
+  tfctc::utils::alloc_aligned(&C, L * L * L * L);
 
   std::cout << "contraction,min" << '\n';
   for (auto [a, b, c] : contractions)
@@ -72,11 +71,11 @@ int main()
     for (size_t j = 0; j < c.length(); j++)
       lengthsC.push_back(L);
 
-    auto tensorA = tfctc::Tensor<std::complex<float>>(lengthsA, A);
-    auto tensorB = tfctc::Tensor<std::complex<float>>(lengthsB, B);
-    auto tensorC = tfctc::Tensor<std::complex<float>>(lengthsC, C);
+    auto tensorA = tfctc::Tensor<std::complex<double>>(lengthsA, A);
+    auto tensorB = tfctc::Tensor<std::complex<double>>(lengthsB, B);
+    auto tensorC = tfctc::Tensor<std::complex<double>>(lengthsC, C);
 
-    std::vector<float> time(N);
+    std::vector<double> time(N);
     for (uint j = 0; j < N; j++)
     {
       auto t0 = std::chrono::high_resolution_clock::now();
