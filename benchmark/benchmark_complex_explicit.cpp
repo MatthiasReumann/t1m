@@ -6,7 +6,6 @@
 #include "tfctc/tfctc.hpp"
 
 const int N = 10;
-const size_t L = 22L;
 
 template<typename T>
 void set_random(std::complex<T>* tensor, size_t size)
@@ -23,53 +22,92 @@ int main()
   std::complex<double>* A = nullptr, * B = nullptr, * C = nullptr;
 
   const std::vector<std::tuple<std::string, std::string, std::string>> contractions = {
-        {"abcde", "efbad", "cf"},
-        {"abcde", "efcad", "bf"},
-        {"abcd", "dbea", "ec"},
-        {"abcde", "ecbfa", "fd"},
-        {"abcd", "deca", "be"},
-        {"abc", "bda", "dc"},
-        {"abcd", "ebad", "ce"},
-        {"abcdef", "dega", "gfbc"},
-        {"abcdef", "dfgb", "geac"},
-        {"abcdef", "degb", "gfac"},
-        {"abcdef", "degc", "gfab"},
-        {"abc", "dca", "bd"},
-        {"abcd", "ea", "ebcd"},
-        {"abcd", "eb", "aecd"},
-        {"abcd", "ec", "abed"},
-        {"abc", "adec", "ebd"},
-        {"ab", "cad", "dcb"},
-        {"ab", "acd", "dbc"},
-        {"abc", "acd", "db"},
-        {"abc", "adc", "bd"},
-        {"ab", "ac", "cb"},
-        {"abcd", "aebf", "fdec"},
-        {"abcd", "eafd", "fbec"},
-        {"abcd", "aebf", "dfce"}
+        {"abcde", "efbad", "cf"}, /*a:48;c:24;b:32;e:48;d:32;f:32;*/
+        {"abcde", "efcad", "bf"}, /* a:48;c:32;b:24;e:48;d:32;f:32;*/
+        {"abcd", "dbea", "ec"}, /*a:72;c:24;b:72;e:72;d:72;*/
+        {"abcde", "ecbfa", "fd"} /*a:48;c:32;b:32;e:48;d:24;f:48;*/,
+        {"abcd", "deca", "be"} /*a:72;c:72;b:24;e:72;d:72;*/,
+        {"abc", "bda", "dc"}, /*a:312;c:24;b:312;d:312;*/
+        {"abcd", "ebad", "ce"}, /*a:72;c:24;b:72;e:72;d:72;*/
+
+        {"abcdef", "dega", "gfbc"}, /*a:24;c:16;b:16;e:16;d:24;g:24;f:16;*/
+        {"abcdef", "dfgb", "geac"}, /*a:24;c:16;b:16;e:16;d:24;g:24;f:16;*/
+        {"abcdef", "degb", "gfac"}, /*a:24;c:16;b:16;e:16;d:24;g:24;f:16;*/
+        {"abcdef", "degc", "gfab"}, /*a:24;c:16;b:16;e:16;d:24;g:24;f:16;*/
+        
+        {"abc", "dca", "bd"}, /* a:312;c:296;b:24;d:312; */
+        
+        {"abcd", "ea", "ebcd"}, /*a:72;c:72;b:72;e:72;d:72;*/
+        {"abcd", "eb", "aecd"}, /*a:72;c:72;b:72;e:72;d:72;*/
+        {"abcd", "ec", "abed"}, /*a:72;c:72;b:72;e:72;d:72;*/
+        {"abc", "adec", "ebd"}, /*a:72;c:72;b:72;e:72;d:72;*/
+        
+        {"ab", "cad", "dcb"}, /*a:312;c:312;b:296;d:312;*/
+        {"ab", "acd", "dbc"}, /*a:312;c:296;b:296;d:312;*/
+        {"abc", "acd", "db"}, /*a:312;c:296;b:312;d:296;*/
+        {"abc", "adc", "bd"}, /*a:312;c:296;b:312;d:296;*/
+        
+        {"ab", "ac", "cb"}, /*a:5136;c:5136;b:5120;*/
+
+        {"abcd", "aebf", "fdec"}, /*a:72;c:72;b:72;e:72;d:72;f:72;*/
+        {"abcd", "eafd", "fbec"}, /*a:72;c:72;b:72;e:72;d:72;f:72;*/
+        {"abcd", "aebf", "dfce"}, /*a:72;c:72;b:72;e:72;d:72;f:72;*/
   };
 
-  tfctc::utils::alloc_aligned(&A, L * L * L * L * L * L);
-  tfctc::utils::alloc_aligned(&B, L * L * L * L * L);
-  tfctc::utils::alloc_aligned(&C, L * L * L * L);
+  const std::vector<std::vector<std::vector<size_t>>> sizes = {
+    {{24, 16, 12, 16, 24}, {24, 16, 16, 24, 16}, {12, 16}},
+    {{24, 12, 16, 16, 24}, {24, 16, 16, 24, 16}, {12, 16}},
+    {{36, 36, 12, 36}, {36, 36, 36, 36}, {36, 12}},
+    {{24, 16, 16, 12, 24}, {24, 16, 16, 24, 24}, {24, 12}},
+    {{36, 12, 36, 36}, {36, 36, 36, 36}, {12, 36}},
+    {{156, 156, 12}, {156, 156, 156}, {156, 12}},
+    {{36, 36, 12, 36}, {36, 36, 36, 36}, {12, 36}},
+
+    {{12, 8, 8, 12, 8, 8}, {12, 8, 12, 12}, {12, 8, 8, 8}},
+    {{12, 8, 8, 12, 8, 8}, {12, 8, 12, 8}, {12, 8, 12, 8}},
+    {{12, 8, 8, 12, 8, 8}, {12, 8, 12, 8}, {12, 8, 12, 8}},
+    {{12, 8, 8, 12, 8, 8}, {12, 8, 12, 8}, {12, 8, 12, 8}},
+
+    {{156, 12, 148}, {156, 148, 156}, {12, 156}},
+
+    {{36, 36, 36, 36}, {36, 36}, {36, 36, 36, 36}},
+    {{36, 36, 36, 36}, {36, 36}, {36, 36, 36, 36}},
+    {{36, 36, 36, 36}, {36, 36}, {36, 36, 36, 36}},
+    {{36, 36, 36}, {36, 36, 36, 36}, {36, 36, 36}},
+
+    {{156, 148}, {156, 156, 156}, {156, 156, 148}},
+    {{156, 148}, {156, 148, 156}, {156, 148, 156}},
+    {{156, 156, 148}, {156, 148, 148}, {148, 156}},
+    {{156, 156, 148}, {156, 148, 148}, {156, 148}},
+
+    {{2568, 2560}, {2568, 2568}, {2568, 2560}},
+
+    {{36, 36, 36, 36}, {36, 36, 36, 36}, {36, 36, 36, 36}},
+    {{36, 36, 36, 36}, {36, 36, 36, 36}, {36, 36, 36, 36}},
+    {{36, 36, 36, 36}, {36, 36, 36, 36}, {36, 36, 36, 36}},
+  };
 
   std::cout << "contraction,min" << '\n';
-  for (auto [a, b, c] : contractions)
+  int i = 0;
+  for (auto [c, a, b] : contractions)
   {
-    std::cout << a << "-" << b << "-" << c << ",";
+    std::cout << c << "-" << a << "-" << b << ",";
     
-    std::vector<size_t> lengthsA;
-    std::vector<size_t> lengthsB;
-    std::vector<size_t> lengthsC;
+    size_t sizeA = 1L;
+    size_t sizeB = 1L;
+    size_t sizeC = 1L;
 
-    for (size_t j = 0; j < a.length(); j++)
-      lengthsA.push_back(L);
+    auto lengthsC = sizes[i][0];
+    auto lengthsA = sizes[i][1];
+    auto lengthsB = sizes[i][2];
 
-    for (size_t j = 0; j < b.length(); j++)
-      lengthsB.push_back(L);
+    for (auto &l : lengthsA) sizeA *= l;
+    for (auto &l : lengthsB) sizeB *= l;
+    for (auto &l : lengthsC) sizeC *= l;
 
-    for (size_t j = 0; j < c.length(); j++)
-      lengthsC.push_back(L);
+    tfctc::utils::alloc_aligned(&A, sizeA);
+    tfctc::utils::alloc_aligned(&B, sizeB);
+    tfctc::utils::alloc_aligned(&C, sizeC);
 
     auto tensorA = tfctc::Tensor<std::complex<double>>(lengthsA, A);
     auto tensorB = tfctc::Tensor<std::complex<double>>(lengthsB, B);
@@ -84,9 +122,11 @@ int main()
       time[j] = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count();
     }
     std::cout << *min_element(time.begin(), time.end()) << '\n';
-  }
 
-  free(A);
-  free(B);
-  free(C);
+    free(A);
+    free(B);
+    free(C);
+
+    i++;
+  }
 }
