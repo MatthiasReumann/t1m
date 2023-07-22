@@ -7,16 +7,6 @@
 
 const int N = 10;
 
-template<typename T>
-void set_random(std::complex<T>* tensor, size_t size)
-{
-  for (int i = 0; i < size; i++)
-  {
-    tensor[i].real(static_cast <T> (rand()) / (static_cast <T> (RAND_MAX)));
-    tensor[i].imag(static_cast <T> (rand()) / (static_cast <T> (RAND_MAX)));
-  }
-}
-
 int main()
 {
   std::complex<double>* A = nullptr, * B = nullptr, * C = nullptr;
