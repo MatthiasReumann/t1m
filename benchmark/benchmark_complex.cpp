@@ -22,14 +22,24 @@ public:
   size_t setRandomContractionLengths()
   {
     size_t lall = 1;
-    for (int i = 0; i < this->contractionIndicesA.size(); i++) {
-      const auto ai = this->contractionIndicesA.at(i);
-      const auto bi = this->contractionIndicesB.at(i);
+    if (this->contractionIndicesA.size() == 1)
+    {
+      const auto ai = this->contractionIndicesA.at(0);
+      const auto bi = this->contractionIndicesB.at(0);
       const size_t l = 4 + (rand() % MAX_SIZE);
       this->lengthsA[ai] = l;
       this->lengthsB[bi] = l;
 
       lall *= l;
+    }
+    else {
+      for (int i = 0; i < this->contractionIndicesA.size(); i++) {
+        const auto ai = this->contractionIndicesA.at(i);
+        const auto bi = this->contractionIndicesB.at(i);
+        const size_t l = 4 + (rand() % 45);
+        this->lengthsA[ai] = l;
+        this->lengthsB[bi] = l;
+      }
     }
     return lall;
   }
@@ -52,7 +62,7 @@ int main()
     Contraction("abcde", "efbad", "cf", {24, 16, 12, 16, 24}, {24, 16, 16, 24, 16}, {12, 16}, {1}, {1}),
     Contraction("abcde", "efcad", "bf", {24, 12, 16, 16, 24}, {24, 16, 16, 24, 16}, {12, 16}, {1}, {1}),
     Contraction("abcde", "ecbfa", "fd", {24, 16, 16, 12, 24}, {24, 16, 16, 24, 24}, {24, 12}, {3}, {0}),
-    
+
     Contraction("abcdef", "dega", "gfbc", {12, 8, 8, 12, 8, 8}, {12, 8, 12, 12}, {12, 8, 8, 8}, {2}, {0}),
     Contraction("abcdef", "dfgb", "geac", {12, 8, 8, 12, 8, 8}, {12, 8, 12, 8}, {12, 8, 12, 8}, {2}, {0}),
     Contraction("abcdef", "degb", "gfac", {12, 8, 8, 12, 8, 8}, {12, 8, 12, 8}, {12, 8, 12, 8}, {2}, {0}),
