@@ -8,7 +8,7 @@
 
 const int N = 10;
 const int ROUNDS = 2000;
-const size_t MAX_SIZE = 128;
+const size_t MAX_SIZE = 2000;
 
 class Contraction {
 public:
@@ -64,7 +64,7 @@ int main()
 
     Contraction("ab", "cad", "dcb", {156, 148}, {156, 156, 156}, {156, 156, 148}, {0, 2}, {1, 0}),
     Contraction("ab", "acd", "dbc", {156, 148}, {156, 148, 156}, {156, 148, 156}, {1, 2}, {0, 2}),
-    Contraction("abc", "acd", "db", {156, 156, 148}, {156, 148, 148}, {148, 156}, {2}, {1}),
+    Contraction("abc", "acd", "db", {156, 156, 148}, {156, 148, 148}, {148, 156}, {2}, {0}),
     Contraction("abc", "adc", "bd", {156, 156, 148}, {156, 148, 148}, {156, 148}, {1}, {1}),
     Contraction("abcd", "aebf", "fdec", {36, 36, 36, 36}, {36, 36, 36, 36}, {36, 36, 36, 36}, {1, 3}, {2, 0}),
     Contraction("abcd", "eafd", "fbec", {36, 36, 36, 36}, {36, 36, 36, 36}, {36, 36, 36, 36}, {0, 2}, {2, 0}),
@@ -72,7 +72,7 @@ int main()
 
   };
 
-  std::cout << "size,min" << '\n';
+  std::cout << "size,contraction,min" << std::endl;
   for (int r = 0; r < ROUNDS; r++)
   {
     const size_t i = rand() % contractions.size();
@@ -100,7 +100,7 @@ int main()
     auto tensorB = tfctc::Tensor<std::complex<double>>(lengthsB, B);
     auto tensorC = tfctc::Tensor<std::complex<double>>(lengthsC, C);
 
-    std::cout << contraction_size << ',';
+    std::cout << contraction_size << ',' << contraction.labelC << '-' << contraction.labelA << '-' << contraction.labelB << ',';
     std::vector<double> time(N);
     for (uint j = 0; j < N; j++)
     {
@@ -109,7 +109,7 @@ int main()
       auto t1 = std::chrono::high_resolution_clock::now();
       time[j] = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count();
     }
-    std::cout << *min_element(time.begin(), time.end()) << '\n';
+    std::cout << *min_element(time.begin(), time.end()) << std::endl;
 
     free(A);
     free(B);
