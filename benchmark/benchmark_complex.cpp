@@ -39,6 +39,7 @@ public:
         const size_t l = 4 + (rand() % 45);
         this->lengthsA[ai] = l;
         this->lengthsB[bi] = l;
+        lall *= l;
       }
     }
     return lall;
