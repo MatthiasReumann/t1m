@@ -7,7 +7,6 @@
 #include "tfctc/tfctc.hpp"
 
 const int N = 10;
-const int ROUNDS = 2000;
 const size_t MAX_SIZE = 1000;
 
 class Contraction {
@@ -19,28 +18,15 @@ public:
     lengthsA{ lengthsA }, lengthsB{ lengthsB }, lengthsC{ lengthsC },
     contractionIndicesA{ contractionIndicesA }, contractionIndicesB{ contractionIndicesB } {}
 
-  size_t setRandomContractionLengths()
+  size_t set_contraction_size(size_t s)
   {
     size_t lall = 1;
-    if (this->contractionIndicesA.size() == 1)
-    {
-      const auto ai = this->contractionIndicesA.at(0);
-      const auto bi = this->contractionIndicesB.at(0);
-      const size_t l = 4 + (rand() % MAX_SIZE);
-      this->lengthsA[ai] = l;
-      this->lengthsB[bi] = l;
-
-      lall *= l;
-    }
-    else {
-      for (int i = 0; i < this->contractionIndicesA.size(); i++) {
-        const auto ai = this->contractionIndicesA.at(i);
-        const auto bi = this->contractionIndicesB.at(i);
-        const size_t l = 4 + (rand() % 45);
-        this->lengthsA[ai] = l;
-        this->lengthsB[bi] = l;
-        lall *= l;
-      }
+    for (int i = 0; i < this->contractionIndicesA.size(); i++) {
+      const auto ai = this->contractionIndicesA.at(i);
+      const auto bi = this->contractionIndicesB.at(i);
+      this->lengthsA[ai] = s;
+      this->lengthsB[bi] = s;
+      lall *= s;
     }
     return lall;
   }
@@ -56,44 +42,19 @@ public:
   std::vector<size_t> contractionIndicesB;
 };
 
-int main()
+void run(Contraction contraction)
 {
+  size_t contraction_size, sizeA, sizeB, sizeC;
   std::complex<double>* A = nullptr, * B = nullptr, * C = nullptr;
-  const std::vector<Contraction> contractions = {
-    Contraction("abcde", "efbad", "cf", {24, 16, 12, 16, 24}, {24, 16, 16, 24, 16}, {12, 16}, {1}, {1}),
-    Contraction("abcde", "efcad", "bf", {24, 12, 16, 16, 24}, {24, 16, 16, 24, 16}, {12, 16}, {1}, {1}),
-    Contraction("abcde", "ecbfa", "fd", {24, 16, 16, 12, 24}, {24, 16, 16, 24, 24}, {24, 12}, {3}, {0}),
-
-    Contraction("abcdef", "dega", "gfbc", {12, 8, 8, 12, 8, 8}, {12, 8, 12, 12}, {12, 8, 8, 8}, {2}, {0}),
-    Contraction("abcdef", "dfgb", "geac", {12, 8, 8, 12, 8, 8}, {12, 8, 12, 8}, {12, 8, 12, 8}, {2}, {0}),
-    Contraction("abcdef", "degb", "gfac", {12, 8, 8, 12, 8, 8}, {12, 8, 12, 8}, {12, 8, 12, 8}, {2}, {0}),
-    Contraction("abcdef", "degc", "gfab", {12, 8, 8, 12, 8, 8}, {12, 8, 12, 8}, {12, 8, 12, 8}, {2}, {0}),
-
-    Contraction("abcd", "ea", "ebcd", {36, 36, 36, 36}, {36, 36}, {36, 36, 36, 36}, {0}, {0}),
-    Contraction("abcd", "eb", "aecd", {36, 36, 36, 36}, {36, 36}, {36, 36, 36, 36}, {0}, {1}),
-    Contraction("abcd", "ec", "abed", {36, 36, 36, 36}, {36, 36}, {36, 36, 36, 36}, {0}, {2}),
-
-    // Contraction("ab", "cad", "dcb", {156, 148}, {156, 156, 156}, {156, 156, 148}, {0, 2}, {1, 0}),
-    // Contraction("ab", "acd", "dbc", {156, 148}, {156, 148, 156}, {156, 148, 156}, {1, 2}, {0, 2}),
-    Contraction("abc", "acd", "db", {156, 156, 148}, {156, 148, 148}, {148, 156}, {2}, {0}),
-    Contraction("abc", "adc", "bd", {156, 156, 148}, {156, 148, 148}, {156, 148}, {1}, {1}),
-    // Contraction("abcd", "aebf", "fdec", {36, 36, 36, 36}, {36, 36, 36, 36}, {36, 36, 36, 36}, {1, 3}, {2, 0}),
-    // Contraction("abcd", "eafd", "fbec", {36, 36, 36, 36}, {36, 36, 36, 36}, {36, 36, 36, 36}, {0, 2}, {2, 0}),
-    // Contraction("abcd", "aebf", "dfce", {36, 36, 36, 36}, {36, 36, 36, 36}, {36, 36, 36, 36}, {1, 3}, {3, 1})
-
-  };
 
   std::cout << "size,contraction,min" << std::endl;
-  for (int r = 0; r < ROUNDS; r++)
+  for(size_t i = 0; i < MAX_SIZE; i += 20)
   {
-    const size_t i = rand() % contractions.size();
+    contraction_size = contraction.set_contraction_size(i);
 
-    auto contraction = contractions.at(i);
-    auto contraction_size = contraction.setRandomContractionLengths();
-
-    size_t sizeA = 1L;
-    size_t sizeB = 1L;
-    size_t sizeC = 1L;
+    sizeA = 1L;
+    sizeB = 1L;
+    sizeC = 1L;
 
     auto lengthsC = contraction.lengthsC;
     auto lengthsA = contraction.lengthsA;
@@ -126,4 +87,41 @@ int main()
     free(B);
     free(C);
   }
+}
+
+void worst()
+{
+  run(Contraction("abcdef", "dega", "gfbc", {12, 8, 8, 12, 8, 8}, {12, 8, 12, 12}, {12, 8, 8, 8}, {2}, {0}));
+}
+
+void best()
+{
+  run(Contraction("abc", "bda", "dc", {156, 156, 12}, {156, 156, 156}, {156, 12}, {1}, {0}));
+}
+int main()
+{
+  /* const std::vector<Contraction> contractions = {
+    Contraction("abcde", "efbad", "cf", {24, 16, 12, 16, 24}, {24, 16, 16, 24, 16}, {12, 16}, {1}, {1}),
+    Contraction("abcde", "efcad", "bf", {24, 12, 16, 16, 24}, {24, 16, 16, 24, 16}, {12, 16}, {1}, {1}),
+    Contraction("abcde", "ecbfa", "fd", {24, 16, 16, 12, 24}, {24, 16, 16, 24, 24}, {24, 12}, {3}, {0}),
+
+    Contraction("abcdef", "dega", "gfbc", {12, 8, 8, 12, 8, 8}, {12, 8, 12, 12}, {12, 8, 8, 8}, {2}, {0}),
+    Contraction("abcdef", "dfgb", "geac", {12, 8, 8, 12, 8, 8}, {12, 8, 12, 8}, {12, 8, 12, 8}, {2}, {0}),
+    Contraction("abcdef", "degb", "gfac", {12, 8, 8, 12, 8, 8}, {12, 8, 12, 8}, {12, 8, 12, 8}, {2}, {0}),
+    Contraction("abcdef", "degc", "gfab", {12, 8, 8, 12, 8, 8}, {12, 8, 12, 8}, {12, 8, 12, 8}, {2}, {0}),
+
+    Contraction("abcd", "ea", "ebcd", {36, 36, 36, 36}, {36, 36}, {36, 36, 36, 36}, {0}, {0}),
+    Contraction("abcd", "eb", "aecd", {36, 36, 36, 36}, {36, 36}, {36, 36, 36, 36}, {0}, {1}),
+    Contraction("abcd", "ec", "abed", {36, 36, 36, 36}, {36, 36}, {36, 36, 36, 36}, {0}, {2}),
+
+    // Contraction("ab", "cad", "dcb", {156, 148}, {156, 156, 156}, {156, 156, 148}, {0, 2}, {1, 0}),
+    // Contraction("ab", "acd", "dbc", {156, 148}, {156, 148, 156}, {156, 148, 156}, {1, 2}, {0, 2}),
+    Contraction("abc", "acd", "db", {156, 156, 148}, {156, 148, 148}, {148, 156}, {2}, {0}),
+    Contraction("abc", "adc", "bd", {156, 156, 148}, {156, 148, 148}, {156, 148}, {1}, {1}),
+    // Contraction("abcd", "aebf", "fdec", {36, 36, 36, 36}, {36, 36, 36, 36}, {36, 36, 36, 36}, {1, 3}, {2, 0}),
+    // Contraction("abcd", "eafd", "fbec", {36, 36, 36, 36}, {36, 36, 36, 36}, {36, 36, 36, 36}, {0, 2}, {2, 0}),
+    // Contraction("abcd", "aebf", "dfce", {36, 36, 36, 36}, {36, 36, 36, 36}, {36, 36, 36, 36}, {1, 3}, {3, 1})
+  }; */
+  worst();
+  best();
 }
