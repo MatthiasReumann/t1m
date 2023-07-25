@@ -98,6 +98,11 @@ void best()
 {
   run(Contraction("abc", "bda", "dc", {156, 156, 12}, {156, 156, 156}, {156, 12}, {1}, {0}));
 }
+
+void closest()
+{
+  run(Contraction("abc", "acd", "db", {156, 156, 148}, {156, 148, 148}, {148, 156}, {2}, {0}));
+}
 int main()
 {
   /* const std::vector<Contraction> contractions = {
@@ -124,4 +129,5 @@ int main()
   }; */
   worst();
   best();
+  closest();
 }
