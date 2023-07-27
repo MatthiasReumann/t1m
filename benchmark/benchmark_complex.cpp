@@ -91,7 +91,7 @@ void run(Contraction contraction)
 
 void worst()
 {
-  run(Contraction("abcdef", "dega", "gfbc", {12, 8, 8, 12, 8, 8}, {12, 8, 12, 12}, {12, 8, 8, 8}, {2}, {0}));
+  run(Contraction("abcde", "ecbfa", "fd", {12, 8, 8, 12, 8, 8}, {12, 8, 12, 12}, {12, 8, 8, 8}, {3}, {0}));
 }
 
 void best()
