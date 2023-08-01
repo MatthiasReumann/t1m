@@ -1,6 +1,7 @@
 #pragma once
 
 #include <complex>
+#include <omp.h>
 #include "utils.hpp"
 #include "std_ext.hpp"
 #include "gemm_context.hpp"
@@ -51,10 +52,12 @@ namespace tfctc
       b_packed = b_packed_base = workspace + MC * KC;
       c_result = workspace + MC * KC + KC * NC;
 
+      #pragma omp parallel for
       for (size_t j_c = 0; j_c < N; j_c += NC)
       {
         nc_n = std_ext::min(NC, static_cast<dim_t>(N - j_c));
 
+        #pragma omp parallel for
         for (size_t p_c = 0; p_c < K; p_c += KC / 2)
         {
           kc_k_complex = std_ext::min(KC / 2, static_cast<dim_t>(K - p_c));
@@ -65,6 +68,7 @@ namespace tfctc
           // B is now row-major packed into a KC * NC buffer
           // with the specialized format such that each sliver
           // has stride NR
+          #pragma omp parallel for
           for (size_t i_c = 0; i_c < M; i_c += MC / 2)
           {
             mc_m_complex = std_ext::min(MC / 2, static_cast<dim_t>(M - i_c));
@@ -78,12 +82,14 @@ namespace tfctc
 
             // Now treat everything as real-valued:
             // Use NR, MR as with real-valued mm
+            #pragma omp parallel for
             for (size_t j_r = 0; j_r < nc_n; j_r += NR)
             {
               off_j = j_c + j_r;
               n = std_ext::min(NR, static_cast<dim_t>(nc_n - j_r));
               csc = C->col_stride_in_block(off_j / NR);
 
+              #pragma omp parallel for
               for (size_t i_r = 0; i_r < mc_m_real; i_r += MR)
               {
                 m = std_ext::min(MR, static_cast<dim_t>(mc_m_real - i_r));

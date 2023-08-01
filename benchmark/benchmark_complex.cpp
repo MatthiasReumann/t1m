@@ -91,7 +91,7 @@ void run(Contraction contraction)
 
 void worst()
 {
-  run(Contraction("abcde", "ecbfa", "fd", {12, 8, 8, 12, 8, 8}, {12, 8, 12, 12}, {12, 8, 8, 8}, {3}, {0}));
+  run(Contraction("abcde", "ecbfa", "fd", {24, 16, 16, 12, 24}, {24, 16, 16, 24, 24}, {24,12}, {3}, {0}));
 }
 
 void best()
@@ -103,30 +103,15 @@ void closest()
 {
   run(Contraction("abc", "acd", "db", {156, 156, 148}, {156, 148, 148}, {148, 156}, {2}, {0}));
 }
+
+void notrans()
+{
+  run(Contraction("abcd", "ea", "ebcd", {128,64,64,64}, {64,128}, {64, 64, 64, 64}, {0}, {0}));
+}
+
 int main()
 {
-  /* const std::vector<Contraction> contractions = {
-    Contraction("abcde", "efbad", "cf", {24, 16, 12, 16, 24}, {24, 16, 16, 24, 16}, {12, 16}, {1}, {1}),
-    Contraction("abcde", "efcad", "bf", {24, 12, 16, 16, 24}, {24, 16, 16, 24, 16}, {12, 16}, {1}, {1}),
-    Contraction("abcde", "ecbfa", "fd", {24, 16, 16, 12, 24}, {24, 16, 16, 24, 24}, {24, 12}, {3}, {0}),
-
-    Contraction("abcdef", "dega", "gfbc", {12, 8, 8, 12, 8, 8}, {12, 8, 12, 12}, {12, 8, 8, 8}, {2}, {0}),
-    Contraction("abcdef", "dfgb", "geac", {12, 8, 8, 12, 8, 8}, {12, 8, 12, 8}, {12, 8, 12, 8}, {2}, {0}),
-    Contraction("abcdef", "degb", "gfac", {12, 8, 8, 12, 8, 8}, {12, 8, 12, 8}, {12, 8, 12, 8}, {2}, {0}),
-    Contraction("abcdef", "degc", "gfab", {12, 8, 8, 12, 8, 8}, {12, 8, 12, 8}, {12, 8, 12, 8}, {2}, {0}),
-
-    Contraction("abcd", "ea", "ebcd", {36, 36, 36, 36}, {36, 36}, {36, 36, 36, 36}, {0}, {0}),
-    Contraction("abcd", "eb", "aecd", {36, 36, 36, 36}, {36, 36}, {36, 36, 36, 36}, {0}, {1}),
-    Contraction("abcd", "ec", "abed", {36, 36, 36, 36}, {36, 36}, {36, 36, 36, 36}, {0}, {2}),
-
-    // Contraction("ab", "cad", "dcb", {156, 148}, {156, 156, 156}, {156, 156, 148}, {0, 2}, {1, 0}),
-    // Contraction("ab", "acd", "dbc", {156, 148}, {156, 148, 156}, {156, 148, 156}, {1, 2}, {0, 2}),
-    Contraction("abc", "acd", "db", {156, 156, 148}, {156, 148, 148}, {148, 156}, {2}, {0}),
-    Contraction("abc", "adc", "bd", {156, 156, 148}, {156, 148, 148}, {156, 148}, {1}, {1}),
-    // Contraction("abcd", "aebf", "fdec", {36, 36, 36, 36}, {36, 36, 36, 36}, {36, 36, 36, 36}, {1, 3}, {2, 0}),
-    // Contraction("abcd", "eafd", "fbec", {36, 36, 36, 36}, {36, 36, 36, 36}, {36, 36, 36, 36}, {0, 2}, {2, 0}),
-    // Contraction("abcd", "aebf", "dfce", {36, 36, 36, 36}, {36, 36, 36, 36}, {36, 36, 36, 36}, {1, 3}, {3, 1})
-  }; */
+  notrans();
   worst();
   best();
   closest();
