@@ -18,12 +18,12 @@ namespace tfctc
         rbs(this->rscat, br),
         cbs(this->cscat, bc) {}
 
-      size_t row_stride_in_block(size_t i)
+      const size_t row_stride_in_block(size_t i)
       {
         return this->rbs.at(i);
       }
 
-      size_t col_stride_in_block(size_t j)
+      const size_t col_stride_in_block(size_t j)
       {
         return this->cbs.at(j);
       }

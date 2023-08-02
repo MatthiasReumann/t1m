@@ -3,7 +3,7 @@
 #include <numeric>
 #include <string>
 #include <complex>
-#include<cstdlib>
+#include <cstdlib>
 #include "tfctc/tfctc.hpp"
 
 const int N = 10;
@@ -74,7 +74,7 @@ void run(Contraction contraction)
 
     std::cout << contraction_size << ',' << contraction.labelC << '-' << contraction.labelA << '-' << contraction.labelB << ',';
     std::vector<double> time(N);
-    for (uint j = 0; j < N; j++)
+    for (size_t j = 0; j < N; j++)
     {
       auto t0 = std::chrono::high_resolution_clock::now();
       tfctc::contract(tensorA, contraction.labelA.c_str(), tensorB, contraction.labelB.c_str(), tensorC, contraction.labelC.c_str());

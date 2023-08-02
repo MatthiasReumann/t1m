@@ -57,6 +57,7 @@ namespace tfctc
       M /= 2;
       for (int j = 0; j < N; j++)
         for (int i = 0; i < M; i++)
+          // std::cout << reinterpret_cast<std::complex<U> *>(out)[i + j * M] << std::endl;
           ptr[C->location(i + off_i, j + off_j)] += reinterpret_cast<std::complex<U> *>(out)[i + j * M];
     }
   };
