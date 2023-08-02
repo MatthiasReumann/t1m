@@ -33,19 +33,13 @@ namespace tfctc
       const size_t K = A->col_size();
       const size_t N = B->col_size();
 
-      dim_t mc_m_complex, nc_n, kc_k_complex, mc_m_real, k;
-
-      T* workspace = nullptr;
-      T* a_packed = nullptr; // A in G^{MC x KC}
-      T* a_packed_base = nullptr;
+      dim_t nc_n, kc_k_complex, k;
 
       T* b_packed = nullptr; // B in G^{KC x NC}
       T* b_packed_base = nullptr;
 
-      utils::alloc_aligned<T>(&workspace, MC * KC + KC * NC);
-
-      a_packed = a_packed_base = workspace;
-      b_packed = b_packed_base = workspace + MC * KC;
+      utils::alloc_aligned<T>(&b_packed, KC * NC);
+      b_packed_base = b_packed;
 
       for (size_t j_c = 0; j_c < N; j_c += NC)
       {
@@ -61,12 +55,19 @@ namespace tfctc
           // B is now row-major packed into a KC * NC buffer
           // with the specialized format such that each sliver
           // has stride NR
+          #pragma omp parallel for
           for (size_t i_c = 0; i_c < M; i_c += MC / 2)
           {
-            mc_m_complex = std_ext::min(MC / 2, static_cast<dim_t>(M - i_c));
-            mc_m_real = mc_m_complex * 2;
+            T* a_packed = nullptr; // A in G^{MC x KC}
+            T* a_packed_base = nullptr;
+            utils::alloc_aligned<T>(&a_packed, MC * KC);
+            a_packed_base = a_packed;
+            
+            dim_t mc_m_complex = std_ext::min(MC / 2, static_cast<dim_t>(M - i_c));
+            dim_t mc_m_real = mc_m_complex * 2;
 
             pack_1m_a(A, a_packed, i_c, p_c, mc_m_complex, kc_k_complex, MR, KP);
+
 
             // A is now column-major packed into a MC * KC buffer
             // with the specialized format such that each sliver
@@ -102,11 +103,13 @@ namespace tfctc
               a_packed_ = a_packed_base;
               free(c_result);
             }
+
+            free(a_packed);
           }
         }
       }
 
-      free(workspace);
+      free(b_packed);
     }
 
     template <typename T>
