@@ -54,7 +54,6 @@ namespace tfctc
       {
         return this->bs.at(i);
       }
-    private:
       std::vector<size_t> bs;
     };
   };

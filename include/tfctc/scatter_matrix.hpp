@@ -47,7 +47,6 @@ namespace tfctc
       {
         return this->rscat.at(i) + this->cscat.at(j);
       }
-    protected:
       ScatterVector rscat;
       ScatterVector cscat;
     };
