@@ -105,7 +105,7 @@ namespace tfctc
 
                   ctx->kernel(m, n, k, ctx->alpha, a_it, b_it, ctx->beta, c_result, 1, m, nullptr, ctx->cntx);
 
-                  // unpack_1m_c(C, c_result, off_i, off_j, m, n, rsc, csc);
+                  unpack_1m_c(C, c_result, off_i, off_j, m, n, rsc, csc);
 
                   a_it += MR * k;
                 }
