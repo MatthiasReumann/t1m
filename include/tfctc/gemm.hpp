@@ -100,16 +100,14 @@ namespace tfctc
                   n = std_ext::min(NR, static_cast<dim_t>(nc_n - j_r));
                   csc = C->col_stride_in_block(off_j / NR);
 
+                  #pragma omp critical
                   for (size_t i_r = 0; i_r < mc_m_real; i_r += MR)
                   {
                     m = std_ext::min(MR, static_cast<dim_t>(mc_m_real - i_r));
                     off_i = i_c + (i_r / 2);
                     rsc = C->row_stride_in_block(off_i / MR);
 
-                    #pragma omp critical
                     ctx->kernel(m, n, k, ctx->alpha, a_it, b_it, ctx->beta, c_result, 1, m, nullptr, ctx->cntx);
-
-                    #pragma omp critical
                     unpack_1m_c(C, c_result, off_i, off_j, m, n, rsc, csc);
 
                     a_it += MR * k;
