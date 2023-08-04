@@ -45,7 +45,6 @@ namespace tfctc
     void unpack_1m_c_cont(std::complex<U>* C, U* out, dim_t M, dim_t N, inc_t rs, inc_t cs)
     {
       M /= 2;
-      #pragma omp critical
       {
         for (int j = 0; j < N; j++)
           for (int i = 0; i < M; i++)
@@ -58,12 +57,9 @@ namespace tfctc
     {
       std::complex<U>* ptr = C->data();
       M /= 2;
-      #pragma omp critical
-      {
       for (int j = 0; j < N; j++)
         for (int i = 0; i < M; i++)
           ptr[C->location(i + off_i, j + off_j)] += reinterpret_cast<std::complex<U> *>(out)[i + j * M];
-      }
     }
   };
 };
