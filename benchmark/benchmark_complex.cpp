@@ -91,7 +91,7 @@ void run(Contraction contraction)
 
 void worst()
 {
-  run(Contraction("abcde", "ecbfa", "fd", {24, 16, 16, 12, 24}, {24, 16, 16, 24, 24}, {24,12}, {3}, {0}));
+  run(Contraction("abcdef", "dega", "gfbc", {12, 8, 8, 12, 8, 8}, {12, 8, 12, 12}, {12, 8, 8, 8}, {2}, {0}));
 }
 
 void best()
@@ -99,9 +99,9 @@ void best()
   run(Contraction("abc", "bda", "dc", {156, 156, 12}, {156, 156, 156}, {156, 12}, {1}, {0}));
 }
 
-void closest()
+void gemm()
 {
-  run(Contraction("abc", "acd", "db", {156, 156, 148}, {156, 148, 148}, {148, 156}, {2}, {0}));
+  run(Contraction("ab", "ac", "cb", {2568, 2560}, {2568, 2568}, {2568, 2560}, {1}, {0}));
 }
 
 void notrans()
@@ -114,5 +114,5 @@ int main()
   notrans();
   worst();
   best();
-  closest();
+  gemm();
 }
