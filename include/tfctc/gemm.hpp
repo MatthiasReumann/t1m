@@ -179,10 +179,25 @@ namespace tfctc
 
                 if (rsc > 0 && csc > 0)
                 {
-                  ctx->kernel(m, n, k, ctx->alpha, a_packed, b_packed, ctx->beta, C->pointer_at_loc(off_i, off_j), rsc, csc, nullptr, ctx->cntx);
+                  ctx->kernel(m, n, k,
+                    ctx->alpha,
+                    a_packed,
+                    b_packed,
+                    ctx->beta,
+                    C->pointer_at_loc(off_i, off_j), rsc, csc,
+                    nullptr,
+                    ctx->cntx);
                 }
                 else {
-                  ctx->kernel(m, n, k, ctx->alpha, a_packed, b_packed, ctx->beta, c_result, 1, m, nullptr, ctx->cntx);
+                  ctx->kernel(m, n, k,
+                    ctx->alpha,
+                    a_packed,
+                    b_packed,
+                    ctx->beta,
+                    c_result, 1, m,
+                    nullptr,
+                    ctx->cntx);
+
                   unpack_c_scat(C, c_result, off_i, off_j, m, n);
                 }
 
