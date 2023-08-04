@@ -33,85 +33,93 @@ namespace tfctc
       const size_t K = A->col_size();
       const size_t N = B->col_size();
 
+      dim_t mc_m_complex, nc_n, kc_k_complex, mc_m_real, k;
+
+      T* workspace = nullptr;
+      T* a_packed = nullptr; // A in G^{MC x KC}
+      T* a_packed_base = nullptr;
+
       T* b_packed = nullptr; // B in G^{KC x NC}
       T* b_packed_base = nullptr;
-      utils::alloc_aligned<T>(&b_packed, KC * NC);
-      b_packed_base = b_packed;
+
+      T* c_result = nullptr; // C in G^{MC x NC}
+
+      utils::alloc_aligned<T>(&workspace, MC * KC + KC * NC);
+
+      a_packed = a_packed_base = workspace;
+      b_packed = b_packed_base = workspace + MC * KC;
 
       for (size_t j_c = 0; j_c < N; j_c += NC)
       {
-        dim_t nc_n = std_ext::min(NC, static_cast<dim_t>(N - j_c));
+        nc_n = std_ext::min(NC, static_cast<dim_t>(N - j_c));
 
         for (size_t p_c = 0; p_c < K; p_c += KC / 2)
         {
-          dim_t kc_k_complex = std_ext::min(KC / 2, static_cast<dim_t>(K - p_c));
-          dim_t k = kc_k_complex * 2;
+          kc_k_complex = std_ext::min(KC / 2, static_cast<dim_t>(K - p_c));
+          k = kc_k_complex * 2;
 
           pack_1m_b(B, b_packed, p_c, j_c, kc_k_complex, nc_n, NR, KP);
 
           // B is now row-major packed into a KC * NC buffer
           // with the specialized format such that each sliver
           // has stride NR
-#pragma omp parallel
+          for (size_t i_c = 0; i_c < M; i_c += MC / 2)
           {
-            T *b_it = b_packed_base;
-            T* a_packed = nullptr; // A in G^{MC x KC}
-            utils::alloc_aligned<T>(&a_packed, MC * KC);
-#pragma omp for
-            for (size_t i_c = 0; i_c < M; i_c += MC / 2)
+            mc_m_complex = std_ext::min(MC / 2, static_cast<dim_t>(M - i_c));
+            mc_m_real = mc_m_complex * 2;
+
+            pack_1m_a(A, a_packed, i_c, p_c, mc_m_complex, kc_k_complex, MR, KP);
+
+            // A is now column-major packed into a MC * KC buffer
+            // with the specialized format such that each sliver
+            // has stride MR
+
+            // Now treat everything as real-valued:
+            // Use NR, MR as with real-valued mm
+            #pragma omp parallel
             {
-              dim_t mc_m_complex = std_ext::min(MC / 2, static_cast<dim_t>(M - i_c));
-              dim_t mc_m_real = mc_m_complex * 2;
+              size_t off_j, off_i;
+              inc_t csc, rsc;
+              dim_t n, m;
+              T* c_result = nullptr; // C in G^{MR x NR}
+              
+              T* a_it = a_packed;
+              T* b_it = b_packed_base;
+              
+              utils::alloc_aligned<T>(&c_result, MR * NR);
+              // std::cout << "threads: " << omp_get_thread_num() << std::endl;
 
-              pack_1m_a(A, a_packed, i_c, p_c, mc_m_complex, kc_k_complex, MR, KP);
-
-
-              // A is now column-major packed into a MC * KC buffer
-              // with the specialized format such that each sliver
-              // has stride MR
-
-              // Now treat everything as real-valued:
-              // Use NR, MR as with real-valued mm
-// #pragma omp parallel
+              #pragma omp for
+              for (size_t j_r = 0; j_r < nc_n; j_r += NR)
               {
-                T* c_result = nullptr;
-                utils::alloc_aligned<T>(&c_result, MR * NR);
+                off_j = j_c + j_r;
+                n = std_ext::min(NR, static_cast<dim_t>(nc_n - j_r));
+                csc = C->col_stride_in_block(off_j / NR);
 
-                for (size_t j_r = 0; j_r < nc_n; j_r += NR)
+                #pragma omp critical
+                for (size_t i_r = 0; i_r < mc_m_real; i_r += MR)
                 {
-                  T* a_packed_ = a_packed;
+                  m = std_ext::min(MR, static_cast<dim_t>(mc_m_real - i_r));
+                  off_i = i_c + (i_r / 2);
+                  rsc = C->row_stride_in_block(off_i / MR);
 
-                  size_t off_j = j_c + j_r;
-                  dim_t n = std_ext::min(NR, static_cast<dim_t>(nc_n - j_r));
-                  inc_t csc = C->col_stride_in_block(off_j / NR);
+                  ctx->kernel(m, n, k, ctx->alpha, a_it, b_it, ctx->beta, c_result, 1, m, nullptr, ctx->cntx);
 
-                  for (size_t i_r = 0; i_r < mc_m_real; i_r += MR)
-                  {
-                    dim_t m = std_ext::min(MR, static_cast<dim_t>(mc_m_real - i_r));
-                    size_t off_i = i_c + (i_r / 2);
-                    inc_t rsc = C->row_stride_in_block(off_i / MR);
+                  // unpack_1m_c(C, c_result, off_i, off_j, m, n, rsc, csc);
 
-#pragma omp critical
-                    {
-                      ctx->kernel(m, n, k, ctx->alpha, a_packed_, b_it, ctx->beta, c_result, 1, m, nullptr, ctx->cntx);
-                      unpack_1m_c(C, c_result, off_i, off_j, m, n, rsc, csc);
-                    }
-
-                    a_packed_ += MR * k;
-                  }
-
-                  b_it += k * NR;
+                  a_it += MR * k;
                 }
+                b_it += k * NR;
 
-                free(c_result);
+                a_it = a_packed;
               }
+              free(c_result);
             }
-
-            free(a_packed);
           }
         }
       }
-      free(b_packed);
+
+      free(workspace);
     }
 
     template <typename T>
