@@ -33,6 +33,11 @@ namespace tfctc
       const size_t K = A->col_size();
       const size_t N = B->col_size();
 
+      T* b_packed = nullptr; // B in G^{KC x NC}
+      T* b_packed_base = nullptr;
+      utils::alloc_aligned<T>(&b_packed, KC * NC);
+      b_packed_base = b_packed;
+
       for (size_t j_c = 0; j_c < N; j_c += NC)
       {
         dim_t nc_n = std_ext::min(NC, static_cast<dim_t>(N - j_c));
@@ -42,20 +47,16 @@ namespace tfctc
           dim_t kc_k_complex = std_ext::min(KC / 2, static_cast<dim_t>(K - p_c));
           dim_t k = kc_k_complex * 2;
 
+          pack_1m_b(B, b_packed, p_c, j_c, kc_k_complex, nc_n, NR, KP);
+
           // B is now row-major packed into a KC * NC buffer
           // with the specialized format such that each sliver
           // has stride NR
 #pragma omp parallel
           {
-            T* b_packed = nullptr; // B in G^{KC x NC}
-            T* b_packed_base = nullptr;
-            utils::alloc_aligned<T>(&b_packed, KC * NC);
-            pack_1m_b(B, b_packed, p_c, j_c, kc_k_complex, nc_n, NR, KP);
-            b_packed_base = b_packed;
-
+            T *b_it = b_packed_base;
             T* a_packed = nullptr; // A in G^{MC x KC}
             utils::alloc_aligned<T>(&a_packed, MC * KC);
-
 #pragma omp for
             for (size_t i_c = 0; i_c < M; i_c += MC / 2)
             {
@@ -71,12 +72,11 @@ namespace tfctc
 
               // Now treat everything as real-valued:
               // Use NR, MR as with real-valued mm
-#pragma omp parallel
+// #pragma omp parallel
               {
                 T* c_result = nullptr;
                 utils::alloc_aligned<T>(&c_result, MR * NR);
 
-#pragma omp for
                 for (size_t j_r = 0; j_r < nc_n; j_r += NR)
                 {
                   T* a_packed_ = a_packed;
@@ -91,27 +91,27 @@ namespace tfctc
                     size_t off_i = i_c + (i_r / 2);
                     inc_t rsc = C->row_stride_in_block(off_i / MR);
 
-                    #pragma omp critical
+#pragma omp critical
                     {
-                      ctx->kernel(m, n, k, ctx->alpha, a_packed_, b_packed, ctx->beta, c_result, 1, m, nullptr, ctx->cntx);
+                      ctx->kernel(m, n, k, ctx->alpha, a_packed_, b_it, ctx->beta, c_result, 1, m, nullptr, ctx->cntx);
                       unpack_1m_c(C, c_result, off_i, off_j, m, n, rsc, csc);
                     }
 
                     a_packed_ += MR * k;
                   }
 
-                  b_packed += k * NR;
+                  b_it += k * NR;
                 }
+
                 free(c_result);
               }
-              b_packed = b_packed_base;
             }
-            
+
             free(a_packed);
-            free(b_packed);
           }
         }
       }
+      free(b_packed);
     }
 
     template <typename T>
