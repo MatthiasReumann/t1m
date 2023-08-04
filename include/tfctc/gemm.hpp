@@ -33,11 +33,6 @@ namespace tfctc
       const size_t K = A->col_size();
       const size_t N = B->col_size();
 
-      T* b_packed = nullptr; // B in G^{KC x NC}
-      T* b_packed_base = nullptr;
-      utils::alloc_aligned<T>(&b_packed, KC * NC);
-      b_packed_base = b_packed;
-
       for (size_t j_c = 0; j_c < N; j_c += NC)
       {
         dim_t nc_n = std_ext::min(NC, static_cast<dim_t>(N - j_c));
@@ -47,14 +42,17 @@ namespace tfctc
           dim_t kc_k_complex = std_ext::min(KC / 2, static_cast<dim_t>(K - p_c));
           dim_t k = kc_k_complex * 2;
 
-          pack_1m_b(B, b_packed, p_c, j_c, kc_k_complex, nc_n, NR, KP);
-
           // B is now row-major packed into a KC * NC buffer
           // with the specialized format such that each sliver
           // has stride NR
 #pragma omp parallel
           {
-            T* b_packed_ = b_packed;
+            T* b_packed = nullptr; // B in G^{KC x NC}
+            T* b_packed_base = nullptr;
+            utils::alloc_aligned<T>(&b_packed, KC * NC);
+            pack_1m_b(B, b_packed, p_c, j_c, kc_k_complex, nc_n, NR, KP);
+            b_packed_base = b_packed;
+
             T* a_packed = nullptr; // A in G^{MC x KC}
             utils::alloc_aligned<T>(&a_packed, MC * KC);
 
@@ -95,26 +93,25 @@ namespace tfctc
 
                     #pragma omp critical
                     {
-                      ctx->kernel(m, n, k, ctx->alpha, a_packed_, b_packed_, ctx->beta, c_result, 1, m, nullptr, ctx->cntx);
+                      ctx->kernel(m, n, k, ctx->alpha, a_packed_, b_packed, ctx->beta, c_result, 1, m, nullptr, ctx->cntx);
+                      unpack_1m_c(C, c_result, off_i, off_j, m, n, rsc, csc);
                     }
-                    unpack_1m_c(C, c_result, off_i, off_j, m, n, rsc, csc);
 
                     a_packed_ += MR * k;
                   }
 
-                  b_packed_ += k * NR;
+                  b_packed += k * NR;
                 }
                 free(c_result);
               }
-              b_packed_ = b_packed;
+              b_packed = b_packed_base;
             }
             
             free(a_packed);
+            free(b_packed);
           }
         }
       }
-
-      free(b_packed);
     }
 
     template <typename T>
