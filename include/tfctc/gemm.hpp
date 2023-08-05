@@ -33,8 +33,6 @@ namespace tfctc
       const size_t K = A->col_size();
       const size_t N = B->col_size();
 
-      dim_t mc_m_complex, nc_n, kc_k_complex, mc_m_real, k;
-
       T* a_packed = nullptr; // A in G^{MC x KC}
       T* b_packed = nullptr; // B in G^{KC x NC}
 
@@ -43,12 +41,12 @@ namespace tfctc
 
       for (size_t j_c = 0; j_c < N; j_c += NC)
       {
-        nc_n = std_ext::min(NC, static_cast<dim_t>(N - j_c));
+        const dim_t nc_n = std_ext::min(NC, static_cast<dim_t>(N - j_c));
 
         for (size_t p_c = 0; p_c < K; p_c += KC / 2)
         {
-          kc_k_complex = std_ext::min(KC / 2, static_cast<dim_t>(K - p_c));
-          k = kc_k_complex * 2;
+          const dim_t kc_k_complex = std_ext::min(KC / 2, static_cast<dim_t>(K - p_c));
+          const dim_t k = kc_k_complex * 2;
 
           pack_1m_b(B, b_packed, p_c, j_c, kc_k_complex, nc_n, NR, KP);
 
@@ -57,8 +55,8 @@ namespace tfctc
           // has stride NR
           for (size_t i_c = 0; i_c < M; i_c += MC / 2)
           {
-            mc_m_complex = std_ext::min(MC / 2, static_cast<dim_t>(M - i_c));
-            mc_m_real = mc_m_complex * 2;
+            const dim_t mc_m_complex = std_ext::min(MC / 2, static_cast<dim_t>(M - i_c));
+            const dim_t mc_m_real = mc_m_complex * 2;
 
             pack_1m_a(A, a_packed, i_c, p_c, mc_m_complex, kc_k_complex, MR, KP);
             // A is now column-major packed into a MC * KC buffer

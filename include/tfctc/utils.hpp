@@ -9,7 +9,6 @@ namespace tfctc
     template <typename T>
     void alloc_aligned(T** ptr, size_t n)
     {
-      // TODO: Memory Alignment?
       if (posix_memalign((void**)ptr, 32, n * sizeof(T)))
       {
         std::throw_with_nested(std::bad_alloc());

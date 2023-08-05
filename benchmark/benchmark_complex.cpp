@@ -48,7 +48,7 @@ void run(Contraction contraction)
   std::complex<double>* A = nullptr, * B = nullptr, * C = nullptr;
 
   std::cout << "size,contraction,min" << std::endl;
-  for(size_t i = 5; i < MAX_SIZE; i += 20)
+  for(size_t i = 0; i < MAX_SIZE; i += 20)
   {
     contraction_size = contraction.set_contraction_size(i);
 
@@ -111,7 +111,7 @@ void notrans()
 
 int main()
 {
-  notrans();
+  // notrans();
   worst();
   best();
   gemm();
