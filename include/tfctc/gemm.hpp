@@ -81,7 +81,6 @@ namespace tfctc
               n = std_ext::min(NR, static_cast<dim_t>(nc_n - j_r));
               csc = C->col_stride_in_block(off_j / NR);
 
-              #pragma omp parallel for
               for (size_t i_r = 0; i_r < mc_m_real; i_r += MR)
               {
                 m = std_ext::min(MR, static_cast<dim_t>(mc_m_real - i_r));
