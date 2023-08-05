@@ -51,7 +51,7 @@ namespace tfctc
           // B is now row-major packed into a KC * NC buffer
           // with the specialized format such that each sliver
           // has stride NR
-          #pragma omp parallel for
+          // #pragma omp parallel for
           for (size_t i_c = 0; i_c < M; i_c += MC / 2)
           {
             const dim_t mc_m_complex = std_ext::min(MC / 2, static_cast<dim_t>(M - i_c));
@@ -80,17 +80,18 @@ namespace tfctc
               n = std_ext::min(NR, static_cast<dim_t>(nc_n - j_r));
               csc = C->col_stride_in_block(off_j / NR);
 
-#pragma omp critical
+
+              for (size_t i_r = 0; i_r < mc_m_real; i_r += MR)
               {
-                for (size_t i_r = 0; i_r < mc_m_real; i_r += MR)
+                m = std_ext::min(MR, static_cast<dim_t>(mc_m_real - i_r));
+                off_i = i_c + (i_r / 2);
+                rsc = C->row_stride_in_block(off_i / MR);
+
+                ctx->kernel(m, n, k, ctx->alpha, a_packed, b_packed, ctx->beta, c_result, 1, m, nullptr, ctx->cntx);
+
+#pragma omp critical
                 {
-                  m = std_ext::min(MR, static_cast<dim_t>(mc_m_real - i_r));
-                  off_i = i_c + (i_r / 2);
-                  rsc = C->row_stride_in_block(off_i / MR);
-
-                  ctx->kernel(m, n, k, ctx->alpha, a_packed, b_packed, ctx->beta, c_result, 1, m, nullptr, ctx->cntx);
                   unpack_1m_c(C, c_result, off_i, off_j, m, n, rsc, csc);
-
                 }
               }
               free(c_result);

@@ -13,8 +13,16 @@ namespace tfctc
     void pack_1m_as_cont(std::complex<U>* A, U* ptr_a, dim_t m, dim_t k, const dim_t MR, inc_t rs, inc_t cs)
     {
       for (size_t j = 0; j < k; j++)
+      {
+#pragma omp simd
         for (size_t i = 0; i < m; i++)
-          pack_1m_ab(ptr_a + 2 * i + 2 * j * MR, A[j * cs + i * rs], MR);
+        {
+          ptr_a[2 * i + 2 * j * MR] = A[j * cs + i * rs].real();
+          ptr_a[2 * i + 2 * j * MR + 1] = A[j * cs + i * rs].imag();
+          ptr_a[2 * i + 2 * j * MR + MR] = -A[j * cs + i * rs].imag();
+          ptr_a[2 * i + 2 * j * MR + MR + 1] = A[j * cs + i * rs].real();
+        }
+      }
     }
 
     template <typename U>
@@ -29,8 +37,14 @@ namespace tfctc
     void pack_1m_bs_cont(std::complex<U>* B, U* ptr_b, dim_t k, dim_t n, const dim_t NR, inc_t rs, inc_t cs)
     {
       for (size_t j = 0; j < n; j++)
+      {
+#pragma omp simd
         for (size_t i = 0; i < k; i++)
-          pack_1m_bb(ptr_b + j + 2 * i * NR, B[j * cs + i * rs], NR);
+        {
+          ptr_b[j + 2 * i * NR] = B[j * cs + i * rs].real();
+          ptr_b[j + 2 * i * NR + NR] = B[j * cs + i * rs].imag();
+        }
+      }
     }
 
     template <typename U>
@@ -47,8 +61,11 @@ namespace tfctc
       M /= 2;
       {
         for (int j = 0; j < N; j++)
+        {
+#pragma omp simd
           for (int i = 0; i < M; i++)
             C[i * rs + j * cs] += reinterpret_cast<std::complex<U>*>(out)[i + j * M];
+        }
       }
     }
 
