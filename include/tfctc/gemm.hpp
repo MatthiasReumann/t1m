@@ -37,6 +37,7 @@ namespace tfctc
 
       utils::alloc_aligned<T>(&b_packed, KC * NC);
 
+      #pragma omp parallel for
       for (size_t j_c = 0; j_c < N; j_c += NC)
       {
         const dim_t nc_n = std_ext::min(NC, static_cast<dim_t>(N - j_c));
@@ -51,7 +52,7 @@ namespace tfctc
           // B is now row-major packed into a KC * NC buffer
           // with the specialized format such that each sliver
           // has stride NR
-          // #pragma omp parallel for
+          #pragma omp parallel for
           for (size_t i_c = 0; i_c < M; i_c += MC / 2)
           {
             const dim_t mc_m_complex = std_ext::min(MC / 2, static_cast<dim_t>(M - i_c));
@@ -80,7 +81,7 @@ namespace tfctc
               n = std_ext::min(NR, static_cast<dim_t>(nc_n - j_r));
               csc = C->col_stride_in_block(off_j / NR);
 
-
+              #pragma omp parallel for
               for (size_t i_r = 0; i_r < mc_m_real; i_r += MR)
               {
                 m = std_ext::min(MR, static_cast<dim_t>(mc_m_real - i_r));
