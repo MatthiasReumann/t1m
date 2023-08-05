@@ -61,7 +61,7 @@ namespace tfctc
     const auto ilf = new internal::IndexBundleFinder(labelsA, labelsB, labelsC);
 
     auto scatterA = new internal::BlockScatterMatrix(A, ilf->I, ilf->Pa, MR, KP);
-    auto scatterB = new internal::BlockScatterMatrix(B, ilf->Pb, ilf->J, KP, MR);
+    auto scatterB = new internal::BlockScatterMatrix(B, ilf->Pb, ilf->J, KP, NR);
     auto scatterC = new internal::BlockScatterMatrix(C, ilf->Ic, ilf->Jc, MR, NR);
 
     double* a = new double(1.);
