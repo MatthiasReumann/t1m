@@ -88,11 +88,7 @@ namespace tfctc
                 rsc = C->row_stride_in_block(off_i / MR);
 
                 ctx->kernel(m, n, k, ctx->alpha, a_packed, b_packed, ctx->beta, c_result, 1, m, nullptr, ctx->cntx);
-
-#pragma omp critical
-                {
-                  unpack_1m_c(C, c_result, off_i, off_j, m, n, rsc, csc);
-                }
+                unpack_1m_c(C, c_result, off_i, off_j, m, n, rsc, csc);
               }
               free(c_result);
             }
