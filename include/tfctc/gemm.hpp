@@ -33,10 +33,8 @@ namespace tfctc
       const size_t K = A->col_size();
       const size_t N = B->col_size();
 
-      T* a_packed = nullptr; // A in G^{MC x KC}
       T* b_packed = nullptr; // B in G^{KC x NC}
 
-      utils::alloc_aligned<T>(&a_packed, MC * KC);
       utils::alloc_aligned<T>(&b_packed, KC * NC);
 
       for (size_t j_c = 0; j_c < N; j_c += NC)
@@ -53,11 +51,14 @@ namespace tfctc
           // B is now row-major packed into a KC * NC buffer
           // with the specialized format such that each sliver
           // has stride NR
+          #pragma omp parallel for
           for (size_t i_c = 0; i_c < M; i_c += MC / 2)
           {
             const dim_t mc_m_complex = std_ext::min(MC / 2, static_cast<dim_t>(M - i_c));
             const dim_t mc_m_real = mc_m_complex * 2;
 
+            T* a_packed = nullptr; // A in G^{MC x KC}
+            utils::alloc_aligned<T>(&a_packed, MC * KC);
             pack_1m_a(A, a_packed, i_c, p_c, mc_m_complex, kc_k_complex, MR, KP);
             // A is now column-major packed into a MC * KC buffer
             // with the specialized format such that each sliver
@@ -94,11 +95,10 @@ namespace tfctc
               }
               free(c_result);
             }
+            free(a_packed);
           }
         }
       }
-
-      free(a_packed);
       free(b_packed);
     }
 
