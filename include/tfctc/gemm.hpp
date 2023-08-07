@@ -33,13 +33,12 @@ namespace tfctc
       const size_t K = A->col_size();
       const size_t N = B->col_size();
 
-      T* b_packed = nullptr; // B in G^{KC x NC}
-
-      utils::alloc_aligned<T>(&b_packed, KC * NC);
-
       #pragma omp parallel for
       for (size_t j_c = 0; j_c < N; j_c += NC)
       {
+        T* b_packed = nullptr; // B in G^{KC x NC}
+        utils::alloc_aligned<T>(&b_packed, KC * NC);
+
         const dim_t nc_n = std_ext::min(NC, static_cast<dim_t>(N - j_c));
 
         for (size_t p_c = 0; p_c < K; p_c += KC / 2)
@@ -95,8 +94,8 @@ namespace tfctc
             free(a_packed);
           }
         }
+        free(b_packed);
       }
-      free(b_packed);
     }
 
     template <typename T>
