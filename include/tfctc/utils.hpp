@@ -16,19 +16,6 @@ namespace tfctc
     }
 
     template <typename T>
-    inline T* alloc_aligned2(size_t n)
-    {
-      if (n == 0) return nullptr;
-
-      void* ptr;
-      if (posix_memalign(&ptr, 32, n * sizeof(T)))
-      {
-        std::throw_with_nested(std::bad_alloc());
-      }
-      return static_cast<T*>(ptr);
-    }
-
-    template <typename T>
     void print_vec(std::vector<T>& vec)
     {
       std::cout << "[ ";
