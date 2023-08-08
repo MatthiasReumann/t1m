@@ -1,5 +1,7 @@
 # t1m
 
+Fusion of the [**T**BLIS](https://github.com/devinamatthews/tblis) approach and the [**1M** Method](https://www.cs.utexas.edu/users/flame/pubs/blis6_toms_rev2.pdf) for complex Matrix-Matrix Multiplication for complex Tensor Contractions. 
+
 ## Requirements
 
 - BLIS Library ([URL](https://github.com/flame/blis))
@@ -9,7 +11,7 @@
 ## API 
 
 ```cpp
-namespace tfctc
+namespace t1m
 {
   void contract(Tensor<std::complex<float>> A, std::string labelsA,
                 Tensor<std::complex<float>> B, std::string labelsB,
@@ -29,26 +31,30 @@ namespace tfctc
 };
 ```
 
+### Multithreading 
+
+The `t1m` library supports OpenMP. The number of threads can be specified with the environment variable `OMP_NUM_THREADS`.
+
 ### Example
 
 ```cpp
 #include <complex>
-#include "tfctc.hpp"
+#include "t1m.hpp"
 
 int main() 
 {
   std::complex<float> *A = nullptr, *B = nullptr, *C = nullptr;
-  tfctc::utils::alloc_aligned(&A, 2 * 2 * 2);
-  tfctc::utils::alloc_aligned(&B, 2 * 2);
-  tfctc::utils::alloc_aligned(&C, 2 * 2 * 2);
+  t1m::utils::alloc_aligned(&A, 2 * 2 * 2);
+  t1m::utils::alloc_aligned(&B, 2 * 2);
+  t1m::utils::alloc_aligned(&C, 2 * 2 * 2);
   
   // initialize values in column major
 
-  auto tensorA = tfctc::Tensor<std::complex<float>>({2, 2, 2}, A);
-  auto tensorB = tfctc::Tensor<std::complex<float>>({2, 2}, B);
-  auto tensorC = tfctc::Tensor<std::complex<float>>({2, 2, 2}, C);
+  auto tensorA = t1m::Tensor<std::complex<float>>({2, 2, 2}, A);
+  auto tensorB = t1m::Tensor<std::complex<float>>({2, 2}, B);
+  auto tensorC = t1m::Tensor<std::complex<float>>({2, 2, 2}, C);
 
-  tfctc::contract(tensorA, "abc", tensorB, "bd", tensorC, "acd");
+  t1m::contract(tensorA, "abc", tensorB, "bd", tensorC, "acd");
   
   // work with C or tensorC
   
@@ -60,7 +66,7 @@ int main()
 
 ## Citation
 
-In case you want refer to TFCTC as part of a research paper, please cite appropriately (pdf):
+In case you want refer to t1m as part of a research paper, please cite appropriately (pdf):
 
 ```text.bibtex
 @thesis {
