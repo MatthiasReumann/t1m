@@ -66,7 +66,7 @@ int main()
 
 ## Citation
 
-In case you want refer to t1m as part of a research paper, please cite appropriately (pdf):
+In case you want refer to `t1m` as part of a research paper, please cite appropriately (pdf):
 
 ```text.bibtex
 @thesis {
