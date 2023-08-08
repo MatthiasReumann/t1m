@@ -1,11 +1,11 @@
 #include <complex>
-#include "tfctc/tensor.hpp"
-#include "tfctc/index_bundle_finder.hpp"
-#include "tfctc/scatter_matrix.hpp"
-#include "tfctc/block_scatter_matrix.hpp"
-#include "tfctc/gemm.hpp"
+#include "t1m/tensor.hpp"
+#include "t1m/index_bundle_finder.hpp"
+#include "t1m/scatter_matrix.hpp"
+#include "t1m/block_scatter_matrix.hpp"
+#include "t1m/gemm.hpp"
 
-namespace tfctc
+namespace t1m
 {
   void contract(Tensor<std::complex<float>> A, std::string labelsA,
     Tensor<std::complex<float>> B, std::string labelsB,

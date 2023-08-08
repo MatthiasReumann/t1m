@@ -3,7 +3,7 @@
 #include <numeric>
 #include <complex>
 #include <tuple>
-#include "tfctc/tfctc.hpp"
+#include "t1m/t1m.hpp"
 
 const int N = 10;
 
@@ -97,19 +97,19 @@ int main()
     for (auto &l : lengthsB) sizeB *= l;
     for (auto &l : lengthsC) sizeC *= l;
 
-    tfctc::utils::alloc_aligned(&A, sizeA);
-    tfctc::utils::alloc_aligned(&B, sizeB);
-    tfctc::utils::alloc_aligned(&C, sizeC);
+    t1m::utils::alloc_aligned(&A, sizeA);
+    t1m::utils::alloc_aligned(&B, sizeB);
+    t1m::utils::alloc_aligned(&C, sizeC);
 
-    auto tensorA = tfctc::Tensor<std::complex<double>>(lengthsA, A);
-    auto tensorB = tfctc::Tensor<std::complex<double>>(lengthsB, B);
-    auto tensorC = tfctc::Tensor<std::complex<double>>(lengthsC, C);
+    auto tensorA = t1m::Tensor<std::complex<double>>(lengthsA, A);
+    auto tensorB = t1m::Tensor<std::complex<double>>(lengthsB, B);
+    auto tensorC = t1m::Tensor<std::complex<double>>(lengthsC, C);
 
     std::vector<double> time(N);
     for (uint j = 0; j < N; j++)
     {
       auto t0 = std::chrono::high_resolution_clock::now();
-      tfctc::contract(tensorA, a, tensorB, b, tensorC, c);
+      t1m::contract(tensorA, a, tensorB, b, tensorC, c);
       auto t1 = std::chrono::high_resolution_clock::now();
       time[j] = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count();
     }

@@ -4,7 +4,7 @@
 #include "scatter_matrix.hpp"
 #include "blis.h"
 
-namespace tfctc {
+namespace t1m {
   namespace internal {
     template <typename T>
     void pack_a(BlockScatterMatrix<T>* A, T* buffer, size_t off_i, size_t off_j, dim_t M, dim_t K, const dim_t MR, const dim_t KP)

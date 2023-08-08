@@ -18,11 +18,11 @@ set(DOCTEST_INCLUDE_DIR ${source_dir}/doctest CACHE INTERNAL "Path to include fo
 add_executable(testcomplex test_complex.cpp)
 target_include_directories(testcomplex PUBLIC ${DOCTEST_INCLUDE_DIR})
 target_compile_features(testcomplex PRIVATE cxx_std_17)
-target_link_libraries(testcomplex PRIVATE tfctc)
+target_link_libraries(testcomplex PRIVATE t1m)
 add_test(NAME testcomplextest COMMAND testcomplex)
 
 add_executable(testreal test_real.cpp)
 target_include_directories(testreal PUBLIC ${DOCTEST_INCLUDE_DIR})
 target_compile_features(testreal PRIVATE cxx_std_17)
-target_link_libraries(testreal PRIVATE tfctc)
+target_link_libraries(testreal PRIVATE t1m)
 add_test(NAME testrealtest COMMAND testreal)

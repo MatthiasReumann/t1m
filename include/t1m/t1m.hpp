@@ -4,7 +4,7 @@
 #include "tensor.hpp"
 #include "utils.hpp"
 
-namespace tfctc
+namespace t1m
 {
   void contract(Tensor<std::complex<float>> A, std::string labelsA,
                 Tensor<std::complex<float>> B, std::string labelsB,

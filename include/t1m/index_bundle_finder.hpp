@@ -5,7 +5,7 @@
 #include <vector>
 #include <unordered_set>
 
-namespace tfctc
+namespace t1m
 {
   namespace internal
   {

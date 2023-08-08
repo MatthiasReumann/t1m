@@ -11,7 +11,7 @@
 #include "packm_1m.hpp"
 #include "blis.h"
 
-namespace tfctc
+namespace t1m
 {
   namespace internal
   {

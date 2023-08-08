@@ -4,7 +4,7 @@
 #include "block_scatter_matrix.hpp"
 #include "blis.h"
 
-namespace tfctc
+namespace t1m
 {
   namespace internal
   {

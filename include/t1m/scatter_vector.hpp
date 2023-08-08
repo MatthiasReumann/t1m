@@ -6,7 +6,7 @@
 #include "utils.hpp"
 #include "marray.hpp"
 
-namespace tfctc
+namespace t1m
 {
   namespace internal
   {

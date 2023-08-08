@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.26)
 
 project(
-  TFCTC
+  T1M
   VERSION 0.1
   DESCRIPTION "Transposition-free Complex Tensor Contractions"
   LANGUAGES CXX)

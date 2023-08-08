@@ -5,7 +5,7 @@
 #include <vector>
 #include "utils.hpp"
 
-namespace tfctc
+namespace t1m
 {
   namespace internal
   {

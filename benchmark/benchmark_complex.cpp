@@ -4,7 +4,7 @@
 #include <string>
 #include <complex>
 #include <cstdlib>
-#include "tfctc/tfctc.hpp"
+#include "t1m/t1m.hpp"
 
 const int N = 10;
 const size_t MAX_SIZE = 1000;
@@ -64,20 +64,20 @@ void run(Contraction contraction)
     for (auto& l : lengthsB) sizeB *= l;
     for (auto& l : lengthsC) sizeC *= l;
 
-    tfctc::utils::alloc_aligned(&A, sizeA);
-    tfctc::utils::alloc_aligned(&B, sizeB);
-    tfctc::utils::alloc_aligned(&C, sizeC);
+    t1m::utils::alloc_aligned(&A, sizeA);
+    t1m::utils::alloc_aligned(&B, sizeB);
+    t1m::utils::alloc_aligned(&C, sizeC);
 
-    auto tensorA = tfctc::Tensor<std::complex<double>>(lengthsA, A);
-    auto tensorB = tfctc::Tensor<std::complex<double>>(lengthsB, B);
-    auto tensorC = tfctc::Tensor<std::complex<double>>(lengthsC, C);
+    auto tensorA = t1m::Tensor<std::complex<double>>(lengthsA, A);
+    auto tensorB = t1m::Tensor<std::complex<double>>(lengthsB, B);
+    auto tensorC = t1m::Tensor<std::complex<double>>(lengthsC, C);
 
     std::cout << contraction_size << ',' << contraction.labelC << '-' << contraction.labelA << '-' << contraction.labelB << ',';
     std::vector<double> time(N);
     for (size_t j = 0; j < N; j++)
     {
       auto t0 = std::chrono::high_resolution_clock::now();
-      tfctc::contract(tensorA, contraction.labelA.c_str(), tensorB, contraction.labelB.c_str(), tensorC, contraction.labelC.c_str());
+      t1m::contract(tensorA, contraction.labelA.c_str(), tensorB, contraction.labelB.c_str(), tensorC, contraction.labelC.c_str());
       auto t1 = std::chrono::high_resolution_clock::now();
       time[j] = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count();
     }

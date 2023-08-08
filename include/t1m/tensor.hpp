@@ -2,7 +2,7 @@
 
 #include "marray.hpp"
 
-namespace tfctc
+namespace t1m
 {
   template <class T>
   class Tensor : public MArray::marray_view<T>

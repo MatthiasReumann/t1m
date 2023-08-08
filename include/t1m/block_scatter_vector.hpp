@@ -4,7 +4,7 @@
 #include "scatter_vector.hpp"
 #include "utils.hpp"
 
-namespace tfctc
+namespace t1m
 {
   namespace internal
   {

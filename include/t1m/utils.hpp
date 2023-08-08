@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-namespace tfctc
+namespace t1m
 {
   namespace utils
   {
