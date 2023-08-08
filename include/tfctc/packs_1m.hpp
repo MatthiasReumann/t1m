@@ -1,7 +1,6 @@
 #pragma once
 
 #include <complex>
-#include "packb_1m.hpp"
 #include "block_scatter_matrix.hpp"
 #include "blis.h"
 
@@ -17,10 +16,11 @@ namespace tfctc
 #pragma omp simd
         for (size_t i = 0; i < m; i++)
         {
-          ptr_a[2 * i + 2 * j * MR] = A[j * cs + i * rs].real();
-          ptr_a[2 * i + 2 * j * MR + 1] = A[j * cs + i * rs].imag();
-          ptr_a[2 * i + 2 * j * MR + MR] = -A[j * cs + i * rs].imag();
-          ptr_a[2 * i + 2 * j * MR + MR + 1] = A[j * cs + i * rs].real();
+          const auto val = A[j * cs + i * rs];
+          ptr_a[2 * i + 2 * j * MR] = val.real();
+          ptr_a[2 * i + 2 * j * MR + 1] = val.imag();
+          ptr_a[2 * i + 2 * j * MR + MR] = -val.imag();
+          ptr_a[2 * i + 2 * j * MR + MR + 1] = val.real();
         }
       }
     }
@@ -30,7 +30,13 @@ namespace tfctc
     {
       for (size_t j = 0; j < k; j++)
         for (size_t i = 0; i < m; i++)
-          pack_1m_ab(ptr_a + 2 * i + 2 * j * MR, (*A)(i + off_i, j + off_j), MR);
+        {
+          const auto val = (*A)(i + off_i, j + off_j);
+          ptr_a[2 * i + 2 * j * MR] = val.real();
+          ptr_a[2 * i + 2 * j * MR + 1] = val.imag();
+          ptr_a[2 * i + 2 * j * MR + MR] = -val.imag();
+          ptr_a[2 * i + 2 * j * MR + MR + 1] = val.real();
+        }
     }
 
     template <typename U>
@@ -41,8 +47,9 @@ namespace tfctc
 #pragma omp simd
         for (size_t i = 0; i < k; i++)
         {
-          ptr_b[j + 2 * i * NR] = B[j * cs + i * rs].real();
-          ptr_b[j + 2 * i * NR + NR] = B[j * cs + i * rs].imag();
+          const auto val = B[j * cs + i * rs];
+          ptr_b[j + 2 * i * NR] = val.real();
+          ptr_b[j + 2 * i * NR + NR] = val.imag();
         }
       }
     }
@@ -52,7 +59,11 @@ namespace tfctc
     {
       for (size_t i = 0; i < k; i++)
         for (size_t j = 0; j < n; j++)
-          pack_1m_bb(ptr_b + j + 2 * i * NR, (*B)(i + off_i, j + off_j), NR);
+        {
+          const auto val = (*B)(i + off_i, j + off_j);
+          ptr_b[j + 2 * i * NR] = val.real();
+          ptr_b[j + 2 * i * NR + NR] = val.imag();
+        }
     }
 
     template <typename U>

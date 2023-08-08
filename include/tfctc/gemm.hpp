@@ -33,7 +33,7 @@ namespace tfctc
       const size_t K = A->col_size();
       const size_t N = B->col_size();
 
-      #pragma omp parallel for
+#pragma omp parallel for
       for (size_t j_c = 0; j_c < N; j_c += NC)
       {
         T* b_packed = nullptr; // B in G^{KC x NC}
@@ -51,7 +51,7 @@ namespace tfctc
           // B is now row-major packed into a KC * NC buffer
           // with the specialized format such that each sliver
           // has stride NR
-          #pragma omp parallel for
+#pragma omp parallel for
           for (size_t i_c = 0; i_c < M; i_c += MC / 2)
           {
             const dim_t mc_m_complex = std_ext::min(MC / 2, static_cast<dim_t>(M - i_c));
