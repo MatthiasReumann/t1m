@@ -1,6 +1,6 @@
 # t1m
 
-Fusion of the [**T**BLIS](https://github.com/devinamatthews/tblis) approach and the [**1M** Method](https://www.cs.utexas.edu/users/flame/pubs/blis6_toms_rev2.pdf) for complex Matrix-Matrix Multiplication for complex Tensor Contractions. 
+Fusion of the [**T**BLIS](https://github.com/devinamatthews/tblis) approach and the [**1M** Method](https://www.cs.utexas.edu/users/flame/pubs/blis6_toms_rev2.pdf) for complex Matrix-Matrix Multiplication to achieve complex Tensor Contractions. 
 
 ## Requirements
 
