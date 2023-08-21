@@ -44,6 +44,10 @@ namespace t1m
 
     internal::gemm_1m(&gemm_ctx);
 
+    delete ilf;
+    delete scatterA;
+    delete scatterB;
+    delete scatterC;
     delete a;
     delete b;
   }
@@ -83,6 +87,11 @@ namespace t1m
         .kernel = bli_dgemm_ukernel
     };
     internal::gemm_1m(&gemm_ctx);
+
+    delete ilf;
+    delete scatterA;
+    delete scatterB;
+    delete scatterC;
     delete a;
     delete b;
   }
@@ -124,6 +133,10 @@ namespace t1m
 
     internal::gemm(&gemm_ctx);
 
+    delete ilf;
+    delete scatterA;
+    delete scatterB;
+    delete scatterC;
     delete a;
     delete b;
   }
@@ -165,6 +178,10 @@ namespace t1m
 
     internal::gemm(&gemm_ctx);
 
+    delete ilf;
+    delete scatterA;
+    delete scatterB;
+    delete scatterC;
     delete a;
     delete b;
   }
