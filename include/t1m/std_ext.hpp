@@ -1,17 +1,14 @@
 #pragma once
 
-namespace t1m
+namespace t1m::std_ext
 {
-  namespace std_ext
+  template <typename T>
+  inline T min(T a, T b)
   {
-    template <typename T>
-    inline T min(T a, T b)
+    if (a <= b)
     {
-      if (a <= b)
-      {
-        return a;
-      }
-      return b;
+      return a;
     }
-  };
+    return b;
+  }
 };

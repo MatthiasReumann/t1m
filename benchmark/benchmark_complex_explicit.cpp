@@ -5,7 +5,7 @@
 #include <tuple>
 #include "t1m/t1m.hpp"
 
-const int N = 10;
+constexpr int N = 10;
 
 int main()
 {
@@ -81,7 +81,7 @@ int main()
 
   std::cout << "contraction,min" << '\n';
   int i = 0;
-  for (auto [c, a, b] : contractions)
+  for (const auto &[c, a, b] : contractions)
   {
     std::cout << c << "-" << a << "-" << b << ",";
     
@@ -93,9 +93,9 @@ int main()
     auto lengthsA = sizes[i][1];
     auto lengthsB = sizes[i][2];
 
-    for (auto &l : lengthsA) sizeA *= l;
-    for (auto &l : lengthsB) sizeB *= l;
-    for (auto &l : lengthsC) sizeC *= l;
+    for (const auto &l : lengthsA) sizeA *= l;
+    for (const auto &l : lengthsB) sizeB *= l;
+    for (const auto &l : lengthsC) sizeC *= l;
 
     t1m::utils::alloc_aligned(&A, sizeA);
     t1m::utils::alloc_aligned(&B, sizeB);
