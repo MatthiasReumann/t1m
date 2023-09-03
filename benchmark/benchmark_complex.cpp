@@ -6,12 +6,12 @@
 #include <cstdlib>
 #include "t1m/t1m.hpp"
 
-const int N = 10;
-const size_t MAX_SIZE = 1000;
+constexpr int N = 10;
+constexpr size_t MAX_SIZE = 1000;
 
 class Contraction {
 public:
-  Contraction(std::string labelC, std::string labelA, std::string labelB,
+  Contraction(const std::string &labelC, const std::string &labelA, const std::string &labelB,
     std::initializer_list<size_t> lengthsC, std::initializer_list<size_t> lengthsA, std::initializer_list<size_t> lengthsB,
     std::initializer_list<size_t> contractionIndicesA, std::initializer_list<size_t> contractionIndicesB)
     : labelA{ labelA }, labelB{ labelB }, labelC{ labelC },
@@ -31,12 +31,12 @@ public:
     return lall;
   }
 
-  std::string labelC;
   std::string labelA;
   std::string labelB;
-  std::vector<size_t> lengthsC;
+  std::string labelC;
   std::vector<size_t> lengthsA;
   std::vector<size_t> lengthsB;
+  std::vector<size_t> lengthsC;
 
   std::vector<size_t> contractionIndicesA;
   std::vector<size_t> contractionIndicesB;
@@ -56,13 +56,13 @@ void run(Contraction contraction)
     sizeB = 1L;
     sizeC = 1L;
 
-    auto lengthsC = contraction.lengthsC;
-    auto lengthsA = contraction.lengthsA;
-    auto lengthsB = contraction.lengthsB;
+    const auto &lengthsC = contraction.lengthsC;
+    const auto &lengthsA = contraction.lengthsA;
+    const auto &lengthsB = contraction.lengthsB;
 
-    for (auto& l : lengthsA) sizeA *= l;
-    for (auto& l : lengthsB) sizeB *= l;
-    for (auto& l : lengthsC) sizeC *= l;
+    for (const auto& l : lengthsA) sizeA *= l;
+    for (const auto& l : lengthsB) sizeB *= l;
+    for (const auto& l : lengthsC) sizeC *= l;
 
     t1m::utils::alloc_aligned(&A, sizeA);
     t1m::utils::alloc_aligned(&B, sizeB);
