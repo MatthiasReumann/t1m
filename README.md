@@ -69,6 +69,12 @@ int main()
 In case you want refer to `t1m` as part of a research paper, please cite appropriately (pdf):
 
 ```text.bibtex
-@thesis {
-...
+@thesis {t1m2023,
+  author = {Matthias Reumann},
+  title = {Transpose-Free Contraction of Complex Tensors},
+  year = {2023},
+  school = {Technical University of Munich},
+  month = {Aug},
+  language = {en},
+  abstract = {Tensor Contraction (TC) is the operation that connects tensors in a Tensor Network (TN). Many scientific applications rely on efficient algorithms for the contraction of large tensors. In this thesis, we aim to develop a transposition-free TC algorithm for complex tensors. Our algorithm fuses high-performance General Matrix-Matrix Multiplication (GEMM), the 1M method for achieving complex with real-valued GEMM, and the Block-Scatter layout for tensors. Consequently, we give an elaborate overview of each. A benchmark for a series of contractions shows that our implementation can compete with the performance of state-of-the-art TC libraries.},
 }
