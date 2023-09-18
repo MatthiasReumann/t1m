@@ -1,9 +1,9 @@
 #pragma once
 
 #include <complex>
+#include <algorithm>
 #include <omp.h>
 #include "utils.hpp"
-#include "std_ext.hpp"
 #include "gemm_context.hpp"
 #include "scatter_matrix.hpp"
 #include "block_scatter_matrix.hpp"
@@ -37,11 +37,11 @@ namespace t1m::internal
       T* b_packed = nullptr; // B in G^{KC x NC}
       utils::alloc_aligned<T>(&b_packed, KC * NC);
 
-      const dim_t nc_n = std_ext::min(NC, static_cast<dim_t>(N - j_c));
+      const dim_t nc_n = std::min<dim_t>(NC, static_cast<dim_t>(N - j_c));
 
       for (size_t p_c = 0; p_c < K; p_c += KC / 2)
       {
-        const dim_t kc_k_complex = std_ext::min(KC / 2, static_cast<dim_t>(K - p_c));
+        const dim_t kc_k_complex = std::min<dim_t>(KC / 2, static_cast<dim_t>(K - p_c));
         const dim_t k = kc_k_complex * 2;
 
         pack_1m_b(B, b_packed, p_c, j_c, kc_k_complex, nc_n, NR, KP);
@@ -52,7 +52,7 @@ namespace t1m::internal
 #pragma omp parallel for
         for (size_t i_c = 0; i_c < M; i_c += MC / 2)
         {
-          const dim_t mc_m_complex = std_ext::min(MC / 2, static_cast<dim_t>(M - i_c));
+          const dim_t mc_m_complex = std::min<dim_t>(MC / 2, static_cast<dim_t>(M - i_c));
           const dim_t mc_m_real = mc_m_complex * 2;
 
           T* a_packed = nullptr; // A in G^{MC x KC}
@@ -75,12 +75,12 @@ namespace t1m::internal
             utils::alloc_aligned<T>(&c_result, MR * NR);
 
             off_j = j_c + j_r;
-            n = std_ext::min(NR, static_cast<dim_t>(nc_n - j_r));
+            n = std::min<dim_t>(NR, static_cast<dim_t>(nc_n - j_r));
             csc = C->col_stride_in_block(off_j / NR);
 
             for (size_t i_r = 0; i_r < mc_m_real; i_r += MR)
             {
-              m = std_ext::min(MR, static_cast<dim_t>(mc_m_real - i_r));
+              m = std::min<dim_t>(MR, static_cast<dim_t>(mc_m_real - i_r));
               off_i = i_c + (i_r / 2);
               rsc = C->row_stride_in_block(off_i / MR);
 
@@ -135,27 +135,27 @@ namespace t1m::internal
 
     for (size_t j_c = 0; j_c < N; j_c += NC)
     {
-      nc_n = std_ext::min(NC, static_cast<dim_t>(N - j_c));
+      nc_n = std::min<dim_t>(NC, static_cast<dim_t>(N - j_c));
 
       for (size_t p_c = 0; p_c < K; p_c += KC)
       {
-        k = std_ext::min(KC, static_cast<dim_t>(K - p_c));
+        k = std::min<dim_t>(KC, static_cast<dim_t>(K - p_c));
         pack_b(B, b_packed, p_c, j_c, k, nc_n, NR, KP);
 
         for (size_t i_c = 0; i_c < M; i_c += MC)
         {
-          mc_m = std_ext::min(MC, static_cast<dim_t>(M - i_c));
+          mc_m = std::min<dim_t>(MC, static_cast<dim_t>(M - i_c));
           pack_a(A, a_packed, i_c, p_c, mc_m, k, MR, KP);
 
           for (size_t j_r = 0; j_r < nc_n; j_r += NR)
           {
-            n = std_ext::min(NR, static_cast<dim_t>(nc_n - j_r));
+            n = std::min<dim_t>(NR, static_cast<dim_t>(nc_n - j_r));
             off_j = j_c + j_r;
             csc = C->col_stride_in_block(off_j / NR);
 
             for (size_t i_r = 0; i_r < mc_m; i_r += MR)
             {
-              m = std_ext::min(MR, static_cast<dim_t>(mc_m - i_r));
+              m = std::min<dim_t>(MR, static_cast<dim_t>(mc_m - i_r));
               off_i = i_c + i_r;
               rsc = C->row_stride_in_block(off_i / MR);
 
