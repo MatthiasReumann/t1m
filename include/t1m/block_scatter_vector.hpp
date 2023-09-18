@@ -1,59 +1,45 @@
 #pragma once
 
 #include <vector>
+#include <cmath>
+#include <algorithm>
 #include "scatter_vector.hpp"
 #include "utils.hpp"
 
+#include <iostream>
+
 namespace t1m::internal
 {
-  class BlockScatterVector
-  {
-  public:
-    BlockScatterVector(const ScatterVector& scat, size_t b)
-    {
-      size_t i, stride; // s, if constant; 0, if different strides
-      const size_t l = scat.size();
-      const size_t size = std::ceil(l / static_cast<float>(b)); // ⌈l/b⌉
+  std::vector<size_t> calc_block_scatter(std::vector<size_t>& scat, size_t b) {
+    const size_t L = scat.size();
+    const size_t N = std::ceil(L / double(b)); // ⌈l/b⌉
 
-      this->bs.reserve(size);
-
-      for (i = 0; i < size_t(l / b) * b; i += b) // blocks
-      {
-        stride = scat.at(i + 1) - scat.at(i);
-
-        for (size_t j = i + 2; j < i + b; j++) {
-          if ((scat.at(j) - scat.at(j - 1)) != stride)
-          {
-            stride = 0;
-            break;
-          }
-        }
-        this->bs.push_back(stride);
-      }
-
-      stride = 0;
-      if (i + 1 < l)
-      {
-        stride = scat.at(i + 1) - scat.at(i);
-
-        for (size_t j = i + 2; j < l; j++) {
-          if ((scat.at(j) - scat.at(j - 1)) != stride)
-          {
-            stride = 0;
-            break;
-          }
-
-        }
-      }
-      this->bs.push_back(stride);
-    }
-
-    size_t at(size_t i) const
-    {
-      return this->bs.at(i);
-    }
-
-  private:
     std::vector<size_t> bs;
-  };
+    bs.reserve(N);
+
+    size_t j, last_stride, curr_stride;
+    for (size_t i = 0; i < N; i++) {
+      last_stride = 0;
+      j = i * b;
+      if (j + 1 == L) { // Edge case: Only one scat element in block.
+        last_stride = scat.at(j);
+      }
+      else { // Normal case: More than one scat element in block.
+        for (j = j; j < std::min<size_t>((i + 1) * b, L) - 1; j++) {
+          curr_stride = scat.at(j + 1) - scat.at(j);
+
+          if (last_stride != 0 && last_stride != curr_stride) {
+            last_stride = 0;
+            break; // Rest of elements in block are irrelevant.
+          }
+          else {
+            last_stride = curr_stride;
+          }
+        }
+      }
+      bs.push_back(last_stride);
+    }
+
+    return bs;
+  }
 };

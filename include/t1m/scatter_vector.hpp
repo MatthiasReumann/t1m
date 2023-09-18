@@ -36,7 +36,6 @@ namespace t1m::internal
       return this->scat.at(i);
     }
 
-  private:
     std::vector<size_t> scat;
   };
 
