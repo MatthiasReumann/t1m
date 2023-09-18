@@ -3,10 +3,6 @@
 #include <vector>
 #include <cmath>
 #include <algorithm>
-#include "scatter_vector.hpp"
-#include "utils.hpp"
-
-#include <iostream>
 
 namespace t1m::internal
 {
