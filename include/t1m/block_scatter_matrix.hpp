@@ -1,9 +1,7 @@
 #pragma once
 
 #include "tensor.hpp"
-#include "scatter_matrix.hpp"
-#include "block_scatter_vector.hpp"
-#include "utils.hpp"
+#include "scatter.hpp"
 
 namespace t1m::internal
 {
@@ -12,10 +10,9 @@ namespace t1m::internal
   {
   public:
     BlockScatterMatrix(Tensor<T>& t, std::vector<size_t> row_indices, std::vector<size_t> col_indices, size_t br, size_t bc)
-      : ScatterMatrix<T>(t, row_indices, col_indices) {
-        this->rbs = t1m::internal::calc_block_scatter(this->rscat.scat, br);
-        this->cbs = t1m::internal::calc_block_scatter(this->cscat.scat, bc);
-      }
+      : ScatterMatrix<T>(t, row_indices, col_indices),
+      rbs(t1m::internal::calc_block_scatter(this->rscat, br)),
+      cbs(t1m::internal::calc_block_scatter(this->cscat, bc)) {}
 
     size_t row_stride_in_block(size_t i) const
     {
