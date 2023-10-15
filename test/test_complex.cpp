@@ -1,6 +1,6 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <complex>
-#include "doctest.h"
+#include "doctest/doctest.h"
 #include "t1m/t1m.hpp"
 
 using FloatComplex = std::complex<float>;

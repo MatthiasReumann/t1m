@@ -8,7 +8,7 @@
 
 namespace t1m::internal
 {
-  const auto fuse_vectors(std::vector<size_t> v1, std::vector<size_t> v2) {
+  auto fuse_vectors(const std::vector<size_t> &v1, const std::vector<size_t> &v2) {
     std::vector<std::vector<size_t>> fused;
     fused.reserve(v1.size());
 
@@ -22,7 +22,7 @@ namespace t1m::internal
     return fused;
   }
 
-  const auto calc_scatter_rec(std::vector<std::vector<size_t>> ls) {
+  auto calc_scatter_rec(std::vector<std::vector<size_t>> ls) {
     if (ls.size() == 1) // Until only one vector is left.
       return ls;
 
@@ -41,7 +41,7 @@ namespace t1m::internal
     return res;
   }
 
-  const auto calc_scatter(std::vector<size_t>& lengths, std::vector<size_t>& strides) {
+  auto calc_scatter(std::vector<size_t>& lengths, std::vector<size_t>& strides) {
     std::vector<size_t> scat;
     std::vector<std::vector<size_t>> ls;
 
@@ -49,7 +49,7 @@ namespace t1m::internal
     // Collect in 2D vector.
     for (size_t i = 0; i < lengths.size(); i++)
     {
-      ls.push_back({});
+      ls.emplace_back();
       for (size_t j = 0; j < lengths.at(i); j++)
         ls.at(i).push_back(j * strides.at(i));
     }
@@ -61,9 +61,9 @@ namespace t1m::internal
     return scat;
   }
 
-  const auto calc_block_scatter(std::vector<size_t>& scat, size_t b) {
+  auto calc_block_scatter(std::vector<size_t>& scat, size_t b) {
     const size_t L = scat.size();
-    const size_t N = std::ceil(L / double(b)); // ⌈l/b⌉
+    const size_t N = (L + b - 1) / b; // ⌈l/b⌉
 
     std::vector<size_t> bs;
     bs.reserve(N);
@@ -76,7 +76,7 @@ namespace t1m::internal
         last_stride = scat.at(j);
       }
       else { // Normal case: More than one scat element in block.
-        for (j = j; j < std::min<size_t>((i + 1) * b, L) - 1; j++) {
+        for (; j < std::min<size_t>((i + 1) * b, L) - 1; j++) {
           curr_stride = scat.at(j + 1) - scat.at(j);
 
           if (last_stride != 0 && last_stride != curr_stride) {

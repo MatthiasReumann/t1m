@@ -6,7 +6,7 @@ project(
   DESCRIPTION "Transposition-free Complex Tensor Contractions"
   LANGUAGES CXX)
 
-include(ExternalProject)
+include(FetchContent)
 include(CTest)
 
 find_package(OpenMP)

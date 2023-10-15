@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tensor.hpp"
-#include "scatter.hpp"
+#include "scatter_matrix.hpp"
 
 namespace t1m::internal
 {
