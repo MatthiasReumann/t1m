@@ -4,7 +4,7 @@
 #include "block_scatter_matrix.hpp"
 #include "blis.h"
 
-namespace t1m::internal
+namespace t1m::utils
 {
   template <typename T>
   struct gemm_context

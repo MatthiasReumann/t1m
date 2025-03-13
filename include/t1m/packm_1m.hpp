@@ -5,7 +5,7 @@
 #include "packs_1m.hpp"
 #include "blis.h"
 
-namespace t1m::internal
+namespace t1m::utils
 {
   template <typename U>
   void pack_1m_a(BlockScatterMatrix<std::complex<U>>* A, U* buffer, int off_i, int off_j, dim_t M, dim_t K, const dim_t MR, const dim_t KP)

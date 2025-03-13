@@ -1,6 +1,6 @@
 #pragma once
 
-#include "marray.hpp"
+#include "marray.h"
 
 namespace t1m
 {

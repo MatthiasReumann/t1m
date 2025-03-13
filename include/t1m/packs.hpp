@@ -3,7 +3,7 @@
 #include "scatter_matrix.hpp"
 #include "blis.h"
 
-namespace t1m::internal {
+namespace t1m::utils {
   template <typename T>
   void pack_as_cont(T* A, T* buffer, dim_t m, dim_t k, const dim_t MR, inc_t rs, inc_t cs)
   {

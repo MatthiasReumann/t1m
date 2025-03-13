@@ -4,7 +4,7 @@
 #include "scatter.hpp"
 #include <vector>
 
-namespace t1m::internal
+namespace t1m::utils
 {
   template <typename T>
   class ScatterMatrix : public Tensor<T>
@@ -57,7 +57,7 @@ namespace t1m::internal
         strides.push_back(static_cast<size_t>(this->strides().at(idx)));
       }
 
-      return t1m::internal::calc_scatter(lengths, strides);
+      return t1m::utils::calc_scatter(lengths, strides);
     }
   };
 };

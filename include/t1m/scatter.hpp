@@ -4,9 +4,9 @@
 #include <cmath>
 #include <algorithm>
 #include "utils.hpp"
-#include "marray.hpp"
+#include "marray.h"
 
-namespace t1m::internal
+namespace t1m::utils
 {
   auto fuse_vectors(const std::vector<size_t> &v1, const std::vector<size_t> &v2) {
     std::vector<std::vector<size_t>> fused;

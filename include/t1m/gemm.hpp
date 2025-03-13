@@ -2,7 +2,6 @@
 
 #include <complex>
 #include <algorithm>
-#include <omp.h>
 #include "utils.hpp"
 #include "gemm_context.hpp"
 #include "scatter_matrix.hpp"
@@ -11,7 +10,7 @@
 #include "packm_1m.hpp"
 #include "blis.h"
 
-namespace t1m::internal
+namespace t1m::utils
 {
   template <typename T>
   void gemm_1m(const gemm_context_1m<std::complex<T>, T>* ctx)
@@ -31,7 +30,6 @@ namespace t1m::internal
     const size_t K = A->col_size();
     const size_t N = B->col_size();
 
-#pragma omp parallel for
     for (size_t j_c = 0; j_c < N; j_c += NC)
     {
       T* b_packed = nullptr; // B in G^{KC x NC}
@@ -49,7 +47,6 @@ namespace t1m::internal
         // B is now row-major packed into a KC * NC buffer
         // with the specialized format such that each sliver
         // has stride NR
-#pragma omp parallel for
         for (size_t i_c = 0; i_c < M; i_c += MC / 2)
         {
           const dim_t mc_m_complex = std::min<dim_t>(MC / 2, static_cast<dim_t>(M - i_c));
@@ -64,7 +61,6 @@ namespace t1m::internal
 
           // Now treat everything as real-valued:
           // Use NR, MR as with real-valued mm
-#pragma omp parallel for
           for (size_t j_r = 0; j_r < nc_n; j_r += NR)
           {
             size_t off_j, off_i;

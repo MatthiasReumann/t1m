@@ -4,7 +4,7 @@
 #include "block_scatter_matrix.hpp"
 #include "blis.h"
 
-namespace t1m::internal
+namespace t1m::utils
 {
   template <typename U>
   void pack_1m_as_cont(std::complex<U>* A, U* ptr_a, dim_t m, dim_t k, const dim_t MR, inc_t rs, inc_t cs)
