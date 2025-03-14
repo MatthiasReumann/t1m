@@ -152,7 +152,7 @@ struct block_scatter {
   const std::vector<std::size_t>& scat;
 
   std::vector<std::size_t> operator()() const {
-    const size_t nblocks = std::ceil(scat.size() / b);
+    const size_t nblocks = (scat.size() + b - 1) / b;  // ⌈l/b⌉
 
     std::vector<std::size_t> block_scat(nblocks);
     for (std::size_t i = 0; i < nblocks; ++i) {
