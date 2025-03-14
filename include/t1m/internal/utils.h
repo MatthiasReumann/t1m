@@ -197,31 +197,4 @@ struct block_scatter {
     return strides;
   }
 };
-
-std::vector<std::size_t> compute_block_scatter_vector(
-    const std::vector<std::size_t>& scat, std::size_t b) {
-  const size_t nblocks = std::ceil(scat.size() / b);
-
-  std::vector<std::size_t> block_scat(nblocks);
-  for (std::size_t i = 0; i < nblocks; ++i) {
-    const std::size_t offset = i * b;
-    const std::size_t nelem = std::min<std::size_t>(b, scat.size() - offset);
-
-    std::size_t stride;
-    if (nelem > 1) {
-      stride = scat.at(offset + 1) - scat.at(offset);
-      if (std::all_of(scat.begin() + offset, scat.begin() + offset + nelem,
-                      [stride](std::size_t i) { return i == stride; })) {
-        std::println("hello");
-      }
-
-    } else {
-      stride = scat.at(offset);
-    }
-
-    block_scat[i] = stride;
-  }
-
-  return block_scat;
-}
 };  // namespace t1m::utils
