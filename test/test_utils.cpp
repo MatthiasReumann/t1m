@@ -40,22 +40,36 @@ TEST_CASE("index bundling") {
   }
 }
 
-TEST_CASE("scatter layout") {
-  SUBCASE("easy") {
-    constexpr std::size_t ndim = 4;
-    constexpr std::array<std::size_t, ndim> dimensions{3, 2, 2, 3};
-    constexpr std::array<std::size_t, ndim> strides =
-        utils::compute_strides(dimensions, utils::memory_layout::COL_MAJOR);
-    constexpr utils::scatter_vector_info<ndim, 2> rscat_info({0, 1}, dimensions,
-                                                             strides);
-    constexpr utils::scatter_vector_info<ndim, 2> cscat_info({2, 3}, dimensions,
-                                                             strides);
-    auto rscat = utils::compute_scatter_vector<>(rscat_info);
-    auto cscat = utils::compute_scatter_vector<>(cscat_info);
+TEST_CASE("scatter vectors") {
+  constexpr std::size_t ndim = 4;
+  constexpr std::array<std::size_t, ndim> dimensions{3, 2, 2, 3};
+  constexpr std::array<std::size_t, ndim> strides =
+      utils::compute_strides(dimensions, utils::memory_layout::COL_MAJOR);
+  constexpr utils::scatter_vector_info<ndim, 2> rscat_info({0, 1}, dimensions,
+                                                           strides);
+  constexpr utils::scatter_vector_info<ndim, 2> cscat_info({2, 3}, dimensions,
+                                                           strides);
+  auto rscat = utils::compute_scatter_vector<>(rscat_info);
+  auto cscat = utils::compute_scatter_vector<>(cscat_info);
+  REQUIRE(rscat == std::vector<std::size_t>{0, 1, 2, 3, 4, 5});
+  REQUIRE(cscat == std::vector<std::size_t>{0, 6, 12, 18, 24, 30});
+}
 
-    REQUIRE(rscat == std::vector<std::size_t>{0, 1, 2, 3, 4, 5});
-    REQUIRE(cscat == std::vector<std::size_t>{0, 6, 12, 18, 24, 30});
-  }
+TEST_CASE("block scatter vectors") {
+  constexpr std::size_t ndim = 4;
+  constexpr std::array<std::size_t, ndim> dimensions{3, 2, 2, 3};
+  constexpr std::array<std::size_t, ndim> strides =
+      utils::compute_strides(dimensions, utils::memory_layout::COL_MAJOR);
+  constexpr utils::scatter_vector_info<ndim, 2> rscat_info({0, 1}, dimensions,
+                                                           strides);
+  constexpr utils::scatter_vector_info<ndim, 2> cscat_info({2, 3}, dimensions,
+                                                           strides);
+  auto rscat = utils::compute_scatter_vector<>(rscat_info);
+  auto cscat = utils::compute_scatter_vector<>(cscat_info);
+  auto block_rscat = utils::block_scatter<3>{rscat}();
+  auto block_cscat = utils::block_scatter<3>{cscat}();
+  REQUIRE(block_rscat == std::vector<std::size_t>{1, 1});
+  REQUIRE(block_cscat == std::vector<std::size_t>{6, 6});
 }
 
 // TEST_CASE("Scatter And Block Scatter Vectors") {

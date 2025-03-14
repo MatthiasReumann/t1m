@@ -103,7 +103,6 @@ consteval std::array<std::size_t, ndim> compute_strides(
 
 template <std::size_t ndim, std::size_t nindices>
 struct scatter_vector_info {
-  /// @brief collect dimensions and strides for a selected set of indices.
   consteval scatter_vector_info(const std::array<std::size_t, nindices> indices,
                                 const std::array<std::size_t, ndim> dimensions,
                                 const std::array<std::size_t, ndim> strides) {
@@ -155,5 +154,74 @@ std::vector<std::size_t> compute_scatter_vector(
   };
 
   return std::reduce(parts.begin() + 1, parts.end(), parts[0], elementwise_add);
+}
+
+template <std::size_t b>
+struct block_scatter {
+  const std::vector<std::size_t>& scat;
+
+  std::vector<std::size_t> operator()() const {
+    const size_t nblocks = std::ceil(scat.size() / b);
+
+    std::vector<std::size_t> block_scat(nblocks);
+    for (std::size_t i = 0; i < nblocks; ++i) {
+      const std::size_t offset = i * b;
+      const std::size_t nelem = std::min<std::size_t>(b, scat.size() - offset);
+      const std::vector<std::size_t> strides =
+          get_strides(std::vector<std::size_t>(scat.begin() + offset,
+                                               scat.begin() + offset + nelem));
+
+      std::size_t stride = strides[0];
+      if (!std::all_of(strides.begin(), strides.end(),
+                       [stride](std::size_t i) { return i == stride; })) {
+        stride = 0;
+      }
+
+      block_scat[i] = stride;
+    }
+
+    return block_scat;
+  }
+
+ private:
+  std::vector<std::size_t> get_strides(
+      const std::vector<std::size_t>& v) const {
+    if (v.size() == 1) {
+      return v;
+    }
+
+    std::vector<std::size_t> strides(v.size() - 1);
+    for (std::size_t i = 0; i < v.size() - 1; ++i) {
+      strides[i] = v[i + 1] - v[i];
+    }
+    return strides;
+  }
+};
+
+std::vector<std::size_t> compute_block_scatter_vector(
+    const std::vector<std::size_t>& scat, std::size_t b) {
+  const size_t nblocks = std::ceil(scat.size() / b);
+
+  std::vector<std::size_t> block_scat(nblocks);
+  for (std::size_t i = 0; i < nblocks; ++i) {
+    const std::size_t offset = i * b;
+    const std::size_t nelem = std::min<std::size_t>(b, scat.size() - offset);
+
+    std::size_t stride;
+    if (nelem > 1) {
+      stride = scat.at(offset + 1) - scat.at(offset);
+      if (std::all_of(scat.begin() + offset, scat.begin() + offset + nelem,
+                      [stride](std::size_t i) { return i == stride; })) {
+        std::println("hello");
+      }
+
+    } else {
+      stride = scat.at(offset);
+    }
+
+    block_scat[i] = stride;
+  }
+
+  return block_scat;
 }
 };  // namespace t1m::utils
