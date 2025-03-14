@@ -101,60 +101,51 @@ consteval std::array<std::size_t, ndim> compute_strides(
   return strides;
 }
 
-template <std::size_t ndim, std::size_t nindices>
-struct scatter_vector_info {
-  consteval scatter_vector_info(const std::array<std::size_t, nindices> indices,
-                                const std::array<std::size_t, ndim> dimensions,
-                                const std::array<std::size_t, ndim> strides) {
-    for (std::size_t i = 0; i < indices.size(); ++i) {
+template <std::size_t ndim>
+struct scatter {
+  const std::vector<std::size_t> indices;
+
+  const std::array<std::size_t, ndim>& dimensions;
+  const std::array<std::size_t, ndim>& strides;
+
+  std::vector<std::size_t> operator()() const {
+    const std::size_t N = indices.size();
+
+    // compute scatter vectors.
+    // first, create 2D vector with each index, stride combination.
+    std::vector<std::vector<std::size_t>> parts{};
+    for (std::size_t i = 0; i < N; ++i) {
       const std::size_t& idx = indices[i];
-      lengths[i] = dimensions[idx];
-      strds[i] = strides[idx];
-    }
-  }
 
-  /// @brief the length for each of the dimensions.
-  std::array<std::size_t, nindices> lengths;
+      const std::size_t& dim = dimensions[idx];
+      const std::size_t& stride = strides[idx];
 
-  /// @brief the stride for each of the dimensions.
-  std::array<std::size_t, nindices> strds;
-};
-
-template <std::size_t ndim, std::size_t nindices>
-std::vector<std::size_t> compute_scatter_vector(
-    const scatter_vector_info<nindices, ndim>& info) {
-
-  // compute scatter vectors.
-  // first, create 2D vector with each index, stride combination.
-  std::vector<std::vector<std::size_t>> parts{};
-  for (std::size_t i = 0; i < info.lengths.size(); ++i) {
-    const std::size_t& dim = info.lengths[i];
-    const std::size_t& stride = info.strds[i];
-
-    std::vector<std::size_t> v(dim);
-    for (std::size_t j = 0; j < dim; ++j) {
-      v[j] = j * stride;
-    }
-    parts.push_back(v);
-  }
-
-  // required to be equivalent with the old implementation.
-  std::reverse(parts.begin(), parts.end());
-
-  // second, reduce 2D to 1D vector, computing each possible combination.
-  auto elementwise_add = [](std::vector<std::size_t> av,
-                            std::vector<std::size_t> bv) {
-    std::vector<std::size_t> cv;
-    for (const std::size_t& a : av) {
-      for (const std::size_t& b : bv) {
-        cv.push_back(a + b);
+      std::vector<std::size_t> v(dim);
+      for (std::size_t j = 0; j < dim; ++j) {
+        v[j] = j * stride;
       }
+      parts.push_back(v);
     }
-    return cv;
-  };
 
-  return std::reduce(parts.begin() + 1, parts.end(), parts[0], elementwise_add);
-}
+    // required to be equivalent with the old implementation.
+    std::reverse(parts.begin(), parts.end());
+
+    // second, reduce 2D to 1D vector, computing each possible combination.
+    auto elementwise_add = [](std::vector<std::size_t> av,
+                              std::vector<std::size_t> bv) {
+      std::vector<std::size_t> cv;
+      for (const std::size_t& a : av) {
+        for (const std::size_t& b : bv) {
+          cv.push_back(a + b);
+        }
+      }
+      return cv;
+    };
+
+    return std::reduce(parts.begin() + 1, parts.end(), parts[0],
+                       elementwise_add);
+  }
+};
 
 template <std::size_t b>
 struct block_scatter {
