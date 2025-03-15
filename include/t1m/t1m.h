@@ -2,18 +2,10 @@
 
 #include <complex>
 #include "internal/utils.h"
+#include "t1m/tensor.h"
 #include "tensor.hpp"
 
 namespace t1m {
-
-// template <typename T>
-// void contract(tensor<T> c, const std::string& labels_c, tensor<T> a,
-//               const std::string& labels_a, tensor<T> b,
-//               const std::string& labels_b) {
-//   auto indices = utils::contraction_indices({labels_c, labels_a, labels_b});
-//   std::array<std::size_t, ndim> strides =
-//       utils::compute_strides(dimensions, utils::memory_layout::COL_MAJOR);
-// }
 
 void contract(Tensor<std::complex<float>> A, std::string labelsA,
               Tensor<std::complex<float>> B, std::string labelsB,

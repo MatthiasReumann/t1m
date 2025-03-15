@@ -9,30 +9,30 @@
 
 namespace t1m::utils {
 
-struct contraction {
-  const std::string label_c;
-  const std::string label_a;
-  const std::string label_b;
+struct contraction_labels {
+  const std::string c;
+  const std::string a;
+  const std::string b;
 
   using bundle_lengths = std::tuple<std::size_t, std::size_t, std::size_t>;
 
   /// @brief Calculate bundle lengths for `P`, `I`, and `J`.
   /// @return `{ P, I, J }`
   constexpr bundle_lengths get_bundle_lengths() const noexcept {
-    const std::size_t dC = label_c.size();
-    const std::size_t dA = label_a.size();
-    const std::size_t dB = label_b.size();
+    const std::size_t dC = c.size();
+    const std::size_t dA = a.size();
+    const std::size_t dB = b.size();
     const std::size_t P = (dA + dB - dC) / 2;
     return {P, dA - P, dB - P};
   }
 };
 
 template <const std::size_t P, const std::size_t I, const std::size_t J>
-struct contraction_indices {
-  constexpr contraction_indices(const contraction& spec) {
-    std::string label_c(spec.label_c);
-    std::string label_a(spec.label_a);
-    std::string label_b(spec.label_b);
+struct contraction {
+  constexpr contraction(const contraction_labels& labels) {
+    std::string label_c(labels.c);
+    std::string label_a(labels.a);
+    std::string label_b(labels.b);
 
     std::sort(label_a.begin(), label_a.end());
     std::sort(label_b.begin(), label_b.end());
@@ -47,18 +47,18 @@ struct contraction_indices {
                         label_a.end(), std::back_inserter(free_b));
 
     for (size_t i = 0; i < contracted.size(); ++i) {
-      AP[i] = spec.label_a.find(contracted[i]);
-      BP[i] = spec.label_b.find(contracted[i]);
+      AP[i] = labels.a.find(contracted[i]);
+      BP[i] = labels.b.find(contracted[i]);
     }
 
     for (size_t i = 0; i < free_a.size(); ++i) {
-      AI[i] = spec.label_a.find(free_a[i]);
-      CI[i] = spec.label_c.find(free_a[i]);
+      AI[i] = labels.a.find(free_a[i]);
+      CI[i] = labels.c.find(free_a[i]);
     }
 
     for (size_t i = 0; i < free_b.size(); ++i) {
-      BJ[i] = spec.label_b.find(free_b[i]);
-      CJ[i] = spec.label_c.find(free_b[i]);
+      BJ[i] = labels.b.find(free_b[i]);
+      CJ[i] = labels.c.find(free_b[i]);
     }
   }
 
@@ -70,16 +70,13 @@ struct contraction_indices {
   std::array<std::size_t, J> BJ;
 };
 
-template <const std::size_t ndim>
+template <const std::size_t N, const std::size_t ndim>
 struct scatter {
-  const std::vector<std::size_t> indices;
-
+  const std::array<std::size_t, N>& indices;
   const std::array<std::size_t, ndim>& dimensions;
   const std::array<std::size_t, ndim>& strides;
 
-  std::vector<std::size_t> operator()() const {
-    const std::size_t N = indices.size();
-
+  constexpr std::vector<std::size_t> operator()() const {
     // compute scatter vectors.
     // first, create 2D vector with each index, stride combination.
     std::vector<std::vector<std::size_t>> parts{};

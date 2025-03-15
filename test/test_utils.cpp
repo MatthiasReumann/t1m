@@ -9,12 +9,12 @@ using namespace t1m;
 
 TEST_CASE("index bundling") {
   SUBCASE("contraction indices (abd = abc . cd)") {
-    constexpr utils::contraction spec{"abd", "abc", "cd"};
-    constexpr auto bundle_lengths = spec.get_bundle_lengths();
+    constexpr utils::contraction_labels labels{"abd", "abc", "cd"};
+    constexpr auto bundle_lengths = labels.get_bundle_lengths();
     constexpr std::size_t P = std::get<0>(bundle_lengths);
     constexpr std::size_t I = std::get<1>(bundle_lengths);
     constexpr std::size_t J = std::get<2>(bundle_lengths);
-    constexpr utils::contraction_indices<P, I, J> indices(spec);
+    constexpr utils::contraction<P, I, J> indices(labels);
 
     REQUIRE(indices.CI == std::array<std::size_t, I>{0, 1});
     REQUIRE(indices.CJ == std::array<std::size_t, J>{2});
@@ -25,12 +25,12 @@ TEST_CASE("index bundling") {
   }
 
   SUBCASE("contraction indices (fa = abcde . bdcf)") {
-    constexpr utils::contraction spec{"fae", "abcde", "bdcf"};
-    constexpr auto bundle_lengths = spec.get_bundle_lengths();
+    constexpr utils::contraction_labels labels{"fae", "abcde", "bdcf"};
+    constexpr auto bundle_lengths = labels.get_bundle_lengths();
     constexpr std::size_t P = std::get<0>(bundle_lengths);
     constexpr std::size_t I = std::get<1>(bundle_lengths);
     constexpr std::size_t J = std::get<2>(bundle_lengths);
-    constexpr utils::contraction_indices<P, I, J> indices(spec);
+    constexpr utils::contraction<P, I, J> indices(labels);
 
     REQUIRE(indices.CI == std::array<std::size_t, I>{1, 2});
     REQUIRE(indices.CJ == std::array<std::size_t, J>{0});
@@ -44,9 +44,9 @@ TEST_CASE("index bundling") {
 TEST_CASE("scatter vectors") {
   t1m::tensor<float, 4> t{{3, 2, 2, 3}, nullptr, memory_layout::COL_MAJOR};
   std::vector<std::size_t> rscat =
-      utils::scatter{{0, 1}, t.dimensions, t.strides()}();
+      utils::scatter<2, 4>{{0, 1}, t.dimensions, t.strides()}();
   std::vector<std::size_t> cscat =
-      utils::scatter{{2, 3}, t.dimensions, t.strides()}();
+      utils::scatter<2, 4>{{2, 3}, t.dimensions, t.strides()}();
 
   REQUIRE(rscat == std::vector<std::size_t>{0, 1, 2, 3, 4, 5});
   REQUIRE(cscat == std::vector<std::size_t>{0, 6, 12, 18, 24, 30});
@@ -56,9 +56,9 @@ TEST_CASE("block scatter vectors") {
   SUBCASE("variant 1") {
     t1m::tensor<float, 4> t{{3, 2, 2, 3}, nullptr, memory_layout::COL_MAJOR};
     std::vector<std::size_t> rscat =
-        utils::scatter{{0, 1}, t.dimensions, t.strides()}();
+        utils::scatter<2, 4>{{0, 1}, t.dimensions, t.strides()}();
     std::vector<std::size_t> cscat =
-        utils::scatter{{2, 3}, t.dimensions, t.strides()}();
+        utils::scatter<2, 4>{{2, 3}, t.dimensions, t.strides()}();
     std::vector<std::size_t> block_rscat = utils::block_scatter<3>{rscat}();
     std::vector<std::size_t> block_cscat = utils::block_scatter<3>{cscat}();
 
@@ -86,9 +86,21 @@ TEST_CASE("block scatter vectors") {
 }
 
 TEST_CASE("contract") {
-  t1m::tensor<float, 3> a{{3, 2, 2}, nullptr, memory_layout::COL_MAJOR};
-  t1m::tensor<float, 2> b{{2, 3}, nullptr, memory_layout::COL_MAJOR};
-  t1m::tensor<float, 3> c{{3, 2, 3}, nullptr, memory_layout::COL_MAJOR};
+  t1m::tensor<float, 3> A{{3, 2, 2}, nullptr, memory_layout::COL_MAJOR};
+  t1m::tensor<float, 2> B{{2, 3}, nullptr, memory_layout::COL_MAJOR};
+  t1m::tensor<float, 3> C{{3, 2, 3}, nullptr, memory_layout::COL_MAJOR};
 
-  // t1m::contract(c, "abd", a, "abc", b, "cd");
+  constexpr utils::contraction_labels labels{"abd", "abc", "cd"};
+  constexpr auto bundle_lengths = labels.get_bundle_lengths();
+  constexpr std::size_t P = std::get<0>(bundle_lengths);
+  constexpr std::size_t I = std::get<1>(bundle_lengths);
+  constexpr std::size_t J = std::get<2>(bundle_lengths);
+  constexpr utils::contraction<P, I, J> contraction(labels);
+
+  t1m::block_scatter_layout<float, 3> layout_A(A, contraction.AI,
+                                               contraction.AP);
+  t1m::block_scatter_layout<float, 2> layout_B(B, contraction.BP,
+                                               contraction.BJ);
+  t1m::block_scatter_layout<float, 3> layout_C(C, contraction.CI,
+                                               contraction.CJ);
 }
