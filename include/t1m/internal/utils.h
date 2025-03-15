@@ -4,39 +4,35 @@
 #include <array>
 #include <span>
 #include <string>
+#include <tuple>
 #include <vector>
-#include "../tensor.hpp"
 
 namespace t1m::utils {
 
-struct contraction_labels {
-  const std::string c;
-  const std::string a;
-  const std::string b;
+struct contraction {
+  const std::string label_c;
+  const std::string label_a;
+  const std::string label_b;
+
+  using bundle_lengths = std::tuple<std::size_t, std::size_t, std::size_t>;
+
+  /// @brief Calculate bundle lengths for `P`, `I`, and `J`.
+  /// @return `{ P, I, J }`
+  constexpr bundle_lengths get_bundle_lengths() const noexcept {
+    const std::size_t dC = label_c.size();
+    const std::size_t dA = label_a.size();
+    const std::size_t dB = label_b.size();
+    const std::size_t P = (dA + dB - dC) / 2;
+    return {P, dA - P, dB - P};
+  }
 };
 
-struct bundle_lengths {
-  const std::size_t P;
-  const std::size_t I;
-  const std::size_t J;
-};
-
-consteval bundle_lengths get_bundle_lengths(const contraction_labels& labels) {
-  const std::size_t dC = labels.c.size();
-  const std::size_t dA = labels.a.size();
-  const std::size_t dB = labels.b.size();
-
-  const std::size_t length_p = (dA + dB - dC) / 2;
-
-  return {length_p, dA - length_p, dB - length_p};
-}
-
-template <const bundle_lengths lengths>
+template <const std::size_t P, const std::size_t I, const std::size_t J>
 struct contraction_indices {
-  consteval contraction_indices(const contraction_labels& labels) {
-    std::string label_a(labels.a);
-    std::string label_b(labels.b);
-    std::string label_c(labels.c);
+  constexpr contraction_indices(const contraction& spec) {
+    std::string label_c(spec.label_c);
+    std::string label_a(spec.label_a);
+    std::string label_b(spec.label_b);
 
     std::sort(label_a.begin(), label_a.end());
     std::sort(label_b.begin(), label_b.end());
@@ -51,57 +47,30 @@ struct contraction_indices {
                         label_a.end(), std::back_inserter(free_b));
 
     for (size_t i = 0; i < contracted.size(); ++i) {
-      AP[i] = labels.a.find(contracted[i]);
-      BP[i] = labels.b.find(contracted[i]);
+      AP[i] = spec.label_a.find(contracted[i]);
+      BP[i] = spec.label_b.find(contracted[i]);
     }
 
     for (size_t i = 0; i < free_a.size(); ++i) {
-      AI[i] = labels.a.find(free_a[i]);
-      CI[i] = labels.c.find(free_a[i]);
+      AI[i] = spec.label_a.find(free_a[i]);
+      CI[i] = spec.label_c.find(free_a[i]);
     }
 
     for (size_t i = 0; i < free_b.size(); ++i) {
-      BJ[i] = labels.b.find(free_b[i]);
-      CJ[i] = labels.c.find(free_b[i]);
+      BJ[i] = spec.label_b.find(free_b[i]);
+      CJ[i] = spec.label_c.find(free_b[i]);
     }
   }
 
-  std::array<std::size_t, lengths.I> CI{};
-  std::array<std::size_t, lengths.J> CJ{};
-
-  std::array<std::size_t, lengths.I> AI{};
-  std::array<std::size_t, lengths.P> AP{};
-
-  std::array<std::size_t, lengths.P> BP{};
-  std::array<std::size_t, lengths.J> BJ{};
+  std::array<std::size_t, I> CI;
+  std::array<std::size_t, J> CJ;
+  std::array<std::size_t, I> AI;
+  std::array<std::size_t, P> AP;
+  std::array<std::size_t, P> BP;
+  std::array<std::size_t, J> BJ;
 };
 
-enum memory_layout { ROW_MAJOR, COL_MAJOR };
-
-template <typename T, std::size_t ndim>
-struct tensor {
-  std::array<std::size_t, ndim> dimensions;
-  T* data;
-  memory_layout _layout;
-};
-
-template <std::size_t ndim>
-consteval std::array<std::size_t, ndim> compute_strides(
-    std::array<std::size_t, ndim> dimensions, memory_layout layout) {
-  std::array<std::size_t, ndim> strides;
-  switch (layout) {
-    case ROW_MAJOR:
-      throw std::runtime_error("not implemented yet.");
-    case COL_MAJOR:
-      strides[0] = 1;
-      for (std::size_t i = 1; i < ndim; ++i) {
-        strides[i] = strides[i - 1] * dimensions[i - 1];
-      }
-  }
-  return strides;
-}
-
-template <std::size_t ndim>
+template <const std::size_t ndim>
 struct scatter {
   const std::vector<std::size_t> indices;
 
