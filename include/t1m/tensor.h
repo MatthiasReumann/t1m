@@ -11,7 +11,7 @@ struct tensor {
   T* data;
   memory_layout layout;
 
-  constexpr std::array<std::size_t, ndim> strides() const {
+  std::array<std::size_t, ndim> strides() const {
     std::array<std::size_t, ndim> strides;
 
     switch (layout) {
@@ -32,12 +32,11 @@ template <typename T, const std::size_t ndim>
 class scatter_layout {
  public:
   template <const std::size_t nrows, const std::size_t ncols>
-  scatter_layout(const tensor<T, ndim>& tensor,
+  scatter_layout(const tensor<T, ndim>& t,
                  const std::array<std::size_t, nrows>& row_indices,
-                 const std::array<std::size_t, ncols>& col_indices) {
-    rscat = utils::scatter{row_indices, tensor.dimensions, tensor.strides()}();
-    cscat = utils::scatter{col_indices, tensor.dimensions, tensor.strides()}();
-  }
+                 const std::array<std::size_t, ncols>& col_indices)
+      : rscat(utils::scatter{row_indices, t.dimensions, t.strides()}()),
+        cscat(utils::scatter{col_indices, t.dimensions, t.strides()}()) {}
 
  protected:
   std::vector<std::size_t> rscat;
@@ -48,13 +47,13 @@ template <typename T, const std::size_t ndim>
 class block_scatter_layout : public scatter_layout<T, ndim> {
  public:
   template <const std::size_t nrows, const std::size_t ncols>
-  block_scatter_layout(const tensor<T, ndim>& tensor,
+  block_scatter_layout(const tensor<T, ndim>& t,
                        const std::array<std::size_t, nrows>& row_indices,
-                       const std::array<std::size_t, ncols>& col_indices)
-      : scatter_layout<T, ndim>(tensor, row_indices, col_indices) {
-    block_rscat = utils::block_scatter{this->rscat}();
-    block_cscat = utils::block_scatter{this->cscat}();
-  }
+                       const std::array<std::size_t, ncols>& col_indices,
+                       const std::size_t brow, const std::size_t bcol)
+      : scatter_layout<T, ndim>(t, row_indices, col_indices),
+        block_rscat(utils::block_scatter{brow}(this->rscat)),
+        block_cscat(utils::block_scatter{bcol}(this->cscat)) {}
 
  private:
   std::vector<std::size_t> block_rscat;

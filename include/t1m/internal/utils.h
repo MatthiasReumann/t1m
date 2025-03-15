@@ -13,23 +13,10 @@ struct contraction_labels {
   const std::string c;
   const std::string a;
   const std::string b;
-
-  using bundle_lengths = std::tuple<std::size_t, std::size_t, std::size_t>;
-
-  /// @brief Calculate bundle lengths for `P`, `I`, and `J`.
-  /// @return `{ P, I, J }`
-  constexpr bundle_lengths get_bundle_lengths() const noexcept {
-    const std::size_t dC = c.size();
-    const std::size_t dA = a.size();
-    const std::size_t dB = b.size();
-    const std::size_t P = (dA + dB - dC) / 2;
-    return {P, dA - P, dB - P};
-  }
 };
 
-template <const std::size_t P, const std::size_t I, const std::size_t J>
 struct contraction {
-  constexpr contraction(const contraction_labels& labels) {
+  contraction(const contraction_labels& labels) {
     std::string label_c(labels.c);
     std::string label_a(labels.a);
     std::string label_b(labels.b);
@@ -46,41 +33,48 @@ struct contraction {
     std::set_difference(label_b.begin(), label_b.end(), label_a.begin(),
                         label_a.end(), std::back_inserter(free_b));
 
+    AP.reserve(contracted.size());
+    BP.reserve(contracted.size());
     for (size_t i = 0; i < contracted.size(); ++i) {
-      AP[i] = labels.a.find(contracted[i]);
-      BP[i] = labels.b.find(contracted[i]);
+      AP.push_back(labels.a.find(contracted[i]));
+      BP.push_back(labels.b.find(contracted[i]));
     }
 
+    AI.reserve(free_a.size());
+    CI.reserve(free_a.size());
     for (size_t i = 0; i < free_a.size(); ++i) {
-      AI[i] = labels.a.find(free_a[i]);
-      CI[i] = labels.c.find(free_a[i]);
+      AI.push_back(labels.a.find(free_a[i]));
+      CI.push_back(labels.c.find(free_a[i]));
     }
 
+    BJ.reserve(free_b.size());
+    CJ.reserve(free_b.size());
     for (size_t i = 0; i < free_b.size(); ++i) {
-      BJ[i] = labels.b.find(free_b[i]);
-      CJ[i] = labels.c.find(free_b[i]);
+      BJ.push_back(labels.b.find(free_b[i]));
+      CJ.push_back(labels.c.find(free_b[i]));
     }
   }
 
-  std::array<std::size_t, I> CI;
-  std::array<std::size_t, J> CJ;
-  std::array<std::size_t, I> AI;
-  std::array<std::size_t, P> AP;
-  std::array<std::size_t, P> BP;
-  std::array<std::size_t, J> BJ;
+  std::vector<std::size_t> CI;
+  std::vector<std::size_t> CJ;
+
+  std::vector<std::size_t> AI;
+  std::vector<std::size_t> AP;
+
+  std::vector<std::size_t> BP;
+  std::vector<std::size_t> BJ;
 };
 
-template <const std::size_t N, const std::size_t ndim>
+template <const std::size_t ndim>
 struct scatter {
-  const std::array<std::size_t, N>& indices;
-  const std::array<std::size_t, ndim>& dimensions;
-  const std::array<std::size_t, ndim>& strides;
-
-  constexpr std::vector<std::size_t> operator()() const {
+  std::vector<std::size_t> operator()(
+      const std::vector<std::size_t>& indices,
+      const std::array<std::size_t, ndim>& dimensions,
+      const std::array<std::size_t, ndim>& strides) const {
     // compute scatter vectors.
     // first, create 2D vector with each index, stride combination.
     std::vector<std::vector<std::size_t>> parts{};
-    for (std::size_t i = 0; i < N; ++i) {
+    for (std::size_t i = 0; i < indices.size(); ++i) {
       const std::size_t& idx = indices[i];
 
       const std::size_t& dim = dimensions[idx];
@@ -113,11 +107,11 @@ struct scatter {
   }
 };
 
-template <std::size_t b>
 struct block_scatter {
-  const std::vector<std::size_t>& scat;
+  const std::size_t b;
 
-  std::vector<std::size_t> operator()() const {
+  std::vector<std::size_t> operator()(
+      const std::vector<std::size_t>& scat) const {
     const size_t nblocks = (scat.size() + b - 1) / b;  // ⌈l/b⌉
 
     std::vector<std::size_t> block_scat(nblocks);
