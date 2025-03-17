@@ -27,37 +27,4 @@ struct tensor {
     return strides;
   }
 };
-
-template <typename T, const std::size_t ndim>
-class scatter_layout {
- public:
-  template <const std::size_t nrows, const std::size_t ncols>
-  scatter_layout(const tensor<T, ndim>& t,
-                 const std::array<std::size_t, nrows>& row_indices,
-                 const std::array<std::size_t, ncols>& col_indices)
-      : rscat(utils::scatter{row_indices, t.dimensions, t.strides()}()),
-        cscat(utils::scatter{col_indices, t.dimensions, t.strides()}()) {}
-
- protected:
-  std::vector<std::size_t> rscat;
-  std::vector<std::size_t> cscat;
-};
-
-template <typename T, const std::size_t ndim>
-class block_scatter_layout : public scatter_layout<T, ndim> {
- public:
-  template <const std::size_t nrows, const std::size_t ncols>
-  block_scatter_layout(const tensor<T, ndim>& t,
-                       const std::array<std::size_t, nrows>& row_indices,
-                       const std::array<std::size_t, ncols>& col_indices,
-                       const std::size_t brow, const std::size_t bcol)
-      : scatter_layout<T, ndim>(t, row_indices, col_indices),
-        block_rscat(utils::block_scatter{brow}(this->rscat)),
-        block_cscat(utils::block_scatter{bcol}(this->cscat)) {}
-
- private:
-  std::vector<std::size_t> block_rscat;
-  std::vector<std::size_t> block_cscat;
-};
-
 };  // namespace t1m

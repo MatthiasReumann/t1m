@@ -10,16 +10,16 @@
 namespace t1m::utils {
 
 struct contraction_labels {
-  const std::string c;
   const std::string a;
   const std::string b;
+  const std::string c;
 };
 
 struct contraction {
   contraction(const contraction_labels& labels) {
-    std::string label_c(labels.c);
     std::string label_a(labels.a);
     std::string label_b(labels.b);
+    std::string label_c(labels.c);
 
     std::sort(label_a.begin(), label_a.end());
     std::sort(label_b.begin(), label_b.end());

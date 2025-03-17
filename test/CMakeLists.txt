@@ -5,9 +5,16 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(doctest)
 
 add_executable(test_utils test_utils.cpp)
+target_link_libraries(test_utils PUBLIC BLAS::BLAS)
 target_link_libraries(test_utils PUBLIC doctest::doctest)
 target_link_libraries(test_utils PRIVATE t1m)
 add_test(NAME test_utilstest COMMAND test_utils)
+
+add_executable(test_packing test_packing.cpp)
+target_link_libraries(test_packing PUBLIC BLAS::BLAS)
+target_link_libraries(test_packing PUBLIC doctest::doctest)
+target_link_libraries(test_packing PRIVATE t1m)
+add_test(NAME test_packingtest COMMAND test_packing)
 
 # add_executable(testcomplex test_complex.cpp)
 # target_link_libraries(testcomplex PUBLIC doctest::doctest)

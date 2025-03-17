@@ -2,6 +2,7 @@
 #include <algorithm>
 #include "doctest/doctest.h"
 #include "t1m/internal/utils.h"
+#include "t1m/internal/scatter.h"
 #include "t1m/t1m.h"
 #include "t1m/tensor.h"
 
@@ -9,7 +10,7 @@ using namespace t1m;
 
 TEST_CASE("index bundling") {
   SUBCASE("contraction indices (abd = abc . cd)") {
-    utils::contraction_labels labels{"abd", "abc", "cd"};
+    utils::contraction_labels labels{"abc", "cd", "abd"};
     utils::contraction indices(labels);
 
     REQUIRE(indices.CI == std::vector<std::size_t>{0, 1});
@@ -21,7 +22,7 @@ TEST_CASE("index bundling") {
   }
 
   SUBCASE("contraction indices (fa = abcde . bdcf)") {
-    utils::contraction_labels labels{"fae", "abcde", "bdcf"};
+    utils::contraction_labels labels{"abcde", "bdcf", "fae"};
     utils::contraction indices(labels);
 
     REQUIRE(indices.CI == std::vector<std::size_t>{1, 2});
@@ -78,21 +79,9 @@ TEST_CASE("block scatter vectors") {
 }
 
 TEST_CASE("contract") {
-  t1m::tensor<float, 3> A{{3, 2, 2}, nullptr, memory_layout::COL_MAJOR};
-  t1m::tensor<float, 2> B{{2, 3}, nullptr, memory_layout::COL_MAJOR};
-  t1m::tensor<float, 3> C{{3, 2, 3}, nullptr, memory_layout::COL_MAJOR};
+  t1m::tensor<float, 3> a{{3, 2, 2}, nullptr, memory_layout::COL_MAJOR};
+  t1m::tensor<float, 2> b{{2, 3}, nullptr, memory_layout::COL_MAJOR};
+  t1m::tensor<float, 3> c{{3, 2, 3}, nullptr, memory_layout::COL_MAJOR};
 
-  // constexpr utils::contraction_labels labels{"abd", "abc", "cd"};
-  // constexpr auto bundle_lengths = labels.get_bundle_lengths();
-  // constexpr std::size_t P = std::get<0>(bundle_lengths);
-  // constexpr std::size_t I = std::get<1>(bundle_lengths);
-  // constexpr std::size_t J = std::get<2>(bundle_lengths);
-  // constexpr utils::contraction<P, I, J> contraction(labels);
-
-  // t1m::block_scatter_layout<float, 3, 4, 3> layout_A(A, contraction.AI,
-  //                                                    contraction.AP);
-  // t1m::block_scatter_layout<float, 2, 4, 3> layout_B(B, contraction.BP,
-  //                                                    contraction.BJ);
-  // t1m::block_scatter_layout<float, 3, 4, 3> layout_C(C, contraction.CI,
-  //                                                    contraction.CJ);
+  contract<float>(1., a, "abc", b, "cd", 0., c, "abd");
 }
