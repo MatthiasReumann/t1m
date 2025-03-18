@@ -14,8 +14,11 @@ class layout {
       : rscat(utils::scatter<ndim>{}(row_indices, t.dimensions, t.strides())),
         cscat(utils::scatter<ndim>{}(col_indices, t.dimensions, t.strides())) {}
 
+  std::vector<std::size_t> rows() const { return rscat; }
+  std::vector<std::size_t> cols() const { return cscat; }
   std::size_t nrows() const noexcept { return rscat.size(); }
   std::size_t ncols() const noexcept { return cscat.size(); }
+
   std::size_t operator()(std::size_t row, std::size_t col) const noexcept {
     return rscat[row] + cscat[col];
   }
