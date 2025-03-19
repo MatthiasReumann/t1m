@@ -66,45 +66,76 @@ class lhs : public base<T> {
 
   T* data() const noexcept { return this->buf; }
 
-  /// @brief Pack `M` x `K` block into slivers.
-  template <std::size_t ndim>
-  void pack(const scatter::block_layout<T, ndim>& layout, const T* src,
-            const std::size_t M, const std::size_t K) {
+  void pack_cell(const scatter::matrix_view& cell, const T* src, T* dest) {
+    const std::size_t nrows = cell.nrows();
+    const std::size_t ncols = cell.ncols();
 
-    const std::size_t nrowblocks = M / layout.row_size;
-    const std::size_t remainder = M % layout.row_size;
+    const std::size_t rs = cell.rbs[0];
+    const std::size_t cs = cell.cbs[0];
 
-    const std::vector<std::size_t> rows = layout.rows();
-    const std::vector<std::size_t> cols = layout.cols();
-
-    for (std::size_t i = 0; i < nrowblocks; ++i) {
-      const std::size_t offset = i * K * layout.row_size;
-      pack_slivers_a<T>{
-          layout.row_size,
-          K,
-          layout.block_rscat[i],
-          layout.block_cscat[i],
-          std::span{rows}.subspan(i * layout.row_size, layout.row_size),
-          std::span{cols}}(src, data() + offset);
-    }
-
-    if (remainder > 0) {
-      const std::size_t offset = nrowblocks * K * layout.row_size;
-      pack_slivers_a<T>{remainder,
-                        K,
-                        layout.block_rscat[i],
-                        layout.block_cscat[i],
-                        std::span{rows}.subspan(nrowblocks * layout.row_size,
-                                                layout.row_size),
-                        std::span{cols}}(src, data() + offset);
+    if (rs > 0 && cs > 0) {
+      const std::size_t offset = (cell.rs[0] + cell.cs[0]);
+      for (std::size_t k = 0; k < nrows; ++k) {
+        for (std::size_t l = 0; l < ncols; ++l) {
+          dest[k + l * nrows] = src[k * rs + l * cs + offset];
+        }
+      }
+    } else {
+      for (std::size_t k = 0; k < nrows; ++k) {
+        for (std::size_t l = 0; l < ncols; ++l) {
+          dest[k + l * nrows] = src[cell.rs[k] + cell.cs[l]];
+        }
+      }
     }
   }
-};
 
-template <typename T>
-struct rhs : public base<T> {
-  rhs(std::size_t size, std::allocator<T> alloc = std::allocator<T>{})
-      : base<T>(size, alloc) {}
-  void pack(const T* orig) {}
+  void pack(const scatter::matrix_view& matrix, const T* src,
+            const std::size_t M, const std::size_t K) {
+    const std::size_t rbn = M / matrix.br;
+    const std::size_t cbn = K / matrix.bc;
+
+    const std::size_t rremainder = M % matrix.br;
+
+    //       K
+    //   ┌───┬───┐
+    //   │   │   │
+    // M ├───┼───┤ "block"
+    //   │   │   │
+    //   └───┴───┘
+
+    for (std::size_t rb = 0; rb < rbn; ++rb) {
+      const std::size_t roffset = cbn * rb * matrix.block_nelems();
+
+      //        K
+      //    ┌───┬───┐
+      // br │   │   │ "sliver"
+      //    └───┴───┘
+
+      for (std::size_t cb = 0; cb < cbn; ++cb) {
+        const std::size_t coffset = cb * matrix.block_nelems();
+
+        //      bc
+        //    ┌────┐
+        // br │    │  "cell"
+        //    └────┘
+
+        const auto cell = matrix.subview(rb * matrix.br, cb * matrix.bc,
+                                         matrix.br, matrix.bc);
+        std::println("{} {} | {} {}", cell.rs, cell.cs, cell.rbs, cell.cbs);
+        pack_cell(cell, src, data() + roffset + coffset);
+      }
+    }
+
+    // if (remainder > 0) {
+    //   const std::size_t offset = nblocks * K * layout.row_size;
+    //   pack_slivers_a<T>{
+    //       remainder,
+    //       K,
+    //       layout.block_rscat[nblocks],
+    //       layout.block_cscat[nblocks],
+    //       std::span{rows}.subspan(nblocks * layout.row_size, layout.row_size),
+    //       std::span{cols}}(src, data() + offset);
+    // }
+  }
 };
 };  // namespace t1m::packing
