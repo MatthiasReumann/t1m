@@ -32,7 +32,7 @@ struct matrix_view {
 
   constexpr std::size_t nrows() const noexcept { return rs.size(); }
   constexpr std::size_t ncols() const noexcept { return cs.size(); }
-  constexpr std::size_t block_nelems() const noexcept { return br * bc; }
+  constexpr std::size_t block_nelems() const noexcept { return nrows() * ncols(); }
 };
 
 struct block_layout {
