@@ -6,81 +6,65 @@
 
 namespace t1m::packing {
 
+namespace a {
+namespace {
 template <typename T>
-class base {
- public:
-  base(std::size_t size, std::allocator<T> alloc)
-      : buf(alloc.allocate(size)), size(size), alloc(alloc) {}
-  ~base() noexcept { alloc.deallocate(buf, size); }
+void pack_cell(const scatter::matrix_view& cell, const T* src, T* dest) {
+  const std::size_t nrows = cell.nrows();
+  const std::size_t ncols = cell.ncols();
 
- protected:
-  T* buf;
-  std::size_t size;
-  std::allocator<T> alloc;
-};
+  const std::size_t rs = cell.rbs[0];
+  const std::size_t cs = cell.cbs[0];
 
-template <typename T>
-class lhs : public base<T> {
- public:
-  lhs(std::size_t size, std::allocator<T> alloc = std::allocator<T>{})
-      : base<T>(size, alloc) {}
-
-  T* data() const noexcept { return this->buf; }
-
-  void pack_cell(const scatter::matrix_view& cell, const T* src, T* dest) {
-    const std::size_t nrows = cell.nrows();
-    const std::size_t ncols = cell.ncols();
-
-    const std::size_t rs = cell.rbs[0];
-    const std::size_t cs = cell.cbs[0];
-
-    if (rs > 0 && cs > 0) {
-      const std::size_t offset = (cell.rs[0] + cell.cs[0]);
-      for (std::size_t k = 0; k < nrows; ++k) {
-        for (std::size_t l = 0; l < ncols; ++l) {
-          dest[k + l * nrows] = src[k * rs + l * cs + offset];
-        }
+  if (rs > 0 && cs > 0) {
+    const std::size_t offset = (cell.rs[0] + cell.cs[0]);
+    for (std::size_t k = 0; k < nrows; ++k) {
+      for (std::size_t l = 0; l < ncols; ++l) {
+        dest[k + l * nrows] = src[k * rs + l * cs + offset];
       }
-    } else {
-      for (std::size_t k = 0; k < nrows; ++k) {
-        for (std::size_t l = 0; l < ncols; ++l) {
-          dest[k + l * nrows] = src[cell.rs[k] + cell.cs[l]];
-        }
+    }
+  } else {
+    for (std::size_t k = 0; k < nrows; ++k) {
+      for (std::size_t l = 0; l < ncols; ++l) {
+        dest[k + l * nrows] = src[cell.rs[k] + cell.cs[l]];
       }
     }
   }
+}
+}  // namespace
 
-  void pack_block(const scatter::matrix_view& matrix, const T* src,
-                  const std::size_t M, const std::size_t K) {
+template <typename T>
+void pack_block(const scatter::matrix_view& block, const T* src, T* dest) {
 
-    //       K
-    //   ┌───┬───┐
-    //   │   │   │
-    // M ├───┼───┤ "block"
-    //   │   │   │
-    //   └───┴───┘
+  //       K
+  //   ┌───┬───┐
+  //   │   │   │
+  // M ├───┼───┤ "block"
+  //   │   │   │
+  //   └───┴───┘
 
-    std::size_t offset = 0;
-    for (std::size_t r = 0; r < M; r += matrix.br) {
+  std::size_t offset = 0;
+  for (std::size_t r = 0; r < block.nrows(); r += block.br) {
 
-      //        K
-      //    ┌───┬───┐
-      // br │   │   │ "sliver"
-      //    └───┴───┘
+    //        K
+    //    ┌───┬───┐
+    // br │   │   │ "sliver"
+    //    └───┴───┘
 
-      for (std::size_t c = 0; c < K; c += matrix.bc) {
+    for (std::size_t c = 0; c < block.ncols(); c += block.bc) {
 
-        //      bc
-        //    ┌────┐
-        // br │    │  "cell"
-        //    └────┘
+      //      bc
+      //    ┌────┐
+      // br │    │  "cell"
+      //    └────┘
 
-        const auto cell = matrix.subview(r, c, std::min(matrix.br, M - r),
-                                         std::min(matrix.bc, K - c));
-        pack_cell(cell, src, data() + offset);
-        offset += cell.block_nelems();
-      }
+      const auto cell =
+          block.subview(r, c, std::min(block.br, block.nrows() - r),
+                        std::min(block.bc, block.ncols() - c));
+      pack_cell(cell, src, dest + offset);
+      offset += cell.block_nelems();
     }
   }
-};
+}
+};  // namespace a
 };  // namespace t1m::packing
