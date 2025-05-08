@@ -15,5 +15,9 @@ find_file(BLIS_H blis REQUIRED) # find path to blis.h file; store in BLIS_H
 find_file(MARRAY_H marray REQUIRED)
 
 add_subdirectory(src) # build library
-add_subdirectory(test) # build tests
-add_subdirectory(benchmark) # build benchmarks
+if(T1M_BUILD_TEST)
+  add_subdirectory(test) # build tests
+endif()
+if(T1M_BUILD_BENCHMARK)
+  add_subdirectory(benchmark) # build benchmarks
+endif()
