@@ -3,7 +3,6 @@
 #include <complex>
 #include "blis.h"
 #include "t1m/internal/packing.h"
-#include "t1m/internal/scatter.h"
 #include "t1m/internal/utils.h"
 #include "t1m/tensor.h"
 

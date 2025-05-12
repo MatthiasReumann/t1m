@@ -2,9 +2,7 @@
 
 #include <algorithm>
 #include <array>
-#include <span>
 #include <string>
-#include <tuple>
 #include <vector>
 
 namespace t1m::utils {

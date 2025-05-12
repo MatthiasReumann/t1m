@@ -1,8 +1,8 @@
 #pragma once
 #include <array>
+#include <span>
 #include <cstddef>
 #include "t1m/internal/utils.h"
-#include "t1m/tensor.h"
 
 namespace t1m::scatter {
 
@@ -57,40 +57,4 @@ struct block_layout {
   std::size_t bc;
   std::vector<std::size_t> cbs;
 };
-
-// template <typename T, const std::size_t ndim>
-// class matrix_view {
-//  public:
-//   matrix_view(const tensor<T, ndim>& t,
-//               const std::vector<std::size_t>& row_indices, const std::size_t br,
-//               const std::vector<std::size_t>& col_indices, const std::size_t bc)
-//       : rscat(utils::scatter<ndim>{}(row_indices, t.dimensions, t.strides())),
-//         cscat(utils::scatter<ndim>{}(col_indices, t.dimensions, t.strides())),
-//         br(br),
-//         bc(bc),
-//         block_rscat(utils::block_scatter{br}(rscat)),
-//         block_cscat(utils::block_scatter{bc}(cscat)) {}
-
-//   matrix_subview subview(std::size_t ri, std::size_t ci, std::size_t nrows,
-//                          std::size_t ncols) const noexcept {
-//     return {std::span{rscat}.subspan(ri, nrows),
-//             std::span{cscat}.subspan(ci, ncols),
-//             br,
-//             std::span{block_rscat},
-//             bc,
-//             std::span{block_cscat}};
-//   }
-
-//   std::size_t nrows() const noexcept { return rscat.size(); }
-//   std::size_t ncols() const noexcept { return cscat.size(); }
-
-//  private:
-//   std::vector<std::size_t> rscat;
-//   std::vector<std::size_t> cscat;
-
-//   std::size_t br;
-//   std::size_t bc;
-//   std::vector<std::size_t> block_rscat;
-//   std::vector<std::size_t> block_cscat;
-// };
 };  // namespace t1m::scatter
