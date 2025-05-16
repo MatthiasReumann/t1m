@@ -5,7 +5,8 @@
 #include <string>
 #include <vector>
 
-namespace t1m::utils {
+namespace t1m {
+namespace utils {
 
 struct contraction_labels {
   const std::string a;
@@ -146,4 +147,5 @@ struct block_scatter {
     return strides;
   }
 };
-};  // namespace t1m::utils
+}  // namespace utils
+};  // namespace t1m

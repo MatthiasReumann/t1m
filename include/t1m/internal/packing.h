@@ -93,7 +93,6 @@ void pack_block_row_major(const scatter::matrix_view& block, const T* src,
   //   └───┴───┘
 
   std::size_t offset = 0;
-
   for (std::size_t c = 0; c < block.ncols(); c += block.bc) {
 
     //      bc

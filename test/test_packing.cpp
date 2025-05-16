@@ -1,6 +1,4 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
-#include <algorithm>
-#include <array>
 #include "doctest/doctest.h"
 #include "t1m/internal/scatter.h"
 #include "t1m/t1m.h"
