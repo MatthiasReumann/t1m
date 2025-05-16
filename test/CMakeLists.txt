@@ -13,8 +13,14 @@ target_link_libraries(test_utils PRIVATE t1m)
 target_link_libraries(test_utils PUBLIC BLAS::BLAS)
 target_link_libraries(test_utils PRIVATE GTest::gtest_main)
 
+add_executable(test_packing test_packing.cpp)
+target_link_libraries(test_packing PRIVATE t1m)
+target_link_libraries(test_packing PUBLIC BLAS::BLAS)
+target_link_libraries(test_packing PRIVATE GTest::gtest_main)
+
 include(GoogleTest)
 gtest_discover_tests(test_utils)
+gtest_discover_tests(test_packing)
 
 # add_executable(test_packing test_packing.cpp)
 # target_link_libraries(test_packing PUBLIC BLAS::BLAS)

@@ -1,7 +1,6 @@
-#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <gtest/gtest.h>
-#include "t1m/internal/utils.h"
 #include "t1m/internal/tensor.h"
+#include "t1m/internal/utils.h"
 
 using namespace t1m;
 
