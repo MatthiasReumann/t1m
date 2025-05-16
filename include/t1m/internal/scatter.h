@@ -1,7 +1,8 @@
 #pragma once
+
 #include <array>
-#include <span>
 #include <cstddef>
+#include <span>
 #include "t1m/internal/utils.h"
 
 namespace t1m::scatter {
@@ -16,8 +17,9 @@ struct matrix_view {
   const std::size_t bc;
   std::span<const std::size_t> cbs;
 
-  constexpr matrix_view subview(std::size_t ri, std::size_t ci, std::size_t nrows,
-                      std::size_t ncols) const noexcept {
+  constexpr matrix_view subview(std::size_t ri, std::size_t ci,
+                                std::size_t nrows,
+                                std::size_t ncols) const noexcept {
     const std::size_t rfrstblck = ri / br;
     const std::size_t cfrstblck = ci / bc;
     const std::size_t rnblcks = (nrows + br - 1) / br;  // ceil(nrows / br)
@@ -32,7 +34,9 @@ struct matrix_view {
 
   constexpr std::size_t nrows() const noexcept { return rs.size(); }
   constexpr std::size_t ncols() const noexcept { return cs.size(); }
-  constexpr std::size_t block_nelems() const noexcept { return nrows() * ncols(); }
+  constexpr std::size_t block_nelems() const noexcept {
+    return nrows() * ncols();
+  }
 };
 
 struct block_layout {

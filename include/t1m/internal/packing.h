@@ -1,7 +1,9 @@
+#pragma once 
+
 #include <algorithm>
 #include <span>
 #include "t1m/internal/scatter.h"
-#include "t1m/tensor.h"
+#include "t1m/internal/tensor.h"
 
 namespace t1m {
 namespace packing {
