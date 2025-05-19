@@ -3,6 +3,7 @@
 #include <blis/blis.h>
 #include <complex>
 #include <cstdlib>
+#include <memory>
 #include <print>
 #include "t1m/internal/packing.h"
 #include "t1m/internal/scatter.h"
@@ -55,40 +56,33 @@ struct blis_kernel {
   }
 };
 
-template <typename T>
-T* alloc_aligned(size_t n) {
-  return static_cast<T*>(std::aligned_alloc(32, n * sizeof(T)));
-}
-
-template <typename T, std::size_t ndim_a, std::size_t ndim_b,
-          std::size_t ndim_c>
+template <class T, std::size_t ndim_a, std::size_t ndim_b, std::size_t ndim_c>
 void contract(const T alpha, const tensor<T, ndim_a>& a,
               const std::string& labels_a, const tensor<T, ndim_b>& b,
               const std::string& labels_b, const T beta, tensor<T, ndim_c>& c,
               const std::string& labels_c) {
+  std::allocator<T> alloc{};
+
   const cntx_t* cntx = bli_gks_query_cntx();
 
   blis_kernel<T> kernel{};
   blis_blocksizes<T> blocksizes(cntx);
   contraction indices({labels_a, labels_b, labels_c});
 
-  block_layout layout_a(a.dimensions, a.strides(), indices.AI, indices.AP,
-                        blocksizes.MR, blocksizes.KP);
-  block_layout layout_b(b.dimensions, b.strides(), indices.BP, indices.BJ,
-                        blocksizes.KP, blocksizes.NR);
-  block_layout layout_c(c.dimensions, c.strides(), indices.CI, indices.CJ,
-                        blocksizes.MR, blocksizes.NR);
+  const block_layout layout_a(a.dimensions, a.strides(), indices.AI, indices.AP,
+                              blocksizes.MR, blocksizes.KP);
+  const block_layout layout_b(b.dimensions, b.strides(), indices.BP, indices.BJ,
+                              blocksizes.KP, blocksizes.NR);
+  const block_layout layout_c(c.dimensions, c.strides(), indices.CI, indices.CJ,
+                              blocksizes.MR, blocksizes.NR);
 
-  matrix_view matr_a{layout_a.rs,  layout_a.cs, layout_a.br,
-                     layout_a.rbs, layout_a.bc, layout_a.cbs};
-  matrix_view matr_b{layout_b.rs,  layout_b.cs, layout_b.br,
-                     layout_b.rbs, layout_b.bc, layout_b.cbs};
-  matrix_view matr_c{layout_c.rs,  layout_c.cs, layout_c.br,
-                     layout_c.rbs, layout_c.bc, layout_c.cbs};
+  const matrix_view matr_a = matrix_view::from_layout(layout_a);
+  const matrix_view matr_b = matrix_view::from_layout(layout_b);
+  const matrix_view matr_c = matrix_view::from_layout(layout_c);
 
-  T* workspace_a = alloc_aligned<T>(blocksizes.MC * blocksizes.KC);
-  T* workspace_b = alloc_aligned<T>(blocksizes.KC * blocksizes.NC);
-  T* workspace_c = alloc_aligned<T>(blocksizes.MC * blocksizes.NC);
+  T* workspace_a = alloc.allocate(blocksizes.MC * blocksizes.KC);
+  T* workspace_b = alloc.allocate(blocksizes.KC * blocksizes.NC);
+  T* workspace_c = alloc.allocate(blocksizes.MC * blocksizes.NC);
 
   auxinfo_t data;
 
@@ -129,8 +123,8 @@ void contract(const T alpha, const tensor<T, ndim_a>& a,
     }
   }
 
-  std::free(workspace_c);
-  std::free(workspace_b);
-  std::free(workspace_a);
+  alloc.deallocate(workspace_c, blocksizes.MC * blocksizes.NC);
+  alloc.deallocate(workspace_b, blocksizes.KC * blocksizes.NC);
+  alloc.deallocate(workspace_a, blocksizes.MC * blocksizes.KC);
 }
 };  // namespace t1m
