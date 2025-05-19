@@ -6,8 +6,8 @@ using namespace t1m;
 
 TEST(UtilsTest, IndexBundling1) {
   // Test: abd = abc . cd
-  utils::contraction_labels labels{"abc", "cd", "abd"};
-  utils::contraction indices(labels);
+  contraction_labels labels{"abc", "cd", "abd"};
+  contraction indices(labels);
 
   EXPECT_EQ(indices.CI, (std::vector<std::size_t>{0, 1}));
   EXPECT_EQ(indices.CJ, (std::vector<std::size_t>{2}));
@@ -19,8 +19,8 @@ TEST(UtilsTest, IndexBundling1) {
 
 TEST(UtilsTest, IndexBundling2) {
   // Test: fa = abcde . bdcf
-  utils::contraction_labels labels{"abcde", "bdcf", "fae"};
-  utils::contraction indices(labels);
+  contraction_labels labels{"abcde", "bdcf", "fae"};
+  contraction indices(labels);
 
   EXPECT_EQ(indices.CI, (std::vector<std::size_t>{1, 2}));
   EXPECT_EQ(indices.CJ, (std::vector<std::size_t>{0}));
@@ -33,9 +33,9 @@ TEST(UtilsTest, IndexBundling2) {
 TEST(UtilsTest, ScatterVectors) {
   t1m::tensor<float, 4> t{{3, 2, 2, 3}, nullptr, memory_layout::COL_MAJOR};
   std::vector<std::size_t> rscat =
-      utils::scatter<4>{}({0, 1}, t.dimensions, t.strides());
+      scatter<4>{}({0, 1}, t.dimensions, t.strides());
   std::vector<std::size_t> cscat =
-      utils::scatter<4>{}({2, 3}, t.dimensions, t.strides());
+      scatter<4>{}({2, 3}, t.dimensions, t.strides());
 
   EXPECT_EQ(rscat, (std::vector<std::size_t>{0, 1, 2, 3, 4, 5}));
   EXPECT_EQ(cscat, (std::vector<std::size_t>{0, 6, 12, 18, 24, 30}));
@@ -44,30 +44,28 @@ TEST(UtilsTest, ScatterVectors) {
 TEST(UtilsTest, BlockScatterVectors1) {
   t1m::tensor<float, 4> t{{3, 2, 2, 3}, nullptr, memory_layout::COL_MAJOR};
   std::vector<std::size_t> rscat =
-      utils::scatter<4>{}({0, 1}, t.dimensions, t.strides());
+      scatter<4>{}({0, 1}, t.dimensions, t.strides());
   std::vector<std::size_t> cscat =
-      utils::scatter<4>{}({2, 3}, t.dimensions, t.strides());
-  std::vector<std::size_t> block_rscat = utils::block_scatter{3}(rscat);
-  std::vector<std::size_t> block_cscat = utils::block_scatter{3}(cscat);
+      scatter<4>{}({2, 3}, t.dimensions, t.strides());
+  std::vector<std::size_t> block_rscat = block_scatter{3}(rscat);
+  std::vector<std::size_t> block_cscat = block_scatter{3}(cscat);
 
   EXPECT_EQ(block_rscat, (std::vector<std::size_t>{1, 1}));
   EXPECT_EQ(block_cscat, (std::vector<std::size_t>{6, 6}));
 }
 
 TEST(UtilsTest, BlockScatterVectors2) {
-  std::vector<std::size_t> block_scat =
-      utils::block_scatter{3}({1, 2, 3, 5, 7, 8});
+  std::vector<std::size_t> block_scat = block_scatter{3}({1, 2, 3, 5, 7, 8});
   EXPECT_EQ(block_scat, (std::vector<std::size_t>{1, 0}));
 }
 
 TEST(UtilsTest, BlockScatterVectors3) {
-  std::vector<std::size_t> block_scat =
-      utils::block_scatter{3}({1, 2, 3, 5, 7, 8, 2});
+  std::vector<std::size_t> block_scat = block_scatter{3}({1, 2, 3, 5, 7, 8, 2});
   EXPECT_EQ(block_scat, (std::vector<std::size_t>{1, 0, 2}));
 }
 
 TEST(UtilsTest, BlockScatterVectors4) {
   std::vector<std::size_t> block_scat =
-      utils::block_scatter{3}({1, 2, 3, 5, 7, 8, 1, 4});
+      block_scatter{3}({1, 2, 3, 5, 7, 8, 1, 4});
   EXPECT_EQ(block_scat, (std::vector<std::size_t>{1, 0, 3}));
 }

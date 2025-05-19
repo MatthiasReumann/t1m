@@ -5,7 +5,7 @@
 #include <span>
 #include "t1m/internal/utils.h"
 
-namespace t1m::scatter {
+namespace t1m {
 
 struct matrix_view {
   std::span<const std::size_t> rs;
@@ -47,10 +47,10 @@ struct block_layout {
                const std::vector<std::size_t>& col_indices,
                const std::size_t br, const std::size_t bc)
       : br(br), bc(bc) {
-    rs = utils::scatter<ndim>{}(row_indices, dimensions, strides);
-    cs = utils::scatter<ndim>{}(col_indices, dimensions, strides);
-    rbs = utils::block_scatter{br}(rs);
-    cbs = utils::block_scatter{bc}(cs);
+    rs = scatter<ndim>{}(row_indices, dimensions, strides);
+    cs = scatter<ndim>{}(col_indices, dimensions, strides);
+    rbs = block_scatter{br}(rs);
+    cbs = block_scatter{bc}(cs);
   }
 
   std::vector<std::size_t> rs;
@@ -61,4 +61,4 @@ struct block_layout {
   std::size_t bc;
   std::vector<std::size_t> cbs;
 };
-};  // namespace t1m::scatter
+};  // namespace t1m

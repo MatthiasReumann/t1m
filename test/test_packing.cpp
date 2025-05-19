@@ -5,7 +5,7 @@
 
 using namespace t1m;
 
-TEST(UtilsTest, PackColMajorQuadratic) {
+TEST(PackingTest, PackColMajorQuadratic) {
   constexpr std::size_t M = 4;
   constexpr std::size_t K = 4;
   constexpr std::size_t sz = M * K;
@@ -29,8 +29,8 @@ TEST(UtilsTest, PackColMajorQuadratic) {
   // 2  6  10  14
   // 3  7  11  15
   // 4  8  12  16
-  scatter::block_layout layout(t.dimensions, t.strides(), {0, 1}, {2}, m, k);
-  scatter::matrix_view block{layout.rs,  layout.cs, layout.br,
+  block_layout layout(t.dimensions, t.strides(), {0, 1}, {2}, m, k);
+  matrix_view block{layout.rs,  layout.cs, layout.br,
                              layout.rbs, layout.bc, layout.cbs};
 
   // Expected Packed Layout In Column Major:
@@ -40,14 +40,14 @@ TEST(UtilsTest, PackColMajorQuadratic) {
   // 3  7  11  15
   // 4  8  12  16
   std::array<float, sz> pckd{};
-  packing::pack_block_col_major<float>(block, elems.data(), pckd.data());
+  pack_block_col_major<float>(block, elems.data(), pckd.data());
 
   std::array<float, sz> expt{1, 2, 5, 6, 9,  10, 13, 14,
                              3, 4, 7, 8, 11, 12, 15, 16};
   EXPECT_TRUE(std::equal(pckd.data(), pckd.data() + sz, expt.begin()));
 }
 
-TEST(UtilsTest, PackColMajorRectangular) {
+TEST(PackingTest, PackColMajorRectangular) {
   constexpr std::size_t M = 4;
   constexpr std::size_t K = 4;
   constexpr std::size_t sz = M * K;
@@ -72,8 +72,8 @@ TEST(UtilsTest, PackColMajorRectangular) {
   // 3  7  11  15
   // 4  8  12  16
 
-  scatter::block_layout layout(t.dimensions, t.strides(), {0, 1}, {2}, m, k);
-  scatter::matrix_view block{layout.rs,  layout.cs, layout.br,
+  block_layout layout(t.dimensions, t.strides(), {0, 1}, {2}, m, k);
+  matrix_view block{layout.rs,  layout.cs, layout.br,
                              layout.rbs, layout.bc, layout.cbs};
 
   // Expected Packed Layout In Column Major:
@@ -83,14 +83,14 @@ TEST(UtilsTest, PackColMajorRectangular) {
   // ------------
   // 4  8  12  16
   std::array<float, sz> pckd{};
-  packing::pack_block_col_major<float>(block, elems.data(), pckd.data());
+  pack_block_col_major<float>(block, elems.data(), pckd.data());
 
   std::array<float, sz> expt{1,  2,  3,  5,  6, 7, 9,  10,
                              11, 13, 14, 15, 4, 8, 12, 16};
   EXPECT_TRUE(std::equal(pckd.data(), pckd.data() + sz, expt.begin()));
 }
 
-TEST(UtilsTest, PackRowMajorQuadratic) {
+TEST(PackingTest, PackRowMajorQuadratic) {
   constexpr std::size_t M = 4;
   constexpr std::size_t K = 4;
   constexpr std::size_t sz = M * K;
@@ -114,8 +114,8 @@ TEST(UtilsTest, PackRowMajorQuadratic) {
   // 2  6  10  14
   // 3  7  11  15
   // 4  8  12  16
-  scatter::block_layout layout(t.dimensions, t.strides(), {0, 1}, {2}, m, k);
-  scatter::matrix_view block{layout.rs,  layout.cs, layout.br,
+  block_layout layout(t.dimensions, t.strides(), {0, 1}, {2}, m, k);
+  matrix_view block{layout.rs,  layout.cs, layout.br,
                              layout.rbs, layout.bc, layout.cbs};
 
   // Expected Packed Layout In Row Major:
@@ -124,14 +124,14 @@ TEST(UtilsTest, PackRowMajorQuadratic) {
   // 3  7 | 11  15
   // 4  8 | 12  16
   std::array<float, sz> pckd{};
-  packing::pack_block_row_major(block, elems.data(), pckd.data());
+  pack_block_row_major(block, elems.data(), pckd.data());
 
   std::array<float, sz> expt{1, 5,  2,  6,  3,  7,  4,  8,
                              9, 13, 10, 14, 11, 15, 12, 16};
   EXPECT_TRUE(std::equal(pckd.data(), pckd.data() + sz, expt.begin()));
 }
 
-TEST(UtilsTest, PackRowMajorRectangular) {
+TEST(PackingTest, PackRowMajorRectangular) {
   constexpr std::size_t M = 4;
   constexpr std::size_t K = 4;
   constexpr std::size_t sz = M * K;
@@ -156,8 +156,8 @@ TEST(UtilsTest, PackRowMajorRectangular) {
   // 3  7  11  15
   // 4  8  12  16
 
-  scatter::block_layout layout(t.dimensions, t.strides(), {0, 1}, {2}, m, k);
-  scatter::matrix_view block{layout.rs,  layout.cs, layout.br,
+  block_layout layout(t.dimensions, t.strides(), {0, 1}, {2}, m, k);
+  matrix_view block{layout.rs,  layout.cs, layout.br,
                              layout.rbs, layout.bc, layout.cbs};
 
   // Expected Packed Layout In Column Major:
@@ -166,7 +166,7 @@ TEST(UtilsTest, PackRowMajorRectangular) {
   // 3  7  11  | 15
   // 4  8  12  | 16
   std::array<float, sz> pckd{};
-  packing::pack_block_row_major<float>(block, elems.data(), pckd.data());
+  pack_block_row_major<float>(block, elems.data(), pckd.data());
 
   std::array<float, sz> expt{1,  5, 9, 2,  6,  10, 3,  7,
                              11, 4, 8, 12, 13, 14, 15, 16};

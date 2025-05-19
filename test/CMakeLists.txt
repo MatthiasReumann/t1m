@@ -10,35 +10,19 @@ enable_testing()
 
 add_executable(test_utils test_utils.cpp)
 target_link_libraries(test_utils PRIVATE t1m)
-target_link_libraries(test_utils PUBLIC BLAS::BLAS)
 target_link_libraries(test_utils PRIVATE GTest::gtest_main)
 
 add_executable(test_packing test_packing.cpp)
 target_link_libraries(test_packing PRIVATE t1m)
-target_link_libraries(test_packing PUBLIC BLAS::BLAS)
 target_link_libraries(test_packing PRIVATE GTest::gtest_main)
+
+add_executable(test_contraction test_contraction.cpp)
+target_include_directories(t1m INTERFACE "${BLIS_H}")
+target_link_libraries(test_contraction PRIVATE t1m)
+target_link_libraries(test_contraction PRIVATE "${BLIS_LIB}")
+target_link_libraries(test_contraction PRIVATE GTest::gtest_main)
 
 include(GoogleTest)
 gtest_discover_tests(test_utils)
 gtest_discover_tests(test_packing)
-
-# add_executable(test_packing test_packing.cpp)
-# target_link_libraries(test_packing PUBLIC BLAS::BLAS)
-# target_link_libraries(test_packing PRIVATE doctest::doctest)
-# target_link_libraries(test_packing INTERFACE t1m)
-# add_test(NAME test_packingtest COMMAND test_packing)
-
-# add_executable(test_real test_real.cpp)
-# target_link_libraries(test_real PRIVATE doctest::doctest)
-# target_link_libraries(test_real INTERFACE t1m)
-# add_test(NAME test_realtest COMMAND test_real)
-
-# add_executable(testcomplex test_complex.cpp)
-# target_link_libraries(testcomplex PUBLIC doctest::doctest)
-# target_link_libraries(testcomplex PRIVATE t1m)
-# add_test(NAME testcomplextest COMMAND testcomplex)
-
-# add_executable(testreal test_real.cpp)
-# target_link_libraries(testreal PUBLIC doctest::doctest)
-# target_link_libraries(testreal PRIVATE t1m)
-# add_test(NAME testrealtest COMMAND testreal)
+gtest_discover_tests(test_contraction)

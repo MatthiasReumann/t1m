@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 
 #include <algorithm>
 #include <span>
@@ -6,10 +6,9 @@
 #include "t1m/internal/tensor.h"
 
 namespace t1m {
-namespace packing {
 
 template <typename T, memory_layout layout>
-void pack_cell(const scatter::matrix_view& cell, const T* src, T* dest) {
+void pack_cell(const matrix_view& cell, const T* src, T* dest) {
   const std::size_t nrows = cell.nrows();
   const std::size_t ncols = cell.ncols();
 
@@ -49,7 +48,7 @@ void pack_cell(const scatter::matrix_view& cell, const T* src, T* dest) {
 }
 
 template <typename T>
-void pack_block_col_major(const scatter::matrix_view& block, const T* src,
+void pack_block_col_major(const matrix_view& block, const T* src,
                           T* dest) {
 
   //       K
@@ -84,7 +83,7 @@ void pack_block_col_major(const scatter::matrix_view& block, const T* src,
 }
 
 template <typename T>
-void pack_block_row_major(const scatter::matrix_view& block, const T* src,
+void pack_block_row_major(const matrix_view& block, const T* src,
                           T* dest) {
 
   //       K
@@ -119,5 +118,4 @@ void pack_block_row_major(const scatter::matrix_view& block, const T* src,
     }
   }
 }
-}  // namespace packing
 };  // namespace t1m
