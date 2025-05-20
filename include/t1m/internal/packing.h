@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <print>
 #include <span>
 #include "t1m/internal/scatter.h"
 #include "t1m/internal/tensor.h"
@@ -20,13 +21,13 @@ void pack_cell(const matrix_view& cell, const T* src, T* dest) {
     if constexpr (layout == memory_layout::COL_MAJOR) {
       for (std::size_t l = 0; l < ncols; ++l) {
         for (std::size_t k = 0; k < nrows; ++k) {
-          dest[k + l * nrows] = src[k * rs + l * cs + offset];
+          dest[k + l * cell.br] = src[k * rs + l * cs + offset];
         }
       }
     } else {
       for (std::size_t k = 0; k < nrows; ++k) {
         for (std::size_t l = 0; l < ncols; ++l) {
-          dest[l + k * ncols] = src[k * rs + l * cs + offset];
+          dest[l + k * cell.bc] = src[k * rs + l * cs + offset];
         }
       }
     }
@@ -34,13 +35,13 @@ void pack_cell(const matrix_view& cell, const T* src, T* dest) {
     if constexpr (layout == memory_layout::COL_MAJOR) {
       for (std::size_t l = 0; l < ncols; ++l) {
         for (std::size_t k = 0; k < nrows; ++k) {
-          dest[k + l * nrows] = src[cell.rs[k] + cell.cs[l]];
+          dest[k + l * cell.br] = src[cell.rs[k] + cell.cs[l]];
         }
       }
     } else {
       for (std::size_t k = 0; k < nrows; ++k) {
         for (std::size_t l = 0; l < ncols; ++l) {
-          dest[l + k * ncols] = src[cell.rs[k] + cell.cs[l]];
+          dest[l + k * cell.bc] = src[cell.rs[k] + cell.cs[l]];
         }
       }
     }
@@ -48,8 +49,7 @@ void pack_cell(const matrix_view& cell, const T* src, T* dest) {
 }
 
 template <typename T>
-void pack_block_col_major(const matrix_view& block, const T* src,
-                          T* dest) {
+void pack_block_col_major(const matrix_view& block, const T* src, T* dest) {
 
   //       K
   //   ┌───┬───┐
@@ -83,8 +83,7 @@ void pack_block_col_major(const matrix_view& block, const T* src,
 }
 
 template <typename T>
-void pack_block_row_major(const matrix_view& block, const T* src,
-                          T* dest) {
+void pack_block_row_major(const matrix_view& block, const T* src, T* dest) {
 
   //       K
   //   ┌───┬───┐
@@ -115,6 +114,18 @@ void pack_block_row_major(const matrix_view& block, const T* src,
                         std::min(block.bc, block.ncols() - c));
       pack_cell<T, ROW_MAJOR>(cell, src, dest + offset);
       offset += cell.block_nelems();
+    }
+  }
+}
+
+template <typename T>
+void unpack(const matrix_view& block, const T* src, T* dest) {
+  const std::size_t nrows = block.nrows();
+  const std::size_t ncols = block.ncols();
+
+  for (std::size_t k = 0; k < nrows; ++k) {
+    for (std::size_t l = 0; l < ncols; ++l) {
+      dest[block.rs[k] + block.cs[l]] += src[k + l * nrows];
     }
   }
 }

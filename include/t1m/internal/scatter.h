@@ -34,10 +34,10 @@ struct matrix_view {
   std::span<const std::size_t> rs;
   std::span<const std::size_t> cs;
 
-  const std::size_t br;
+  std::size_t br;
   std::span<const std::size_t> rbs;
 
-  const std::size_t bc;
+  std::size_t bc;
   std::span<const std::size_t> cbs;
 
   constexpr static matrix_view from_layout(const block_layout& layout) {
@@ -61,8 +61,7 @@ struct matrix_view {
 
   constexpr std::size_t nrows() const noexcept { return rs.size(); }
   constexpr std::size_t ncols() const noexcept { return cs.size(); }
-  constexpr std::size_t block_nelems() const noexcept {
-    return nrows() * ncols();
-  }
+  constexpr std::size_t nelems() const noexcept { return nrows() * ncols(); }
+  constexpr std::size_t block_nelems() const noexcept { return br * bc; }
 };
 };  // namespace t1m

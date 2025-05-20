@@ -14,12 +14,12 @@ namespace t1m {
 
 template <typename T>
 struct blis_blocksizes {
-  const std::size_t MR;
-  const std::size_t NR;
-  const std::size_t KP;
-  const std::size_t MC;
-  const std::size_t KC;
-  const std::size_t NC;
+  std::size_t MR;
+  std::size_t NR;
+  std::size_t KP;
+  std::size_t MC;
+  std::size_t KC;
+  std::size_t NC;
 
   blis_blocksizes(const cntx_t* cntx)
       requires(std::same_as<T, float> || std::same_as<T, std::complex<float>>)
@@ -44,14 +44,15 @@ template <typename T>
 struct blis_kernel {
 
   template <typename... Us>
-  auto operator()(Us... args)
+  constexpr auto operator()(Us... args) const
       requires(std::same_as<T, float> || std::same_as<T, std::complex<float>>) {
     return bli_sgemm_ukernel(args...);
   }
 
   template <typename... Us>
-  auto operator()(Us... args) requires(std::same_as<T, double> ||
-                                       std::same_as<T, std::complex<double>>) {
+  constexpr auto operator()(Us... args) const
+      requires(std::same_as<T, double> ||
+               std::same_as<T, std::complex<double>>) {
     return bli_dgemm_ukernel(args...);
   }
 };
@@ -63,11 +64,11 @@ void contract(const T alpha, const tensor<T, ndim_a>& a,
               const std::string& labels_c) {
   std::allocator<T> alloc{};
 
-  const cntx_t* cntx = bli_gks_query_cntx();
+  constexpr blis_kernel<T> kernel{};
 
-  blis_kernel<T> kernel{};
-  blis_blocksizes<T> blocksizes(cntx);
-  contraction indices({labels_a, labels_b, labels_c});
+  const cntx_t* cntx = bli_gks_query_cntx();
+  const blis_blocksizes<T> blocksizes(cntx);
+  const contraction indices({labels_a, labels_b, labels_c});
 
   const block_layout layout_a(a.dimensions, a.strides(), indices.AI, indices.AP,
                               blocksizes.MR, blocksizes.KP);
@@ -82,7 +83,7 @@ void contract(const T alpha, const tensor<T, ndim_a>& a,
 
   T* workspace_a = alloc.allocate(blocksizes.MC * blocksizes.KC);
   T* workspace_b = alloc.allocate(blocksizes.KC * blocksizes.NC);
-  T* workspace_c = alloc.allocate(blocksizes.MC * blocksizes.NC);
+  T* workspace_c = alloc.allocate(blocksizes.MR * blocksizes.NR);
 
   auxinfo_t data;
 
@@ -110,13 +111,13 @@ void contract(const T alpha, const tensor<T, ndim_a>& a,
           std::size_t off_j = j_c + j_r;
 
           for (size_t i_r = 0; i_r < mc_m; i_r += blocksizes.MR) {
+            std::size_t off_i = i_c + i_r;
             std::size_t m = std::min(blocksizes.MR, mc_m - i_r);
 
             kernel(m, n, k, &alpha, workspace_a, workspace_b, &beta,
                    workspace_c, 1, m, &data, cntx);
-
-            std::size_t off_i = i_c + i_r;
             matrix_view block_c = matr_c.subview(off_i, off_j, m, n);
+            unpack(block_c, workspace_c, c.data);
           }
         }
       }
