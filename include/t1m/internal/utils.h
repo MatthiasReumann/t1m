@@ -4,6 +4,7 @@
 #include <array>
 #include <string>
 #include <vector>
+#include "t1m/internal/tensor.h"
 
 namespace t1m {
 
@@ -117,8 +118,8 @@ struct block_scatter {
       const std::size_t offset = i * b;
       const std::size_t nelem = std::min<std::size_t>(b, scat.size() - offset);
       const std::vector<std::size_t> strides =
-          get_strides(std::vector<std::size_t>(scat.begin() + offset,
-                                               scat.begin() + offset + nelem));
+          get_pairwise_distances(std::vector<std::size_t>(
+              scat.begin() + offset, scat.begin() + offset + nelem));
 
       std::size_t stride = strides[0];
       if (!std::all_of(strides.begin(), strides.end(),
@@ -133,17 +134,17 @@ struct block_scatter {
   }
 
  private:
-  std::vector<std::size_t> get_strides(
+  std::vector<std::size_t> get_pairwise_distances(
       const std::vector<std::size_t>& v) const {
     if (v.size() == 1) {
-      return v;
+      return {0};
     }
 
-    std::vector<std::size_t> strides(v.size() - 1);
+    std::vector<std::size_t> distances(v.size() - 1);
     for (std::size_t i = 0; i < v.size() - 1; ++i) {
-      strides[i] = v[i + 1] - v[i];
+      distances[i] = v[i + 1] - v[i];
     }
-    return strides;
+    return distances;
   }
 };
 };  // namespace t1m

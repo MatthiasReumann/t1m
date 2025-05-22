@@ -8,15 +8,15 @@
 namespace t1m {
 
 struct block_layout {
-  template <const std::size_t ndim>
-  block_layout(const std::array<std::size_t, ndim> dimensions,
-               const std::array<std::size_t, ndim> strides,
+  template <std::size_t ndim>
+  block_layout(const std::array<std::size_t, ndim>& dims,
+               const std::array<std::size_t, ndim>& strides,
                const std::vector<std::size_t>& row_indices,
                const std::vector<std::size_t>& col_indices,
                const std::size_t br, const std::size_t bc)
       : br(br), bc(bc) {
-    rs = scatter<ndim>{}(row_indices, dimensions, strides);
-    cs = scatter<ndim>{}(col_indices, dimensions, strides);
+    rs = scatter<ndim>{}(row_indices, dims, strides);
+    cs = scatter<ndim>{}(col_indices, dims, strides);
     rbs = block_scatter{br}(rs);
     cbs = block_scatter{bc}(cs);
   }

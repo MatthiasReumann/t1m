@@ -22,14 +22,14 @@ TEST(PackingTest, PackColMajorQuadratic) {
   // 3D Layout:
   // 1 3 | 5 7 |  9 11 | 13 15
   // 2 4 | 6 8 | 10 12 | 14 16
-  tensor<float, 3> t{{2, 2, 4}, elems.data(), memory_layout::COL_MAJOR};
+  tensor<float, 3> t{{2, 2, 4}, elems.data(), memory_layout::col_major};
 
   // 2D Layout:
   // 1  5   9  13
   // 2  6  10  14
   // 3  7  11  15
   // 4  8  12  16
-  block_layout layout(t.dimensions, t.strides(), {0, 1}, {2}, m, k);
+  block_layout layout(t.dims, t.strides(), {0, 1}, {2}, m, k);
   matrix_view block = matrix_view::from_layout(layout);
 
   // Expected Packed Layout In Column Major:
@@ -39,7 +39,7 @@ TEST(PackingTest, PackColMajorQuadratic) {
   // 3  7  11  15
   // 4  8  12  16
   std::array<float, sz> pckd{};
-  pack_block_col_major<float>(block, elems.data(), pckd.data());
+  pack_block_col_major<float>(block, K, elems.data(), pckd.data());
 
   std::array<float, sz> expt{1, 2, 5, 6, 9,  10, 13, 14,
                              3, 4, 7, 8, 11, 12, 15, 16};
@@ -64,7 +64,7 @@ TEST(PackingTest, PackColMajorRectangular) {
   // 3D Layout:
   // 1 3 | 5 7 |  9 11 | 13 15
   // 2 4 | 6 8 | 10 12 | 14 16
-  t1m::tensor<float, 3> t{{2, 2, 4}, elems.data(), memory_layout::COL_MAJOR};
+  t1m::tensor<float, 3> t{{2, 2, 4}, elems.data(), memory_layout::col_major};
 
   // 2D Layout:
   // 1  5   9  13
@@ -72,7 +72,7 @@ TEST(PackingTest, PackColMajorRectangular) {
   // 3  7  11  15
   // 4  8  12  16
 
-  block_layout layout(t.dimensions, t.strides(), {0, 1}, {2}, m, k);
+  block_layout layout(t.dims, t.strides(), {0, 1}, {2}, m, k);
   matrix_view block = matrix_view::from_layout(layout);
 
   // Expected Packed Layout In Column Major:
@@ -85,7 +85,7 @@ TEST(PackingTest, PackColMajorRectangular) {
   // 0  0   0   0
 
   std::array<float, space> pckd{};
-  pack_block_col_major<float>(block, elems.data(), pckd.data());
+  pack_block_col_major<float>(block, K, elems.data(), pckd.data());
 
   std::array<float, space> expt{1, 2, 3, 5, 6, 7, 9,  10, 11, 13, 14, 15,
                                 4, 0, 0, 8, 0, 0, 12, 0,  0,  16, 0,  0};
@@ -110,14 +110,14 @@ TEST(PackingTest, PackRowMajorQuadratic) {
   // 3D Layout:
   // 1 3 | 5 7 |  9 11 | 13 15
   // 2 4 | 6 8 | 10 12 | 14 16
-  tensor<float, 3> t{{2, 2, 4}, elems.data(), memory_layout::COL_MAJOR};
+  tensor<float, 3> t{{2, 2, 4}, elems.data(), memory_layout::col_major};
 
   // 2D Layout:
   // 1  5   9  13
   // 2  6  10  14
   // 3  7  11  15
   // 4  8  12  16
-  block_layout layout(t.dimensions, t.strides(), {0, 1}, {2}, m, k);
+  block_layout layout(t.dims, t.strides(), {0, 1}, {2}, m, k);
   matrix_view block = matrix_view::from_layout(layout);
 
   // Expected Packed Layout In Row Major:
@@ -126,7 +126,7 @@ TEST(PackingTest, PackRowMajorQuadratic) {
   // 3  7 | 11  15
   // 4  8 | 12  16
   std::array<float, space> pckd{};
-  pack_block_row_major(block, elems.data(), pckd.data());
+  pack_block_row_major(block, K, elems.data(), pckd.data());
 
   std::array<float, space> expt{1, 5,  2,  6,  3,  7,  4,  8,
                                 9, 13, 10, 14, 11, 15, 12, 16};
@@ -151,7 +151,7 @@ TEST(PackingTest, PackRowMajorRectangular) {
   // 3D Layout:
   // 1 3 | 5 7 |  9 11 | 13 15
   // 2 4 | 6 8 | 10 12 | 14 16
-  t1m::tensor<float, 3> t{{2, 2, 4}, elems.data(), memory_layout::COL_MAJOR};
+  t1m::tensor<float, 3> t{{2, 2, 4}, elems.data(), memory_layout::col_major};
 
   // 2D Layout:
   // 1  5   9  13
@@ -159,7 +159,7 @@ TEST(PackingTest, PackRowMajorRectangular) {
   // 3  7  11  15
   // 4  8  12  16
 
-  block_layout layout(t.dimensions, t.strides(), {0, 1}, {2}, m, k);
+  block_layout layout(t.dims, t.strides(), {0, 1}, {2}, m, k);
   matrix_view block = matrix_view::from_layout(layout);
 
   // Expected Packed Layout In Row Major:
@@ -168,7 +168,7 @@ TEST(PackingTest, PackRowMajorRectangular) {
   // 3  7  11  | 15  0  0
   // 4  8  12  | 16  0  0
   std::array<float, space> pckd{};
-  pack_block_row_major<float>(block, elems.data(), pckd.data());
+  pack_block_row_major<float>(block, K, elems.data(), pckd.data());
 
   std::array<float, space> expt{1,  5, 9, 2,  6, 10, 3,  7, 11, 4,  8, 12,
                                 13, 0, 0, 14, 0, 0,  15, 0, 0,  16, 0, 0};
