@@ -3,7 +3,7 @@
 #include <functional>
 #include <limits>
 #include <numeric>
-#include "t1m/internal/blis.h"
+#include "t1m/bli/mappings.h"
 #include "t1m/internal/t1m.h"
 #include "t1m/internal/tensor.h"
 
@@ -14,8 +14,7 @@ std::size_t multiply(const std::array<std::size_t, ndim>& dims) {
                          std::multiplies<std::size_t>());
 }
 
-template <typename T, std::size_t ndim_a, std::size_t ndim_b,
-          std::size_t ndim_c>
+template <class T, std::size_t ndim_a, std::size_t ndim_b, std::size_t ndim_c>
 void gemm_like(const std::string& labels_a, const std::string& labels_b,
                const std::string& labels_c, const std::size_t exp_m,
                const std::size_t exp_n, const std::size_t exp_k) {

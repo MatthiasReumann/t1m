@@ -6,50 +6,47 @@
 #include <vector>
 
 namespace t1m {
+namespace internal {
+struct index_bundles {
+  constexpr index_bundles(const std::string& labels_a,
+                          const std::string& labels_b,
+                          const std::string& labels_c) {
+    // Copy for sorting.
+    std::string a(labels_a);
+    std::string b(labels_b);
+    std::string c(labels_c);
 
-struct contraction_labels {
-  const std::string a;
-  const std::string b;
-  const std::string c;
-};
-
-struct contraction {
-  contraction(const contraction_labels& labels) {
-    std::string label_a(labels.a);
-    std::string label_b(labels.b);
-    std::string label_c(labels.c);
-
-    std::sort(label_a.begin(), label_a.end());
-    std::sort(label_b.begin(), label_b.end());
-    std::sort(label_c.begin(), label_c.end());
+    std::sort(a.begin(), a.end());
+    std::sort(b.begin(), b.end());
+    std::sort(c.begin(), c.end());
 
     std::string contracted, free_a, free_b;
-    std::set_intersection(label_a.begin(), label_a.end(), label_b.begin(),
-                          label_b.end(), std::back_inserter(contracted));
-    std::set_difference(label_a.begin(), label_a.end(), label_b.begin(),
-                        label_b.end(), std::back_inserter(free_a));
-    std::set_difference(label_b.begin(), label_b.end(), label_a.begin(),
-                        label_a.end(), std::back_inserter(free_b));
+    std::set_intersection(a.begin(), a.end(), b.begin(), b.end(),
+                          std::back_inserter(contracted));
+    std::set_difference(a.begin(), a.end(), b.begin(), b.end(),
+                        std::back_inserter(free_a));
+    std::set_difference(b.begin(), b.end(), a.begin(), a.end(),
+                        std::back_inserter(free_b));
 
     AP.reserve(contracted.size());
     BP.reserve(contracted.size());
     for (size_t i = 0; i < contracted.size(); ++i) {
-      AP.push_back(labels.a.find(contracted[i]));
-      BP.push_back(labels.b.find(contracted[i]));
+      AP.push_back(labels_a.find(contracted[i]));
+      BP.push_back(labels_b.find(contracted[i]));
     }
 
     AI.reserve(free_a.size());
     CI.reserve(free_a.size());
     for (size_t i = 0; i < free_a.size(); ++i) {
-      AI.push_back(labels.a.find(free_a[i]));
-      CI.push_back(labels.c.find(free_a[i]));
+      AI.push_back(labels_a.find(free_a[i]));
+      CI.push_back(labels_c.find(free_a[i]));
     }
 
     BJ.reserve(free_b.size());
     CJ.reserve(free_b.size());
     for (size_t i = 0; i < free_b.size(); ++i) {
-      BJ.push_back(labels.b.find(free_b[i]));
-      CJ.push_back(labels.c.find(free_b[i]));
+      BJ.push_back(labels_b.find(free_b[i]));
+      CJ.push_back(labels_c.find(free_b[i]));
     }
   }
 
@@ -146,4 +143,5 @@ struct block_scatter {
     return distances;
   }
 };
+};  // namespace internal
 };  // namespace t1m

@@ -4,6 +4,7 @@
 #include "t1m/internal/tensor.h"
 
 using namespace t1m;
+using namespace t1m::internal;
 
 TEST(PackingTest, PackColMajorQuadratic) {
   constexpr std::size_t M = 4;

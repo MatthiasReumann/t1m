@@ -6,7 +6,7 @@
 #include "t1m/internal/utils.h"
 
 namespace t1m {
-
+namespace internal {
 struct block_layout {
   template <std::size_t ndim>
   block_layout(const std::array<std::size_t, ndim>& dims,
@@ -64,4 +64,5 @@ struct matrix_view {
   constexpr std::size_t nelems() const noexcept { return nrows() * ncols(); }
   constexpr std::size_t block_nelems() const noexcept { return br * bc; }
 };
+};  // namespace internal
 };  // namespace t1m
