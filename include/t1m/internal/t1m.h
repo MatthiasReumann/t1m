@@ -1,62 +1,16 @@
 #pragma once
 
 #include <blis/blis.h>
-#include <complex>
 #include <cstdlib>
 #include <cstring>
 #include <memory>
-#include <print>
+#include "t1m/internal/blis.h"
 #include "t1m/internal/packing.h"
 #include "t1m/internal/scatter.h"
 #include "t1m/internal/tensor.h"
 #include "t1m/internal/utils.h"
 
 namespace t1m {
-
-template <typename T>
-struct blis_blocksizes {
-  std::size_t MR;
-  std::size_t NR;
-  std::size_t KP;
-  std::size_t MC;
-  std::size_t KC;
-  std::size_t NC;
-
-  blis_blocksizes(const cntx_t* cntx)
-      requires(std::same_as<T, float> || std::same_as<T, std::complex<float>>)
-      : MR(bli_cntx_get_blksz_def_dt(BLIS_FLOAT, BLIS_MR, cntx)),
-        NR(bli_cntx_get_blksz_def_dt(BLIS_FLOAT, BLIS_NR, cntx)),
-        KP(4),
-        MC(bli_cntx_get_blksz_def_dt(BLIS_FLOAT, BLIS_MC, cntx)),
-        KC(bli_cntx_get_blksz_def_dt(BLIS_FLOAT, BLIS_KC, cntx)),
-        NC(bli_cntx_get_blksz_def_dt(BLIS_FLOAT, BLIS_NC, cntx)) {}
-
-  blis_blocksizes(const cntx_t* cntx)
-      requires(std::same_as<T, double> || std::same_as<T, std::complex<double>>)
-      : MR(bli_cntx_get_blksz_def_dt(BLIS_DOUBLE, BLIS_MR, cntx)),
-        NR(bli_cntx_get_blksz_def_dt(BLIS_DOUBLE, BLIS_NR, cntx)),
-        KP(4),
-        MC(bli_cntx_get_blksz_def_dt(BLIS_DOUBLE, BLIS_MC, cntx)),
-        KC(bli_cntx_get_blksz_def_dt(BLIS_DOUBLE, BLIS_KC, cntx)),
-        NC(bli_cntx_get_blksz_def_dt(BLIS_DOUBLE, BLIS_NC, cntx)) {}
-};
-
-template <typename T>
-struct blis_kernel {
-
-  template <typename... Us>
-  constexpr void operator()(Us... args) const
-      requires(std::same_as<T, float> || std::same_as<T, std::complex<float>>) {
-    bli_sgemm_ukernel(args...);
-  }
-
-  template <typename... Us>
-  constexpr void operator()(Us... args) const
-      requires(std::same_as<T, double> ||
-               std::same_as<T, std::complex<double>>) {
-    bli_dgemm_ukernel(args...);
-  }
-};
 
 template <typename T, std::size_t ndim_a, std::size_t ndim_b,
           std::size_t ndim_c>
@@ -66,12 +20,10 @@ void contract(const T alpha, const tensor<T, ndim_a>& a,
               const std::string& labels_c) {
   std::allocator<T> alloc{};
 
-  constexpr blis_kernel<T> kernel{};
-
   const cntx_t* cntx = bli_gks_query_cntx();
-  const blis_blocksizes<T> blocksizes(cntx);
-  const contraction indices({labels_a, labels_b, labels_c});
+  const bli::block_sizes blocksizes{bli::get_block_sizes<T>(cntx)};
 
+  const contraction indices({labels_a, labels_b, labels_c});
   const block_layout layout_a(a.dims, a.strides(), indices.AI, indices.AP,
                               blocksizes.MR, blocksizes.KP);
   const block_layout layout_b(b.dims, b.strides(), indices.BP, indices.BJ,
@@ -132,13 +84,13 @@ void contract(const T alpha, const tensor<T, ndim_a>& a,
             const std::size_t rsc = block_c.rbs[0];
             const std::size_t csc = block_c.cbs[0];
             if (rsc > 0 && csc > 0) {
-              kernel(m, n, k, &alpha, sliver_a, sliver_b, &beta,
-                     &c.data[block_c.rs[0] + block_c.cs[0]], rsc, csc, &data,
-                     cntx);
+              bli::gemm_kernel<T>(m, n, k, &alpha, sliver_a, sliver_b, &beta,
+                                  &c.data[block_c.rs[0] + block_c.cs[0]], rsc,
+                                  csc, &data, cntx);
             } else {
               std::fill(space_c, space_c + space_size_c, T(0));
-              kernel(m, n, k, &alpha, sliver_a, sliver_b, &beta, space_c, 1,
-                     blocksizes.MR, &data, cntx);
+              bli::gemm_kernel<T>(m, n, k, &alpha, sliver_a, sliver_b, &beta,
+                                  space_c, 1, blocksizes.MR, &data, cntx);
               unpack(block_c, space_c, c.data);
             }
           }

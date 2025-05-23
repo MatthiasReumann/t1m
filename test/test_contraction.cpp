@@ -3,7 +3,6 @@
 #include <functional>
 #include <limits>
 #include <numeric>
-#include <type_traits>
 #include "t1m/internal/blis.h"
 #include "t1m/internal/t1m.h"
 #include "t1m/internal/tensor.h"
