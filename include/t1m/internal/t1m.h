@@ -122,21 +122,25 @@ void contract(const T alpha, const tensor<T, ndim_a>& a,
 
           T* sliver_b = space_b + blocksizes.KC * j_r;
           for (size_t i_r = 0; i_r < mc_m; i_r += blocksizes.MR) {
-            std::size_t m = std::min(blocksizes.MR, mc_m - i_r);
             std::size_t off_i = i_c + i_r;
+            std::size_t m = std::min(blocksizes.MR, mc_m - i_r);
 
             T* sliver_a = space_a + i_r * blocksizes.KC;
 
-            // clang-format off
-            std::fill(space_c, space_c + space_size_c, T(0));
-            kernel(m, n, k, 
-                   &alpha, sliver_a, sliver_b,
-                   &beta, space_c,
-                   1, blocksizes.MR, &data, cntx);
-            // clang-format on
-
             matrix_view block_c = matr_c.subview(off_i, off_j, m, n);
-            unpack(block_c, space_c, c.data);
+
+            const std::size_t rsc = block_c.rbs[0];
+            const std::size_t csc = block_c.cbs[0];
+            if (rsc > 0 && csc > 0) {
+              kernel(m, n, k, &alpha, sliver_a, sliver_b, &beta,
+                     &c.data[block_c.rs[0] + block_c.cs[0]], rsc, csc, &data,
+                     cntx);
+            } else {
+              std::fill(space_c, space_c + space_size_c, T(0));
+              kernel(m, n, k, &alpha, sliver_a, sliver_b, &beta, space_c, 1,
+                     blocksizes.MR, &data, cntx);
+              unpack(block_c, space_c, c.data);
+            }
           }
         }
       }

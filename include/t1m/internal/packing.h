@@ -13,21 +13,21 @@ void pack_cell(const matrix_view& cell, const T* src, T* dest) {
   const std::size_t nrows = cell.nrows();
   const std::size_t ncols = cell.ncols();
 
-  const std::size_t rs = cell.rbs[0];
-  const std::size_t cs = cell.cbs[0];
+  const std::size_t rsc = cell.rbs[0];
+  const std::size_t csc = cell.cbs[0];
 
-  if (rs > 0 && cs > 0) {
+  if (rsc > 0 && csc > 0) {
     const std::size_t offset = (cell.rs[0] + cell.cs[0]);
     if constexpr (layout == memory_layout::col_major) {
       for (std::size_t l = 0; l < ncols; ++l) {
         for (std::size_t k = 0; k < nrows; ++k) {
-          dest[k + l * cell.br] = src[k * rs + l * cs + offset];
+          dest[k + l * cell.br] = src[k * rsc + l * csc + offset];
         }
       }
     } else {
       for (std::size_t k = 0; k < nrows; ++k) {
         for (std::size_t l = 0; l < ncols; ++l) {
-          dest[l + k * cell.bc] = src[k * rs + l * cs + offset];
+          dest[l + k * cell.bc] = src[k * rsc + l * csc + offset];
         }
       }
     }

@@ -4,7 +4,6 @@
 #include <array>
 #include <string>
 #include <vector>
-#include "t1m/internal/tensor.h"
 
 namespace t1m {
 
