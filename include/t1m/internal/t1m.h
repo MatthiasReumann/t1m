@@ -13,10 +13,10 @@
 namespace t1m {
 
 template <class T, std::size_t ndim_a, std::size_t ndim_b, std::size_t ndim_c>
-void contract(const T alpha, const tensor<T, ndim_a>& a,
-              const std::string& labels_a, const tensor<T, ndim_b>& b,
-              const std::string& labels_b, const T beta, tensor<T, ndim_c>& c,
-              const std::string& labels_c) {
+requires(std::is_same_v<T, float> || std::is_same_v<T, double>) void contract(
+    const T alpha, const tensor<T, ndim_a>& a, const std::string& labels_a,
+    const tensor<T, ndim_b>& b, const std::string& labels_b, const T beta,
+    tensor<T, ndim_c>& c, const std::string& labels_c) {
   using namespace t1m::internal;
   using namespace t1m::bli;
 
