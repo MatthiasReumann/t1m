@@ -8,25 +8,23 @@ project(
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(BLA_VENDOR FLAME)
 
 include(CMakePrintHelpers)
 include(FetchContent)
 include(CTest)
 
 # find_package(OpenMP)
-find_package(BLAS REQUIRED)
+
+find_library(BLIS_LIBRARIES "libblis.a" REQUIRED)
+find_file(BLIS_INCLUDE_DIRS blis REQUIRED)
 
 # Build header-only library.
 add_library(t1m INTERFACE)
+target_include_directories(t1m INTERFACE ${BLIS_INCLUDE_DIRS})
 target_include_directories(t1m INTERFACE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
   $<INSTALL_INTERFACE:include/>  # <prefix>/include
-)
-target_include_directories(t1m INTERFACE
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/lib/include/>
-  $<INSTALL_INTERFACE:lib/include/>  # <prefix>/external
-)
+  )
 
 add_subdirectory(test) # build tests
 

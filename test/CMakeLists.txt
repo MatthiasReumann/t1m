@@ -6,23 +6,14 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
+file(GLOB test_sources "*.cpp") # Find all .cpp test files.
+
 enable_testing()
 
-add_executable(test_utils test_utils.cpp)
-target_link_libraries(test_utils PRIVATE t1m)
-target_link_libraries(test_utils PRIVATE GTest::gtest_main)
-
-add_executable(test_packing test_packing.cpp)
-target_link_libraries(test_packing PRIVATE t1m)
-target_link_libraries(test_packing PRIVATE GTest::gtest_main)
-
-add_executable(test_contraction test_contraction.cpp)
-target_include_directories(t1m INTERFACE "${BLIS_H}")
-target_link_libraries(test_contraction PRIVATE t1m)
-target_link_libraries(test_contraction PRIVATE "${BLIS_LIB}")
-target_link_libraries(test_contraction PRIVATE GTest::gtest_main)
+add_executable(test_t1m ${test_sources})
+target_link_libraries(test_t1m PRIVATE t1m)
+target_link_libraries(test_t1m PRIVATE ${BLIS_LIBRARIES})
+target_link_libraries(test_t1m PRIVATE GTest::gtest_main)
 
 include(GoogleTest)
-gtest_discover_tests(test_utils)
-gtest_discover_tests(test_packing)
-gtest_discover_tests(test_contraction)
+gtest_discover_tests(test_t1m)

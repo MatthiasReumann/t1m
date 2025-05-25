@@ -1,6 +1,6 @@
 #pragma once
 
-#include <blis/blis.h>
+#include <blis.h>
 #include <cstdlib>
 #include <cstring>
 #include <memory>

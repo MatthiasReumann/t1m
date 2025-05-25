@@ -1,4 +1,4 @@
-#include <blis/blis.h>
+#include <blis.h>
 #include <gtest/gtest.h>
 #include <functional>
 #include <limits>
