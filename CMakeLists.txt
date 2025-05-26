@@ -16,10 +16,9 @@ include(CMakePrintHelpers)
 include(FetchContent)
 include(CTest)
 
-# find_package(OpenMP)
-
 find_library(BLIS_LIBRARIES "libblis.a" REQUIRED)
 find_file(BLIS_INCLUDE_DIRS blis REQUIRED)
+find_package(OpenMP)
 
 # Build header-only library.
 add_library(t1m INTERFACE)

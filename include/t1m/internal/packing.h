@@ -18,6 +18,7 @@ requires std::is_floating_point_v<T> void pack_cell_col_major(
   if (rsc > 0 && csc > 0) {
     const std::size_t offset = (cell.rs[0] + cell.cs[0]);
     for (std::size_t l = 0; l < ncols; ++l) {
+      #pragma omp simd
       for (std::size_t k = 0; k < nrows; ++k) {
         dest[k + l * cell.br] = src[k * rsc + l * csc + offset];
       }
@@ -43,6 +44,7 @@ requires std::is_floating_point_v<T> void pack_cell_row_major(
   if (rsc > 0 && csc > 0) {
     const std::size_t offset = (cell.rs[0] + cell.cs[0]);
     for (std::size_t k = 0; k < nrows; ++k) {
+      #pragma omp simd
       for (std::size_t l = 0; l < ncols; ++l) {
         dest[l + k * cell.bc] = src[k * rsc + l * csc + offset];
       }
