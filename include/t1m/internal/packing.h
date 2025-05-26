@@ -2,13 +2,14 @@
 
 #include <span>
 #include <type_traits>
+#include "t1m/internal/concepts.h"
 #include "t1m/internal/scatter.h"
 
 namespace t1m {
 namespace internal {
 template <typename T>
-requires std::is_floating_point_v<T> void pack_cell_col_major(
-    const matrix_view& cell, const T* src, T* dest) {
+requires is_real_type_v<T> void pack_cell_col_major(const matrix_view& cell,
+                                                    const T* src, T* dest) {
   const std::size_t nrows = cell.nrows();
   const std::size_t ncols = cell.ncols();
 
@@ -18,7 +19,7 @@ requires std::is_floating_point_v<T> void pack_cell_col_major(
   if (rsc > 0 && csc > 0) {
     const std::size_t offset = (cell.rs[0] + cell.cs[0]);
     for (std::size_t l = 0; l < ncols; ++l) {
-      #pragma omp simd
+#pragma omp simd
       for (std::size_t k = 0; k < nrows; ++k) {
         dest[k + l * cell.br] = src[k * rsc + l * csc + offset];
       }
@@ -33,8 +34,8 @@ requires std::is_floating_point_v<T> void pack_cell_col_major(
 }
 
 template <typename T>
-requires std::is_floating_point_v<T> void pack_cell_row_major(
-    const matrix_view& cell, const T* src, T* dest) {
+requires is_real_type_v<T> void pack_cell_row_major(const matrix_view& cell,
+                                                    const T* src, T* dest) {
   const std::size_t nrows = cell.nrows();
   const std::size_t ncols = cell.ncols();
 
@@ -44,7 +45,7 @@ requires std::is_floating_point_v<T> void pack_cell_row_major(
   if (rsc > 0 && csc > 0) {
     const std::size_t offset = (cell.rs[0] + cell.cs[0]);
     for (std::size_t k = 0; k < nrows; ++k) {
-      #pragma omp simd
+#pragma omp simd
       for (std::size_t l = 0; l < ncols; ++l) {
         dest[l + k * cell.bc] = src[k * rsc + l * csc + offset];
       }
@@ -59,8 +60,9 @@ requires std::is_floating_point_v<T> void pack_cell_row_major(
 }
 
 template <typename T>
-requires std::is_floating_point_v<T> void pack_block_col_major(
-    const matrix_view& block, const std::size_t width, const T* src, T* dest) {
+requires is_real_type_v<T> void pack_block_col_major(const matrix_view& block,
+                                                     const std::size_t width,
+                                                     const T* src, T* dest) {
   const std::size_t nrows = block.nrows();
   const std::size_t ncols = block.ncols();
 
@@ -95,8 +97,9 @@ requires std::is_floating_point_v<T> void pack_block_col_major(
 }
 
 template <typename T>
-requires std::is_floating_point_v<T> void pack_block_row_major(
-    const matrix_view& block, const std::size_t height, const T* src, T* dest) {
+requires is_real_type_v<T> void pack_block_row_major(const matrix_view& block,
+                                                     const std::size_t height,
+                                                     const T* src, T* dest) {
   const std::size_t nrows = block.nrows();
   const std::size_t ncols = block.ncols();
 
@@ -133,8 +136,8 @@ requires std::is_floating_point_v<T> void pack_block_row_major(
 }
 
 template <typename T>
-requires std::is_floating_point_v<T> void unpack(const matrix_view& block,
-                                                 const T* src, T* dest) {
+requires is_real_type_v<T> void unpack(const matrix_view& block, const T* src,
+                                       T* dest) {
   const std::size_t nrows = block.nrows();
   const std::size_t ncols = block.ncols();
 
