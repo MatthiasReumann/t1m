@@ -1,11 +1,15 @@
 #pragma once
+
 #include <span>
 #include "t1m/internal/scatter.h"
 
 namespace t1m {
 namespace internal {
 template <typename T>
-void pack_cell_col_major(const matrix_view& cell, const T* src, T* dest) {
+requires(
+    std::is_same_v<T, float> ||
+    std::is_same_v<T, double>) void pack_cell_col_major(const matrix_view& cell,
+                                                        const T* src, T* dest) {
   const std::size_t nrows = cell.nrows();
   const std::size_t ncols = cell.ncols();
 
@@ -29,7 +33,10 @@ void pack_cell_col_major(const matrix_view& cell, const T* src, T* dest) {
 }
 
 template <typename T>
-void pack_cell_row_major(const matrix_view& cell, const T* src, T* dest) {
+requires(
+    std::is_same_v<T, float> ||
+    std::is_same_v<T, double>) void pack_cell_row_major(const matrix_view& cell,
+                                                        const T* src, T* dest) {
   const std::size_t nrows = cell.nrows();
   const std::size_t ncols = cell.ncols();
 
@@ -53,8 +60,11 @@ void pack_cell_row_major(const matrix_view& cell, const T* src, T* dest) {
 }
 
 template <typename T>
-void pack_block_col_major(const matrix_view& block, const std::size_t width,
-                          const T* src, T* dest) {
+requires(std::is_same_v<T, float> ||
+         std::is_same_v<
+             T, double>) void pack_block_col_major(const matrix_view& block,
+                                                   const std::size_t width,
+                                                   const T* src, T* dest) {
   const std::size_t nrows = block.nrows();
   const std::size_t ncols = block.ncols();
 
@@ -89,8 +99,11 @@ void pack_block_col_major(const matrix_view& block, const std::size_t width,
 }
 
 template <typename T>
-void pack_block_row_major(const matrix_view& block, const std::size_t height,
-                          const T* src, T* dest) {
+requires(std::is_same_v<T, float> ||
+         std::is_same_v<
+             T, double>) void pack_block_row_major(const matrix_view& block,
+                                                   const std::size_t height,
+                                                   const T* src, T* dest) {
   const std::size_t nrows = block.nrows();
   const std::size_t ncols = block.ncols();
 
@@ -127,7 +140,9 @@ void pack_block_row_major(const matrix_view& block, const std::size_t height,
 }
 
 template <typename T>
-void unpack(const matrix_view& block, const T* src, T* dest) {
+requires(std::is_same_v<T, float> ||
+         std::is_same_v<T, double>) void unpack(const matrix_view& block,
+                                                const T* src, T* dest) {
   const std::size_t nrows = block.nrows();
   const std::size_t ncols = block.ncols();
 

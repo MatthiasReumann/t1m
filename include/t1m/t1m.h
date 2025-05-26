@@ -25,7 +25,7 @@ requires(std::is_same_v<T, float> || std::is_same_v<T, double>) void contract(
   const block_sizes& bs = get_block_sizes<T>(cntx);
   const auto [MR, NR, KP, MC, KC, NC] = bs;
 
-  const index_bundles bundles(labels_a, labels_b, labels_c);
+  const index_bundles bundles = get_index_bundles(labels_a, labels_b, labels_c);
   const block_layout layout_a(a.dims, a.strides(), bundles.AI, bundles.AP, MR,
                               KP);
   const block_layout layout_b(b.dims, b.strides(), bundles.BP, bundles.BJ, KP,
