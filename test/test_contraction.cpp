@@ -4,8 +4,8 @@
 #include <limits>
 #include <numeric>
 #include "t1m/bli/mappings.h"
-#include "t1m/internal/t1m.h"
-#include "t1m/internal/tensor.h"
+#include "t1m/t1m.h"
+#include "t1m/tensor.h"
 
 namespace {
 template <std::size_t ndim>
@@ -74,9 +74,10 @@ void gemm_like(const std::string& labels_a, const std::string& labels_b,
 
     EXPECT_NEAR(estimator, 0.f, 1e-6);
 
-    alloc.deallocate(data_a, nelems_a);
-    alloc.deallocate(data_b, nelems_b);
+    alloc.deallocate(data_ref, nelems_c);
     alloc.deallocate(data_c, nelems_c);
+    alloc.deallocate(data_b, nelems_b);
+    alloc.deallocate(data_a, nelems_a);
   }
 }
 

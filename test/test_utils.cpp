@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "t1m/internal/tensor.h"
+#include "t1m/tensor.h"
 #include "t1m/internal/utils.h"
 
 using namespace t1m;

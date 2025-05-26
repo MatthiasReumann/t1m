@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include "t1m/internal/packing.h"
 #include "t1m/internal/scatter.h"
-#include "t1m/internal/tensor.h"
+#include "t1m/tensor.h"
 
 using namespace t1m;
 using namespace t1m::internal;
@@ -13,7 +13,6 @@ TEST(PackingTest, PackColMajorQuadratic) {
 
   constexpr std::size_t m = 2;
   constexpr std::size_t k = 2;
-  constexpr std::size_t block_size = m * k;
 
   std::array<float, sz> elems{};
   for (std::size_t i = 0; i < sz; ++i) {
@@ -100,7 +99,6 @@ TEST(PackingTest, PackRowMajorQuadratic) {
 
   constexpr std::size_t m = 2;
   constexpr std::size_t k = 2;
-  constexpr std::size_t block_size = m * k;
   constexpr std::size_t space = sz;
 
   std::array<float, sz> elems{};
