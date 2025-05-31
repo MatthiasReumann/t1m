@@ -3,54 +3,36 @@
 #include <span>
 #include "t1m/internal/concepts.h"
 #include "t1m/internal/scatter.h"
+#include "t1m/tensor.h"
 
 namespace t1m {
 namespace internal {
-template <Real T>
-void pack_cell_col_major(const matrix_view& cell, const T* src, T* dest) {
+
+template <Real T, memory_layout layout>
+constexpr void pack_cell(const matrix_view& cell, const T* src, T* dest) {
   const std::size_t nrows = cell.nrows();
   const std::size_t ncols = cell.ncols();
 
   const std::size_t rsc = cell.rbs[0];
   const std::size_t csc = cell.cbs[0];
 
-  if (rsc > 0 && csc > 0) {
-    const std::size_t offset = (cell.rs[0] + cell.cs[0]);
-    for (std::size_t l = 0; l < ncols; ++l) {
-#pragma omp simd
-      for (std::size_t k = 0; k < nrows; ++k) {
-        dest[k + l * cell.br] = src[k * rsc + l * csc + offset];
-      }
-    }
-  } else {
+  const bool is_dense = (rsc > 0 && csc > 0);
+  const std::size_t offset = is_dense ? (cell.rs[0] + cell.cs[0]) : 0;
+
+  if constexpr (layout == col_major) {
     for (std::size_t l = 0; l < ncols; ++l) {
       for (std::size_t k = 0; k < nrows; ++k) {
-        dest[k + l * cell.br] = src[cell.rs[k] + cell.cs[l]];
+        const std::size_t src_idx =
+            is_dense ? (k * rsc + l * csc + offset) : (cell.rs[k] + cell.cs[l]);
+        dest[k + l * cell.br] = src[src_idx];
       }
     }
-  }
-}
-
-template <Real T>
-void pack_cell_row_major(const matrix_view& cell, const T* src, T* dest) {
-  const std::size_t nrows = cell.nrows();
-  const std::size_t ncols = cell.ncols();
-
-  const std::size_t rsc = cell.rbs[0];
-  const std::size_t csc = cell.cbs[0];
-
-  if (rsc > 0 && csc > 0) {
-    const std::size_t offset = (cell.rs[0] + cell.cs[0]);
-    for (std::size_t k = 0; k < nrows; ++k) {
-#pragma omp simd
-      for (std::size_t l = 0; l < ncols; ++l) {
-        dest[l + k * cell.bc] = src[k * rsc + l * csc + offset];
-      }
-    }
-  } else {
+  } else {  // row_major
     for (std::size_t k = 0; k < nrows; ++k) {
       for (std::size_t l = 0; l < ncols; ++l) {
-        dest[l + k * cell.bc] = src[cell.rs[k] + cell.cs[l]];
+        const std::size_t src_idx =
+            is_dense ? (k * rsc + l * csc + offset) : (cell.rs[k] + cell.cs[l]);
+        dest[l + k * cell.bc] = src[src_idx];
       }
     }
   }
@@ -87,7 +69,7 @@ void pack_block_col_major(const matrix_view& block, const std::size_t width,
       const std::size_t cell_ncols = std::min(block.bc, ncols - c);
       const matrix_view cell = block.subview(r, c, cell_nrows, cell_ncols);
       const std::size_t offset = c * block.br + r * width;
-      pack_cell_col_major<T>(cell, src, dest + offset);
+      pack_cell<T, col_major>(cell, src, dest + offset);
     }
   }
 }
@@ -125,7 +107,7 @@ void pack_block_row_major(const matrix_view& block, const std::size_t height,
       const std::size_t cell_ncols = std::min(block.bc, ncols - c);
       const matrix_view cell = block.subview(r, c, cell_nrows, cell_ncols);
       const std::size_t offset = r * block.bc + c * height;
-      pack_cell_row_major<T>(cell, src, dest + offset);
+      pack_cell<T, row_major>(cell, src, dest + offset);
     }
   }
 }
