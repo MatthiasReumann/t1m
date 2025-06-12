@@ -70,7 +70,7 @@ inline std::vector<std::size_t> get_block_scatter(
       distances[i] = first[i + 1] - first[i];
     }
 
-    // Compaire pairwise distances and set block strides.
+    // Compare pairwise distances and set block strides.
     std::size_t stride = distances[0];
     if (!std::all_of(distances.begin(), distances.end(),
                      [stride](std::size_t i) { return i == stride; })) {
