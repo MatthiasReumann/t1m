@@ -114,6 +114,7 @@ void contract(const tensor<T, ndim_a>& a, const std::string& labels_a,
               tensor<T, ndim_c>& c, const std::string& labels_c) {
   using namespace t1m::internal;
   using namespace t1m::bli;
+  
   using U = typename T::value_type;
 
   const cntx_t* cntx = bli_gks_query_cntx();
