@@ -66,8 +66,8 @@ inline std::vector<std::size_t> get_block_scatter(
     }
 
     std::vector<std::size_t> distances(n - 1);
-    for (std::size_t i = 0; i < n - 1; ++i) {
-      distances[i] = first[i + 1] - first[i];
+    for (std::size_t j = 0; j < n - 1; ++j) {
+      distances[j] = first[j + 1] - first[j];
     }
 
     // Compare pairwise distances and set block strides.

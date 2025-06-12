@@ -16,7 +16,7 @@ include(CMakePrintHelpers)
 include(FetchContent)
 include(CTest)
 
-find_library(BLIS_LIBRARIES "libblis.a" REQUIRED)
+find_library(BLIS_LIBRARIES blis REQUIRED)
 find_file(BLIS_INCLUDE_DIRS blis REQUIRED)
 find_package(OpenMP)
 
