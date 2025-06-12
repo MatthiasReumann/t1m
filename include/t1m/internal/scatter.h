@@ -33,9 +33,10 @@ std::vector<std::size_t> get_scatter(
   std::reverse(parts.begin(), parts.end());
 
   // second, reduce 2D to 1D vector, computing each possible combination.
-  auto elementwise_add = [](std::vector<std::size_t> av,
-                            std::vector<std::size_t> bv) {
+  auto elementwise_add = [](const std::vector<std::size_t>& av,
+                            const std::vector<std::size_t>& bv) {
     std::vector<std::size_t> cv;
+    cv.reserve(av.size() * bv.size());
     for (const std::size_t& a : av) {
       for (const std::size_t& b : bv) {
         cv.push_back(a + b);

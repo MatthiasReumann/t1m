@@ -10,7 +10,8 @@ A header-only library for tensor contractions. The transposition-free tensor con
 
 ```cpp
 #include <complex>
-#include "t1m.hpp"
+#include <memory>
+#include "t1m/t1m.h"
 
 int main() 
 {
