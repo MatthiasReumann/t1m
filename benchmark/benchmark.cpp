@@ -7,6 +7,21 @@
 constexpr std::size_t REPEATS = 10;
 
 namespace {
+template <typename T> struct Alias {
+  using value_type = T;
+  using blis_type = T;
+};
+
+template <> struct Alias<std::complex<float>> {
+  using value_type = float;
+  using blis_type = scomplex;
+};
+
+template <> struct Alias<std::complex<double>> {
+  using value_type = double;
+  using blis_type = dcomplex;
+};
+
 template <std::size_t ndim>
 std::size_t multiply(const std::array<std::size_t, ndim>& dims) {
   return std::accumulate(dims.begin(), dims.end(), 1,
@@ -20,26 +35,35 @@ void explicit_benchmark(const std::array<std::size_t, ndim_a>& dims_a,
                         const std::string& labels_b,
                         const std::array<std::size_t, ndim_c>& dims_c,
                         const std::string& labels_c) {
-  std::allocator<T> alloc{};
+  // BLIS requires scomplex and dcomplex types for their operations.
+  // Hence, use this trick to convert the respective cpp standard type
+  // to BLIS' custom types.
+  using BLI_T = Alias<T>::blis_type;
+
+  // For floating point numbers, U = T.
+  // For complex numbers, U = std::complex<U>.
+  using U = Alias<T>::value_type;
+
+  std::allocator<BLI_T> alloc{};
 
   constexpr t1m::memory_layout layout = t1m::col_major;
 
-  const T zero = T(0);
+  const BLI_T zero(0);
 
   const std::size_t nelems_a = multiply(dims_a);
   const std::size_t nelems_b = multiply(dims_b);
   const std::size_t nelems_c = multiply(dims_c);
 
-  T* data_a = alloc.allocate(nelems_a);
-  T* data_b = alloc.allocate(nelems_b);
-  T* data_c = alloc.allocate(nelems_c);
+  BLI_T* data_a = alloc.allocate(nelems_a);
+  BLI_T* data_b = alloc.allocate(nelems_b);
+  BLI_T* data_c = alloc.allocate(nelems_c);
 
   t1m::bli::randv<T>(nelems_a, data_a, 1);
   t1m::bli::randv<T>(nelems_b, data_b, 1);
 
-  t1m::tensor<T, ndim_a> a{dims_a, data_a, layout};
-  t1m::tensor<T, ndim_b> b{dims_b, data_b, layout};
-  t1m::tensor<T, ndim_c> c{dims_c, data_c, layout};
+  t1m::tensor<T, ndim_a> a{dims_a, reinterpret_cast<T*>(data_a), layout};
+  t1m::tensor<T, ndim_b> b{dims_b, reinterpret_cast<T*>(data_b), layout};
+  t1m::tensor<T, ndim_c> c{dims_c, reinterpret_cast<T*>(data_c), layout};
 
   std::print("{}-{}-{},", labels_a, labels_b, labels_c);
 
@@ -48,7 +72,12 @@ void explicit_benchmark(const std::array<std::size_t, ndim_a>& dims_a,
     t1m::bli::setv<T>(BLIS_NO_CONJUGATE, nelems_c, &zero, data_c, 1);
 
     auto t0 = std::chrono::high_resolution_clock::now();
-    t1m::contract<T>(1., a, labels_a, b, labels_b, 0., c, labels_c);
+    // Make sure to call the correct function for the respective types.
+    if constexpr (std::is_same_v<T, float> || std::is_same_v<T, double>) {
+      t1m::contract(T(1), a, labels_a, b, labels_b, T(0), c, labels_c);
+    } else {
+      t1m::contract(a, labels_a, b, labels_b, c, labels_c);
+    }
     auto t1 = std::chrono::high_resolution_clock::now();
     time[i] =
         std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count();
@@ -61,8 +90,7 @@ void explicit_benchmark(const std::array<std::size_t, ndim_a>& dims_a,
 }
 }  // namespace
 
-template <typename T>
-void suite() {
+template <typename T> void suite() {
   std::println("contraction,min");
   // clang-format off
   explicit_benchmark<T, 5, 2, 5>(
@@ -167,4 +195,6 @@ void suite() {
 int main() {
   suite<float>();
   suite<double>();
+  suite<std::complex<float>>();
+  suite<std::complex<double>>();
 }
