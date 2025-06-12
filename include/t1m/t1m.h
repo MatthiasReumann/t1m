@@ -5,7 +5,6 @@
 #include <cstring>
 #include <memory>
 #include "t1m/bli/mappings.h"
-#include "t1m/internal/concepts.h"
 #include "t1m/internal/packing.h"
 #include "t1m/internal/scatter.h"
 #include "t1m/internal/utils.h"
@@ -13,8 +12,7 @@
 
 namespace t1m {
 
-template <internal::Real T, std::size_t ndim_a, std::size_t ndim_b,
-          std::size_t ndim_c>
+template <class T, std::size_t ndim_a, std::size_t ndim_b, std::size_t ndim_c>
 void contract(const T alpha, const tensor<T, ndim_a>& a,
               const std::string& labels_a, const tensor<T, ndim_b>& b,
               const std::string& labels_b, const T beta, tensor<T, ndim_c>& c,
@@ -42,11 +40,12 @@ void contract(const T alpha, const tensor<T, ndim_a>& a,
   const std::size_t space_size_a = MC * KC;
   const std::size_t space_size_b = KC * NC;
   const std::size_t space_size_c = MR * NR;
+  const std::size_t space_total = space_size_a + space_size_b + space_size_c;
 
   std::allocator<T> alloc{};
-  T* space_a = alloc.allocate(space_size_a);
-  T* space_b = alloc.allocate(space_size_b);
-  T* space_c = alloc.allocate(space_size_c);
+  T* space_a = alloc.allocate(space_total);
+  T* space_b = space_a + space_size_a;
+  T* space_c = space_b + space_size_b;
 
   auxinfo_t data;
 
@@ -62,14 +61,14 @@ void contract(const T alpha, const tensor<T, ndim_a>& a,
       const matrix_view view_b = matr_b.subview(p_c, j_c, k, nc_n);
 
       std::fill(space_b, space_b + space_size_b, T(0));
-      pack_block_row_major(view_b, KC, b.data, space_b);
+      pack_block<T, packing_label::B>(view_b, KC, b.data, space_b);
 
       for (size_t i_c = 0; i_c < M; i_c += MC) {
         const std::size_t mc_m = std::min(MC, M - i_c);
         const matrix_view view_a = matr_a.subview(i_c, p_c, mc_m, k);
 
         std::fill(space_a, space_a + space_size_a, T(0));
-        pack_block_col_major(view_a, KC, a.data, space_a);
+        pack_block<T, packing_label::A>(view_a, KC, a.data, space_a);
 
         for (size_t j_r = 0; j_r < nc_n; j_r += NR) {
           const std::size_t n = std::min(NR, nc_n - j_r);
@@ -104,8 +103,6 @@ void contract(const T alpha, const tensor<T, ndim_a>& a,
     }
   }
 
-  alloc.deallocate(space_c, space_size_c);
-  alloc.deallocate(space_b, space_size_b);
-  alloc.deallocate(space_a, space_size_a);
+  alloc.deallocate(space_a, space_total);
 }
 };  // namespace t1m

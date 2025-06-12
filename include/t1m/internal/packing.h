@@ -1,15 +1,47 @@
+/**
+ * @brief Block packing functionality.
+ * @details 
+ *
+ * Column major:
+ *       K
+ *   ┌───┬───┐            K              bc
+ *   │   │   │        ┌───┬───┐        ┌────┐
+ * M ├───┼───┤  →  br │   │   │  →  br │    │
+ *   │   │   │        └───┴───┘        └────┘
+ *   └───┴───┘
+ *    "block"         "sliver"         "cell"
+ *
+ * Row major:
+*        N             bc
+ *   ┌───┬───┐       ┌───┐          bc
+ *   │   │   │       │   │        ┌────┐
+ * K ├───┼───┤  →  K ├───┤  →  br │    │
+ *   │   │   │       │   │        └────┘
+ *   └───┴───┘       └───┘
+ *    "block"       "sliver"      "cell"
+ */
+
 #pragma once
 
+#include <print>
 #include <span>
-#include "t1m/internal/concepts.h"
+#include <type_traits>
 #include "t1m/internal/scatter.h"
-#include "t1m/tensor.h"
 
 namespace t1m {
 namespace internal {
 
-template <Real T, memory_layout layout>
-constexpr void pack_cell(const matrix_view& cell, const T* src, T* dest) {
+/// @brief Categorizes the (un-)packing order.
+enum packing_label {
+  A,  // Pack only. Column Major.
+  B,  // Pack only. Row Major.
+  C   // Unpack only.
+};
+
+namespace {
+template <class T, packing_label label>
+  requires std::is_floating_point_v<T>
+void pack_cell(const matrix_view& cell, const T* src, T* dest) {
   const std::size_t nrows = cell.nrows();
   const std::size_t ncols = cell.ncols();
 
@@ -19,7 +51,7 @@ constexpr void pack_cell(const matrix_view& cell, const T* src, T* dest) {
   const bool is_dense = (rsc > 0 && csc > 0);
   const std::size_t offset = is_dense ? (cell.rs[0] + cell.cs[0]) : 0;
 
-  if constexpr (layout == col_major) {
+  if constexpr (label == A) {
     for (std::size_t l = 0; l < ncols; ++l) {
       for (std::size_t k = 0; k < nrows; ++k) {
         const std::size_t src_idx =
@@ -27,7 +59,7 @@ constexpr void pack_cell(const matrix_view& cell, const T* src, T* dest) {
         dest[k + l * cell.br] = src[src_idx];
       }
     }
-  } else {  // row_major
+  } else {  // B
     for (std::size_t k = 0; k < nrows; ++k) {
       for (std::size_t l = 0; l < ncols; ++l) {
         const std::size_t src_idx =
@@ -38,81 +70,121 @@ constexpr void pack_cell(const matrix_view& cell, const T* src, T* dest) {
   }
 }
 
-template <Real T>
-void pack_block_col_major(const matrix_view& block, const std::size_t width,
-                          const T* src, T* dest) {
+template <class T, packing_label label>
+void pack_cell(const matrix_view& cell, const T* src,
+               typename T::value_type* dest) {
+  const std::size_t nrows = cell.nrows();
+  const std::size_t ncols = cell.ncols();
+
+  const std::size_t rsc = cell.rbs[0];
+  const std::size_t csc = cell.cbs[0];
+
+  const bool is_dense = (rsc > 0 && csc > 0);
+  const std::size_t offset = is_dense ? (cell.rs[0] + cell.cs[0]) : 0;
+
+  if constexpr (label == A) {
+    for (std::size_t l = 0; l < ncols; ++l) {
+      for (std::size_t k = 0; k < nrows; ++k) {
+        const std::size_t src_idx =
+            is_dense ? (k * rsc + l * csc + offset) : (cell.rs[k] + cell.cs[l]);
+        const auto& val = src[src_idx];
+        const auto real = val.real();
+        const auto imag = val.imag();
+
+        const std::size_t base = 2 * k + 2 * l * cell.br;
+        dest[base] = real;
+        dest[base + 1] = imag;
+        dest[base + cell.br] = -imag;
+        dest[base + cell.br + 1] = real;
+      }
+    }
+  } else {  // B
+    for (std::size_t k = 0; k < nrows; ++k) {
+      for (std::size_t l = 0; l < ncols; ++l) {
+        const std::size_t src_idx =
+            is_dense ? (k * rsc + l * csc + offset) : (cell.rs[k] + cell.cs[l]);
+        const auto& val = src[src_idx];
+
+        const std::size_t base = l + 2 * k * cell.bc;
+        dest[base] = val.real();
+        dest[base + cell.bc] = val.imag();
+      }
+    }
+  }
+}
+}  // namespace
+
+template <class T, packing_label label>
+  requires std::is_floating_point_v<T>
+void pack_block(const matrix_view& block, const std::size_t length,
+                const T* src, T* dest) {
   const std::size_t nrows = block.nrows();
   const std::size_t ncols = block.ncols();
 
-  //       K
-  //   ┌───┬───┐
-  //   │   │   │
-  // M ├───┼───┤ "block"
-  //   │   │   │
-  //   └───┴───┘
+  if constexpr (label == A) {
+    for (std::size_t r = 0; r < nrows; r += block.br) {
+      for (std::size_t c = 0; c < ncols; c += block.bc) {
+        const std::size_t offset = c * block.br + r * length;
 
-  for (std::size_t r = 0; r < nrows; r += block.br) {
+        const std::size_t cell_nrows = std::min(block.br, nrows - r);
+        const std::size_t cell_ncols = std::min(block.bc, ncols - c);
+        const matrix_view cell = block.subview(r, c, cell_nrows, cell_ncols);
 
-    //        K
-    //    ┌───┬───┐
-    // br │   │   │ "sliver"
-    //    └───┴───┘
-
+        pack_cell<T, label>(cell, src, dest + offset);
+      }
+    }
+  } else {  // B
     for (std::size_t c = 0; c < ncols; c += block.bc) {
+      for (std::size_t r = 0; r < nrows; r += block.br) {
+        const std::size_t offset = r * block.bc + c * length;
 
-      //      bc
-      //    ┌────┐
-      // br │    │  "cell"
-      //    └────┘
+        const std::size_t cell_nrows = std::min(block.br, nrows - r);
+        const std::size_t cell_ncols = std::min(block.bc, ncols - c);
+        const matrix_view cell = block.subview(r, c, cell_nrows, cell_ncols);
 
-      const std::size_t cell_nrows = std::min(block.br, nrows - r);
-      const std::size_t cell_ncols = std::min(block.bc, ncols - c);
-      const matrix_view cell = block.subview(r, c, cell_nrows, cell_ncols);
-      const std::size_t offset = c * block.br + r * width;
-      pack_cell<T, col_major>(cell, src, dest + offset);
+        pack_cell<T, label>(cell, src, dest + offset);
+      }
     }
   }
 }
 
-template <Real T>
-void pack_block_row_major(const matrix_view& block, const std::size_t height,
-                          const T* src, T* dest) {
+template <class T, packing_label label>
+void pack_block(const matrix_view& block, const std::size_t length,
+                const T* src, typename T::value_type* dest) {
   const std::size_t nrows = block.nrows();
   const std::size_t ncols = block.ncols();
+  const std::size_t half_br = block.br / 2;
+  const std::size_t half_bc = block.bc / 2;
 
-  //       K
-  //   ┌───┬───┐
-  //   │   │   │
-  // M ├───┼───┤ "block"
-  //   │   │   │
-  //   └───┴───┘
+  if constexpr (label == A) {
+    for (std::size_t r = 0; r < nrows; r += half_br) {
+      for (std::size_t c = 0; c < ncols; c += half_bc) {
+        const std::size_t offset = 2 * (c * block.br + r * length);
 
-  for (std::size_t c = 0; c < block.ncols(); c += block.bc) {
+        const std::size_t cell_nrows = std::min(half_br, nrows - r);
+        const std::size_t cell_ncols = std::min(half_bc, ncols - c);
+        const matrix_view cell = block.subview(r, c, cell_nrows, cell_ncols);
 
-    //      bc
-    //    ┌───┐
-    //    │   │
-    // M  ├───┤ "sliver"
-    //    │   │
-    //    └───┘
+        pack_cell<T, label>(cell, src, dest + offset);
+      }
+    }
+  } else {  // B
+    for (std::size_t c = 0; c < ncols; c += block.bc) {
+      for (std::size_t r = 0; r < nrows; r += half_br) {
+        const std::size_t offset = 2 * r * block.bc + c * length;
 
-    for (std::size_t r = 0; r < block.nrows(); r += block.br) {
+        const std::size_t cell_nrows = std::min(half_br, nrows - r);
+        const std::size_t cell_ncols = std::min(block.bc, ncols - c);
+        const matrix_view cell = block.subview(r, c, cell_nrows, cell_ncols);
 
-      //      bc
-      //    ┌────┐
-      // br │    │  "cell"
-      //    └────┘
-
-      const std::size_t cell_nrows = std::min(block.br, nrows - r);
-      const std::size_t cell_ncols = std::min(block.bc, ncols - c);
-      const matrix_view cell = block.subview(r, c, cell_nrows, cell_ncols);
-      const std::size_t offset = r * block.bc + c * height;
-      pack_cell<T, row_major>(cell, src, dest + offset);
+        pack_cell<T, label>(cell, src, dest + offset);
+      }
     }
   }
 }
 
-template <Real T>
+template <class T>
+  requires std::is_floating_point_v<T>
 void unpack(const matrix_view& block, const T* src, T* dest) {
   const std::size_t nrows = block.nrows();
   const std::size_t ncols = block.ncols();
