@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <string>
+#include <iterator>
 #include <vector>
 
 namespace t1m {
