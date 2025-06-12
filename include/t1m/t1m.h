@@ -74,17 +74,17 @@ void contract(const T alpha, const tensor<T, ndim_a>& a,
 
         for (size_t j_r = 0; j_r < nc_n; j_r += NR) {
           const std::size_t n = std::min(NR, nc_n - j_r);
-          const std::size_t off_j = j_c + j_r;
+          const std::size_t cci = j_c + j_r;
 
           const T* sliver_b = space_b + KC * j_r;
 
           for (size_t i_r = 0; i_r < mc_m; i_r += MR) {
             const std::size_t m = std::min(MR, mc_m - i_r);
-            const std::size_t off_i = i_c + i_r;
+            const std::size_t cri = i_c + i_r;
 
             const T* sliver_a = space_a + i_r * KC;
 
-            const matrix_view view_c = matr_c.subview(off_i, off_j, m, n);
+            const matrix_view view_c = matr_c.subview(cri, cci, m, n);
 
             const std::size_t rsc = view_c.rbs[0];
             const std::size_t csc = view_c.cbs[0];
@@ -114,7 +114,7 @@ void contract(const tensor<T, ndim_a>& a, const std::string& labels_a,
               tensor<T, ndim_c>& c, const std::string& labels_c) {
   using namespace t1m::internal;
   using namespace t1m::bli;
-  
+
   using U = typename T::value_type;
 
   const cntx_t* cntx = bli_gks_query_cntx();
@@ -176,16 +176,16 @@ void contract(const tensor<T, ndim_a>& a, const std::string& labels_a,
 
         for (size_t j_r = 0; j_r < nc_n; j_r += NR) {
           const std::size_t n = std::min(NR, nc_n - j_r);
-          const std::size_t off_j = j_c + j_r;
+          const std::size_t cci = j_c + j_r;
           const U* sliver_b = space_b + KC * j_r;
 
           for (size_t i_r = 0; i_r < mc_m_real; i_r += MR) {
             const std::size_t m = std::min(MR, mc_m_real - i_r);
-            const std::size_t off_i = i_c + (i_r / 2);
+            const std::size_t cri = i_c + (i_r / 2);
 
             const U* sliver_a = space_a + i_r * KC;
 
-            const matrix_view view_c = matr_c.subview(off_i, off_j, m / 2, n);
+            const matrix_view view_c = matr_c.subview(cri, cci, m / 2, n);
 
             std::fill(space_c, space_c + space_size_c, U(0));
             gemm_kernel<T>(m, n, k_real, &alpha, sliver_a, sliver_b, &beta,
