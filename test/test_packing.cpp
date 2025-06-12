@@ -168,14 +168,14 @@ TEST(PackingTest, Unpack) {
   std::array<float, M * K> elems{};
   std::iota(elems.begin(), elems.end(), 1);
 
-  // Data Layout:
+  // Tensor Layout:
   // 1  5   9  13
   // 2  6  10  14
   // 3  7  11  15
   // 4  8  12  16
   tensor<float, 3> t{{M, K}, elems.data(), col_major};
 
-  // Tensor Layout
+  // 2D Layout:
   //  1   2   3   4
   //  5   6   7   8
   //  9  10  11  12
@@ -378,5 +378,50 @@ TEST(PackingTest, Pack1MRowMajorOdd) {
       1,  9,  17, 2,  10, 18, 3,  11, 19, 4, 12, 20, 5, 13, 21, 6,
       14, 22, 7,  15, 23, 8,  16, 24, 25, 0, 0,  26, 0, 0,  27, 0,
       0,  28, 0,  0,  29, 0,  0,  30, 0,  0, 31, 0,  0, 32, 0,  0};
+  EXPECT_TRUE(std::equal(dest.begin(), dest.end(), expt.begin()));
+}
+
+TEST(PackingTest, Unpack1M) {
+  constexpr std::size_t X = 4;
+  constexpr std::size_t Y = 4;
+
+  std::array<std::complex<float>, X * Y> elems{};
+  std::generate(elems.begin(), elems.end(),
+                [r = 1.f]() mutable { return std::complex<float>{r++, r++}; });
+
+  // Tensor Layout:
+  // 1+2i   9+10i  17+18i  25+26i
+  // 3+4i  11+12i  19+20i  27+28i
+  // 5+6i  13+14i  21+22i  29+30i
+  // 7+8i  15+16i  23+24i  31+32i
+  tensor<std::complex<float>, 3> t{{X, Y}, elems.data(), col_major};
+
+  // 2D Layout
+  //  1+ 2i   3+ 4i   5+ 6i   7+ 8i
+  //  9+10i  11+12i  13+14i  15+16i
+  // 17+18i  19+20i  21+22i  23+24i
+  // 25+26i  27+28i  29+30i  31+32i
+  block_layout layout(t.dims, t.strides(), {1}, {0}, 2 * X, 2 * Y);
+  matrix_view block = matrix_view::from_layout(layout);
+
+  std::array<std::complex<float>, X * Y> dest{};
+  unpack(block, reinterpret_cast<float*>(t.data), dest.data());
+
+  std::array<std::complex<float>, X * Y> expt{std::complex<float>{1, 2},
+                                              {9, 10},
+                                              {17, 18},
+                                              {25, 26},
+                                              {3, 4},
+                                              {11, 12},
+                                              {19, 20},
+                                              {27, 28},
+                                              {5, 6},
+                                              {13, 14},
+                                              {21, 22},
+                                              {29, 30},
+                                              {7, 8},
+                                              {15, 16},
+                                              {23, 24},
+                                              {31, 32}};
   EXPECT_TRUE(std::equal(dest.begin(), dest.end(), expt.begin()));
 }

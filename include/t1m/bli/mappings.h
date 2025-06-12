@@ -1,67 +1,141 @@
 #pragma once
 
 #include <blis.h>
+#include <complex>
 #include <cstdlib>
+#include <type_traits>
 
 namespace t1m {
 namespace bli {
 template <typename T, typename... Us>
-requires std::is_same_v<T, float> void setv(Us... args) {
+  requires std::is_same_v<T, float>
+void setv(Us... args) {
   bli_ssetv(args...);
 }
 
 template <typename T, typename... Us>
-requires std::is_same_v<T, double> void setv(Us... args) {
+  requires std::is_same_v<T, double>
+void setv(Us... args) {
   bli_dsetv(args...);
 }
 
 template <typename T, typename... Us>
-requires std::is_same_v<T, float> void randv(Us... args) {
+  requires std::is_same_v<T, std::complex<float>>
+void setv(Us... args) {
+  bli_csetv(args...);
+}
+
+template <typename T, typename... Us>
+  requires std::is_same_v<T, std::complex<double>>
+void setv(Us... args) {
+  bli_zsetv(args...);
+}
+
+template <typename T, typename... Us>
+  requires std::is_same_v<T, float>
+void randv(Us... args) {
   bli_srandv(args...);
 }
 
 template <typename T, typename... Us>
-requires std::is_same_v<T, double> void randv(Us... args) {
+  requires std::is_same_v<T, double>
+void randv(Us... args) {
   bli_drandv(args...);
 }
 
 template <typename T, typename... Us>
-requires std::is_same_v<T, float> void normv(Us... args) {
+  requires std::is_same_v<T, std::complex<float>>
+void randv(Us... args) {
+  bli_crandv(args...);
+}
+
+template <typename T, typename... Us>
+  requires std::is_same_v<T, std::complex<double>>
+void randv(Us... args) {
+  bli_zrandv(args...);
+}
+
+template <typename T, typename... Us>
+  requires std::is_same_v<T, float>
+void normv(Us... args) {
   bli_snormfv(args...);
 }
 
 template <typename T, typename... Us>
-requires std::is_same_v<T, double> void normv(Us... args) {
+  requires std::is_same_v<T, double>
+void normv(Us... args) {
   bli_dnormfv(args...);
 }
 
 template <typename T, typename... Us>
-requires std::is_same_v<T, float> void axpym(Us... args) {
+  requires std::is_same_v<T, std::complex<float>>
+void normv(Us... args) {
+  bli_cnormfv(args...);
+}
+
+template <typename T, typename... Us>
+  requires std::is_same_v<T, std::complex<double>>
+void normv(Us... args) {
+  bli_znormfv(args...);
+}
+
+template <typename T, typename... Us>
+  requires std::is_same_v<T, float>
+void axpym(Us... args) {
   bli_saxpym(args...);
 }
 
 template <typename T, typename... Us>
-requires std::is_same_v<T, double> void axpym(Us... args) {
+  requires std::is_same_v<T, double>
+void axpym(Us... args) {
   bli_daxpym(args...);
 }
 
 template <typename T, typename... Us>
-requires std::is_same_v<T, float> void gemm(Us... args) {
+  requires std::is_same_v<T, std::complex<float>>
+void axpym(Us... args) {
+  bli_caxpym(args...);
+}
+
+template <typename T, typename... Us>
+  requires std::is_same_v<T, std::complex<double>>
+void axpym(Us... args) {
+  bli_zaxpym(args...);
+}
+
+template <typename T, typename... Us>
+  requires std::is_same_v<T, float>
+void gemm(Us... args) {
   bli_sgemm(args...);
 }
 
 template <typename T, typename... Us>
-requires std::is_same_v<T, double> void gemm(Us... args) {
+  requires std::is_same_v<T, double>
+void gemm(Us... args) {
   bli_dgemm(args...);
 }
 
 template <typename T, typename... Us>
-requires std::is_same_v<T, float> void gemm_kernel(Us... args) {
+  requires std::is_same_v<T, std::complex<float>>
+void gemm(Us... args) {
+  bli_cgemm(args...);
+}
+
+template <typename T, typename... Us>
+  requires std::is_same_v<T, std::complex<double>>
+void gemm(Us... args) {
+  bli_zgemm(args...);
+}
+
+template <typename T, typename... Us>
+  requires(std::is_same_v<T, float> || std::is_same_v<T, std::complex<float>>)
+void gemm_kernel(Us... args) {
   bli_sgemm_ukernel(args...);
 }
 
 template <typename T, typename... Us>
-requires std::is_same_v<T, double> void gemm_kernel(Us... args) {
+  requires(std::is_same_v<T, double> || std::is_same_v<T, std::complex<double>>)
+void gemm_kernel(Us... args) {
   bli_dgemm_ukernel(args...);
 }
 
@@ -86,14 +160,14 @@ block_sizes get_block_sizes(const cntx_t* cntx, const num_t dt) {
 }
 
 template <typename T>
-requires std::is_same_v<T, float> block_sizes
-get_block_sizes(const cntx_t* cntx) {
+  requires(std::is_same_v<T, float> || std::is_same_v<T, std::complex<float>>)
+block_sizes get_block_sizes(const cntx_t* cntx) {
   return get_block_sizes<T>(cntx, BLIS_FLOAT);
 }
 
 template <typename T>
-requires std::is_same_v<T, double> block_sizes
-get_block_sizes(const cntx_t* cntx) {
+  requires(std::is_same_v<T, double> || std::is_same_v<T, std::complex<double>>)
+block_sizes get_block_sizes(const cntx_t* cntx) {
   return get_block_sizes<T>(cntx, BLIS_DOUBLE);
 }
 
