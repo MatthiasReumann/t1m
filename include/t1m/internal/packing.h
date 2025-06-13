@@ -1,6 +1,5 @@
 #pragma once
 
-#include <print>
 #include <span>
 #include <type_traits>
 #include "t1m/internal/scatter.h"
