@@ -40,10 +40,6 @@ void explicit_benchmark(const std::array<std::size_t, ndim_a>& dims_a,
   // to BLIS' custom types.
   using BLI_T = Alias<T>::blis_type;
 
-  // For floating point numbers, U = T.
-  // For complex numbers, U = std::complex<U>.
-  using U = Alias<T>::value_type;
-
   std::allocator<BLI_T> alloc{};
 
   constexpr t1m::memory_layout layout = t1m::col_major;
