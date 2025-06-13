@@ -1,26 +1,3 @@
-/**
- * @brief Block packing functionality.
- * @details 
- *
- * Column major:
- *       K
- *   ┌───┬───┐            K              bc
- *   │   │   │        ┌───┬───┐        ┌────┐
- * M ├───┼───┤  →  br │   │   │  →  br │    │
- *   │   │   │        └───┴───┘        └────┘
- *   └───┴───┘
- *    "block"         "sliver"         "cell"
- *
- * Row major:
-*        N             bc
- *   ┌───┬───┐       ┌───┐          bc
- *   │   │   │       │   │        ┌────┐
- * K ├───┼───┤  →  K ├───┤  →  br │    │
- *   │   │   │       │   │        └────┘
- *   └───┴───┘       └───┘
- *    "block"       "sliver"      "cell"
- */
-
 #pragma once
 
 #include <print>
@@ -31,7 +8,9 @@
 namespace t1m {
 namespace internal {
 
-/// @brief Categorizes the (un-)packing order.
+/**
+ * @brief Categorizes the (un-)packing order.
+ */
 enum packing_label {
   A,  // Pack only. Column Major.
   B,  // Pack only. Row Major.

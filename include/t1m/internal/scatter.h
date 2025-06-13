@@ -3,54 +3,120 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <cstdlib>
 #include <numeric>
 #include <span>
+#include <tuple>
 #include <vector>
 
 namespace t1m {
 namespace internal {
-template <const std::size_t ndim>
+
+/**
+ * @brief Calculate ceil(x / y).
+ */
+constexpr std::size_t div_ceil(std::size_t x, std::size_t y) {
+  return x / y + (x % y > 0);
+}
+
+/**
+ * @brief Row (X) and Column (Y) indices for tensor labels.
+ */
+struct index_bundle {
+  std::vector<std::size_t> X;
+  std::vector<std::size_t> Y;
+};
+
+using index_bundle_tuple = std::tuple<index_bundle, index_bundle, index_bundle>;
+
+inline index_bundle_tuple get_index_bundles(const std::string& labels_a,
+                                            const std::string& labels_b,
+                                            const std::string& labels_c) {
+
+  // Copy for sorting.
+  std::string a(labels_a);
+  std::string b(labels_b);
+  std::string c(labels_c);
+
+  // Sort for set operations.
+  std::sort(a.begin(), a.end());
+  std::sort(b.begin(), b.end());
+  std::sort(c.begin(), c.end());
+
+  // Apply set operations.
+  std::string contracted, free_a, free_b;
+  std::set_intersection(a.begin(), a.end(), b.begin(), b.end(),
+                        std::back_inserter(contracted));
+  std::set_difference(a.begin(), a.end(), b.begin(), b.end(),
+                      std::back_inserter(free_a));
+  std::set_difference(b.begin(), b.end(), a.begin(), a.end(),
+                      std::back_inserter(free_b));
+
+  // Assign bundles.
+  std::vector<std::size_t> AY(contracted.size());
+  std::vector<std::size_t> BX(contracted.size());
+  for (size_t i = 0; i < contracted.size(); ++i) {
+    AY[i] = labels_a.find(contracted[i]);
+    BX[i] = labels_b.find(contracted[i]);
+  }
+
+  std::vector<std::size_t> AX(free_a.size());
+  std::vector<std::size_t> CX(free_a.size());
+  for (size_t i = 0; i < free_a.size(); ++i) {
+    AX[i] = labels_a.find(free_a[i]);
+    CX[i] = labels_c.find(free_a[i]);
+  }
+
+  std::vector<std::size_t> BY(free_b.size());
+  std::vector<std::size_t> CY(free_b.size());
+  for (size_t i = 0; i < free_b.size(); ++i) {
+    BY[i] = labels_b.find(free_b[i]);
+    CY[i] = labels_c.find(free_b[i]);
+  }
+
+  return index_bundle_tuple{{AX, AY}, {BX, BY}, {CX, CY}};
+}
+
+template <std::size_t ndim>
 std::vector<std::size_t> get_scatter(
     const std::vector<std::size_t>& indices,
     const std::array<std::size_t, ndim>& dimensions,
     const std::array<std::size_t, ndim>& strides) {
-  // first, create 2D vector with each index, stride combination.
-  std::vector<std::vector<std::size_t>> parts{};
-  for (std::size_t i = 0; i < indices.size(); ++i) {
-    const std::size_t& idx = indices[i];
 
-    const std::size_t& dim = dimensions[idx];
-    const std::size_t& stride = strides[idx];
+  // Compute all index-stride combinations.
+  std::vector<std::vector<std::size_t>> parts(indices.size());
+  for (std::size_t i = 0; i < parts.size(); ++i) {
+    const std::size_t idx = indices[i];
+    const std::size_t dim = dimensions[idx];
+    const std::size_t stride = strides[idx];
 
-    std::vector<std::size_t> v(dim);
-    for (std::size_t j = 0; j < dim; ++j) {
-      v[j] = j * stride;
-    }
-    parts.push_back(v);
+    parts[i] = [&dim, &stride] {
+      std::vector<std::size_t> v(dim);
+      for (std::size_t j = 0; j < dim; ++j) {
+        v[j] = j * stride;
+      }
+      return v;
+    }();
   }
 
-  // required to be equivalent with the old implementation.
-  std::reverse(parts.begin(), parts.end());
-
   // second, reduce 2D to 1D vector, computing each possible combination.
-  auto elementwise_add = [](const std::vector<std::size_t>& av,
-                            const std::vector<std::size_t>& bv) {
-    std::vector<std::size_t> cv;
-    cv.reserve(av.size() * bv.size());
-    for (const std::size_t& a : av) {
-      for (const std::size_t& b : bv) {
-        cv.push_back(a + b);
+  auto f = [](const std::vector<std::size_t>& av,
+              const std::vector<std::size_t>& bv) {
+    std::vector<std::size_t> cv(av.size() * bv.size());
+    for (std::size_t a = 0; a < av.size(); ++a) {
+      for (std::size_t b = 0; b < bv.size(); ++b) {
+        cv[b + a * bv.size()] = av[a] + bv[b];
       }
     }
     return cv;
   };
 
-  return std::reduce(parts.begin() + 1, parts.end(), parts[0], elementwise_add);
+  return std::reduce(std::next(parts.rbegin()), parts.rend(), parts.back(), f);
 }
 
 inline std::vector<std::size_t> get_block_scatter(
     const std::vector<std::size_t>& scat, const std::size_t b) {
-  const size_t nblocks = (scat.size() + b - 1) / b;  // ⌈l/b⌉
+  const size_t nblocks = div_ceil(scat.size(), b);
 
   std::vector<std::size_t> block_scat(nblocks);
   for (std::size_t i = 0; i < nblocks; ++i) {
@@ -84,19 +150,6 @@ inline std::vector<std::size_t> get_block_scatter(
 }
 
 struct block_layout {
-  template <std::size_t ndim>
-  block_layout(const std::array<std::size_t, ndim>& dims,
-               const std::array<std::size_t, ndim>& strides,
-               const std::vector<std::size_t>& row_indices,
-               const std::vector<std::size_t>& col_indices,
-               const std::size_t br, const std::size_t bc)
-      : br(br), bc(bc) {
-    rs = get_scatter<ndim>(row_indices, dims, strides);
-    cs = get_scatter<ndim>(col_indices, dims, strides);
-    rbs = get_block_scatter(rs, br);
-    cbs = get_block_scatter(cs, bc);
-  }
-
   std::vector<std::size_t> rs;
   std::vector<std::size_t> cs;
 
@@ -104,6 +157,18 @@ struct block_layout {
   std::vector<std::size_t> rbs;
   std::size_t bc;
   std::vector<std::size_t> cbs;
+
+  template <std::size_t ndim>
+  block_layout(const std::array<std::size_t, ndim>& dims,
+               const std::array<std::size_t, ndim>& strides,
+               const index_bundle& bundle, const std::size_t br,
+               const std::size_t bc)
+      : br(br), bc(bc) {
+    rs = get_scatter<ndim>(bundle.X, dims, strides);
+    cs = get_scatter<ndim>(bundle.Y, dims, strides);
+    rbs = get_block_scatter(rs, br);
+    cbs = get_block_scatter(cs, bc);
+  }
 };
 
 struct matrix_view {
@@ -112,7 +177,6 @@ struct matrix_view {
 
   std::size_t br;
   std::span<const std::size_t> rbs;
-
   std::size_t bc;
   std::span<const std::size_t> cbs;
 
@@ -125,8 +189,8 @@ struct matrix_view {
                                 std::size_t ncols) const noexcept {
     const std::size_t rfrstblck = ri / br;
     const std::size_t cfrstblck = ci / bc;
-    const std::size_t rnblcks = (nrows + br - 1) / br;  // ceil(nrows / br)
-    const std::size_t cnblcks = (ncols + bc - 1) / bc;  // ceil(ncols / bc)
+    const std::size_t rnblcks = div_ceil(nrows, br);
+    const std::size_t cnblcks = div_ceil(ncols, bc);
     return {rs.subspan(ri, nrows),
             cs.subspan(ci, ncols),
             br,

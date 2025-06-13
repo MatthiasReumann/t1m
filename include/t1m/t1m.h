@@ -8,32 +8,29 @@
 #include "t1m/bli/mappings.h"
 #include "t1m/internal/packing.h"
 #include "t1m/internal/scatter.h"
-#include "t1m/internal/utils.h"
 #include "t1m/tensor.h"
 
 namespace t1m {
 
-template <class T, std::size_t ndim_a, std::size_t ndim_b, std::size_t ndim_c>
-  requires(std::is_floating_point_v<T>)
+template <class T, class Allocator = std::allocator<T>, std::size_t ndim_a,
+          std::size_t ndim_b, std::size_t ndim_c>
+  requires(std::is_same_v<T, float> || std::is_same_v<T, double>)
 void contract(const T alpha, const tensor<T, ndim_a>& a,
               const std::string& labels_a, const tensor<T, ndim_b>& b,
               const std::string& labels_b, const T beta, tensor<T, ndim_c>& c,
-              const std::string& labels_c) {
+              const std::string& labels_c,
+              const cntx_t* cntx = bli_gks_query_cntx()) {
   using namespace t1m::internal;
   using namespace t1m::bli;
-
-  const cntx_t* cntx = bli_gks_query_cntx();
 
   const block_sizes& bs = get_block_sizes<T>(cntx);
   const auto [MR, NR, KP, MC, KC, NC] = bs;
 
-  const index_bundles bundles = get_index_bundles(labels_a, labels_b, labels_c);
-  const block_layout layout_a(a.dims, a.strides(), bundles.AI, bundles.AP, MR,
-                              KP);
-  const block_layout layout_b(b.dims, b.strides(), bundles.BP, bundles.BJ, KP,
-                              NR);
-  const block_layout layout_c(c.dims, c.strides(), bundles.CI, bundles.CJ, MR,
-                              NR);
+  const auto [bundle_a, bundle_b, bundle_c] =
+      get_index_bundles(labels_a, labels_b, labels_c);
+  const block_layout layout_a(a.dims, a.strides(), bundle_a, MR, KP);
+  const block_layout layout_b(b.dims, b.strides(), bundle_b, KP, NR);
+  const block_layout layout_c(c.dims, c.strides(), bundle_c, MR, NR);
 
   const matrix_view matr_a = matrix_view::from_layout(layout_a);
   const matrix_view matr_b = matrix_view::from_layout(layout_b);
@@ -44,8 +41,8 @@ void contract(const T alpha, const tensor<T, ndim_a>& a,
   const std::size_t space_size_c = MR * NR;
   const std::size_t space_total = space_size_a + space_size_b + space_size_c;
 
-  std::allocator<T> alloc{};
-  T* space_a = alloc.allocate(space_total);
+  Allocator alloc{};
+  T* space_a = std::allocator_traits<Allocator>::allocate(alloc, space_total);
   T* space_b = space_a + space_size_a;
   T* space_c = space_b + space_size_b;
 
@@ -105,30 +102,29 @@ void contract(const T alpha, const tensor<T, ndim_a>& a,
     }
   }
 
-  alloc.deallocate(space_a, space_total);
+  std::allocator_traits<Allocator>::deallocate(alloc, space_a, space_total);
 }
 
-template <class T, std::size_t ndim_a, std::size_t ndim_b, std::size_t ndim_c>
+template <class T, class U = typename T::value_type,
+          class Allocator = std::allocator<U>, std::size_t ndim_a,
+          std::size_t ndim_b, std::size_t ndim_c>
+  requires(std::is_same_v<T, std::complex<float>> ||
+           std::is_same_v<T, std::complex<double>>)
 void contract(const tensor<T, ndim_a>& a, const std::string& labels_a,
               const tensor<T, ndim_b>& b, const std::string& labels_b,
-              tensor<T, ndim_c>& c, const std::string& labels_c) {
+              tensor<T, ndim_c>& c, const std::string& labels_c,
+              const cntx_t* cntx = bli_gks_query_cntx()) {
   using namespace t1m::internal;
   using namespace t1m::bli;
-
-  using U = typename T::value_type;
-
-  const cntx_t* cntx = bli_gks_query_cntx();
 
   const block_sizes& bs = get_block_sizes<T>(cntx);
   const auto [MR, NR, KP, MC, KC, NC] = bs;
 
-  const index_bundles bundles = get_index_bundles(labels_a, labels_b, labels_c);
-  const block_layout layout_a(a.dims, a.strides(), bundles.AI, bundles.AP, MR,
-                              KP);
-  const block_layout layout_b(b.dims, b.strides(), bundles.BP, bundles.BJ, KP,
-                              NR);
-  const block_layout layout_c(c.dims, c.strides(), bundles.CI, bundles.CJ, MR,
-                              NR);
+  const auto [bundle_a, bundle_b, bundle_c] =
+      get_index_bundles(labels_a, labels_b, labels_c);
+  const block_layout layout_a(a.dims, a.strides(), bundle_a, MR, KP);
+  const block_layout layout_b(b.dims, b.strides(), bundle_b, KP, NR);
+  const block_layout layout_c(c.dims, c.strides(), bundle_c, MR, NR);
 
   const matrix_view matr_a = matrix_view::from_layout(layout_a);
   const matrix_view matr_b = matrix_view::from_layout(layout_b);
@@ -139,8 +135,8 @@ void contract(const tensor<T, ndim_a>& a, const std::string& labels_a,
   const std::size_t space_size_c = MR * NR;
   const std::size_t space_total = space_size_a + space_size_b + space_size_c;
 
-  std::allocator<U> alloc{};
-  U* space_a = alloc.allocate(space_total);
+  Allocator alloc{};
+  U* space_a = std::allocator_traits<Allocator>::allocate(alloc, space_total);
   U* space_b = space_a + space_size_a;
   U* space_c = space_b + space_size_b;
 
@@ -197,6 +193,6 @@ void contract(const tensor<T, ndim_a>& a, const std::string& labels_a,
     }
   }
 
-  alloc.deallocate(space_a, space_total);
+  std::allocator_traits<Allocator>::deallocate(alloc, space_a, space_total);
 }
 };  // namespace t1m
