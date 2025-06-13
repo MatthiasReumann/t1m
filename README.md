@@ -4,7 +4,7 @@ A header-only library for tensor contractions. The transposition-free tensor con
 
 ## Requirements
 
-- BLIS Library ([URL](https://github.com/flame/blis))
+- [BLIS](https://github.com/flame/blis)
 
 ## Usage
 
@@ -15,7 +15,7 @@ A header-only library for tensor contractions. The transposition-free tensor con
 
 int main() 
 {
-  std::allocator<float> alloc{};
+  std::allocator<std::complex<float>> alloc{};
 
   std::complex<float>* data_a = alloc.allocate(2 * 2 * 2);
   std::complex<float>* data_b = alloc.allocate(2 * 2);
@@ -29,7 +29,7 @@ int main()
 
   t1m::contract(a, "abc", b, "bd", c, "acd");
   
-  // work with C or tensorC
+  // ...
   
   alloc.deallocate(data_c, 2 * 2 * 2);
   alloc.deallocate(data_b, 2 * 2);
