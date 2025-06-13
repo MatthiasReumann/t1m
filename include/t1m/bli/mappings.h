@@ -117,12 +117,12 @@ struct block_sizes {
 template <typename T>
 block_sizes get_block_sizes(const cntx_t* cntx, const num_t dt) {
   struct block_sizes bs;
-  bs.MR = bli_cntx_get_blksz_def_dt(dt, BLIS_MR, cntx);
-  bs.NR = bli_cntx_get_blksz_def_dt(dt, BLIS_NR, cntx);
+  bs.MR = bli_cntx_get_blksz_def_dt(dt, BLIS_MR, const_cast<cntx_t*>(cntx));
+  bs.NR = bli_cntx_get_blksz_def_dt(dt, BLIS_NR, const_cast<cntx_t*>(cntx));
   bs.KP = 4;
-  bs.MC = bli_cntx_get_blksz_def_dt(dt, BLIS_MC, cntx);
-  bs.KC = bli_cntx_get_blksz_def_dt(dt, BLIS_KC, cntx);
-  bs.NC = bli_cntx_get_blksz_def_dt(dt, BLIS_NC, cntx);
+  bs.MC = bli_cntx_get_blksz_def_dt(dt, BLIS_MC, const_cast<cntx_t*>(cntx));
+  bs.KC = bli_cntx_get_blksz_def_dt(dt, BLIS_KC, const_cast<cntx_t*>(cntx));
+  bs.NC = bli_cntx_get_blksz_def_dt(dt, BLIS_NC, const_cast<cntx_t*>(cntx));
   return bs;
 }
 
