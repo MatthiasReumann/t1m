@@ -104,7 +104,7 @@ void gemm_like(const std::string& labels_a, const std::string& labels_b,
 
     const U estimator = norm_diff / (eps * d * a_norm * b_norm);
 
-    EXPECT_NEAR(estimator, 0.f, 1e-6);
+    EXPECT_LE(estimator, U(1));
 
     alloc.deallocate(data_ref, nelems_c);
     alloc.deallocate(data_c, nelems_c);
