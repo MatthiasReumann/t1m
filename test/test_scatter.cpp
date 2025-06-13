@@ -50,19 +50,19 @@ TEST(UtilsTest, BlockScatterVectors1) {
 }
 
 TEST(UtilsTest, BlockScatterVectors2) {
-  std::vector<std::size_t> block_scat =
-      get_block_scatter({1, 2, 3, 5, 7, 8}, 3);
+  const std::vector<std::size_t> scat{1, 2, 3, 5, 7, 8};
+  const std::vector<std::size_t> block_scat = get_block_scatter(scat, 3);
   EXPECT_EQ(block_scat, (std::vector<std::size_t>{1, 0}));
 }
 
 TEST(UtilsTest, BlockScatterVectors3) {
-  std::vector<std::size_t> block_scat =
-      get_block_scatter({1, 2, 3, 5, 7, 8, 2}, 3);
+  const std::vector<std::size_t> scat{1, 2, 3, 5, 7, 8, 2};
+  const std::vector<std::size_t> block_scat = get_block_scatter(scat, 3);
   EXPECT_EQ(block_scat, (std::vector<std::size_t>{1, 0, 0}));
 }
 
 TEST(UtilsTest, BlockScatterVectors4) {
-  std::vector<std::size_t> block_scat =
-      get_block_scatter({1, 2, 3, 5, 7, 8, 1, 4}, 3);
+  const std::vector<std::size_t> scat{1, 2, 3, 5, 7, 8, 1, 4};
+  const std::vector<std::size_t> block_scat = get_block_scatter(scat, 3);
   EXPECT_EQ(block_scat, (std::vector<std::size_t>{1, 0, 3}));
 }
