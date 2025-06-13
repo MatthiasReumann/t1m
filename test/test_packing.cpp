@@ -32,7 +32,7 @@ TEST(PackingTest, PackColMajorEven) {
   // 2  6  10  14
   // 3  7  11  15
   // 4  8  12  16
-  block_layout layout(t.dims, t.strides(), {{0, 1}, {2}}, m, k);
+  matrix_layout layout(t, {{0, 1}, {2}}, m, k);
   matrix_view block = matrix_view::from_layout(layout);
 
   // Expected Packed Layout In Column Major:
@@ -69,7 +69,7 @@ TEST(PackingTest, PackColMajorOdd) {
   // 3  7  11  15
   // 4  8  12  16
 
-  block_layout layout(t.dims, t.strides(), {{0, 1}, {2}}, m, k);
+  matrix_layout layout(t, {{0, 1}, {2}}, m, k);
   matrix_view block = matrix_view::from_layout(layout);
 
   // Expected Packed Layout In Column Major:
@@ -109,7 +109,7 @@ TEST(PackingTest, PackRowMajorEven) {
   // 2  6  10  14
   // 3  7  11  15
   // 4  8  12  16
-  block_layout layout(t.dims, t.strides(), {{0, 1}, {2}}, m, k);
+  matrix_layout layout(t, {{0, 1}, {2}}, m, k);
   matrix_view block = matrix_view::from_layout(layout);
 
   // Expected Packed Layout In Row Major:
@@ -145,7 +145,7 @@ TEST(PackingTest, PackRowMajorOdd) {
   // 3  7  11  15
   // 4  8  12  16
 
-  block_layout layout(t.dims, t.strides(), {{0, 1}, {2}}, m, k);
+  matrix_layout layout(t, {{0, 1}, {2}}, m, k);
   matrix_view block = matrix_view::from_layout(layout);
 
   // Expected Packed Layout In Row Major:
@@ -180,7 +180,7 @@ TEST(PackingTest, Unpack) {
   //  5   6   7   8
   //  9  10  11  12
   // 13  14  15  16
-  block_layout layout(t.dims, t.strides(), {{1}, {0}}, M, K);
+  matrix_layout layout(t, {{1}, {0}}, M, K);
   matrix_view block = matrix_view::from_layout(layout);
 
   // Expected Unpacked Layout
@@ -221,7 +221,7 @@ TEST(PackingTest, Pack1MColMajorEven) {
   // 3+4i  11+12i  19+20i  27+28i
   // 5+6i  13+14i  21+22i  29+30i
   // 7+8i  15+16i  23+24i  31+32i
-  block_layout layout(t.dims, t.strides(), {{0, 1}, {2}}, MR, KP);
+  matrix_layout layout(t, {{0, 1}, {2}}, MR, KP);
   matrix_view block = matrix_view::from_layout(layout);
 
   // Expected Packed Layout In Column Major:
@@ -266,7 +266,7 @@ TEST(PackingTest, Pack1MColMajorOdd) {
   // 3+4i  11+12i  19+20i  27+28i
   // 5+6i  13+14i  21+22i  29+30i
   // 7+8i  15+16i  23+24i  31+32i
-  block_layout layout(t.dims, t.strides(), {{0, 1}, {2}}, MR, KP);
+  matrix_layout layout(t, {{0, 1}, {2}}, MR, KP);
   matrix_view block = matrix_view::from_layout(layout);
 
   // Expected Packed Layout In Column Major:
@@ -317,7 +317,7 @@ TEST(PackingTest, Pack1MRowMajorEven) {
   // 3+4i  11+12i  19+20i  27+28i
   // 5+6i  13+14i  21+22i  29+30i
   // 7+8i  15+16i  23+24i  31+32i
-  block_layout layout(t.dims, t.strides(), {{0, 1}, {2}}, KP, NR);
+  matrix_layout layout(t, {{0, 1}, {2}}, KP, NR);
   matrix_view block = matrix_view::from_layout(layout);
 
   // Expected Packed Layout In Row Major:
@@ -359,7 +359,7 @@ TEST(PackingTest, Pack1MRowMajorOdd) {
   // 3+4i  11+12i  19+20i  27+28i
   // 5+6i  13+14i  21+22i  29+30i
   // 7+8i  15+16i  23+24i  31+32i
-  block_layout layout(t.dims, t.strides(), {{0, 1}, {2}}, KP, NR);
+  matrix_layout layout(t, {{0, 1}, {2}}, KP, NR);
   matrix_view block = matrix_view::from_layout(layout);
 
   // Expected Packed Layout In Row Major:
@@ -401,7 +401,7 @@ TEST(PackingTest, Unpack1M) {
   //  9+10i  11+12i  13+14i  15+16i
   // 17+18i  19+20i  21+22i  23+24i
   // 25+26i  27+28i  29+30i  31+32i
-  block_layout layout(t.dims, t.strides(), {{1}, {0}}, 2 * X, 2 * Y);
+  matrix_layout layout(t, {{1}, {0}}, 2 * X, 2 * Y);
   matrix_view block = matrix_view::from_layout(layout);
 
   std::array<std::complex<float>, X * Y> dest{};

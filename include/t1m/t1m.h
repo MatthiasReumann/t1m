@@ -28,9 +28,9 @@ void contract(const T alpha, const tensor<T, ndim_a>& a,
 
   const auto [bundle_a, bundle_b, bundle_c] =
       get_index_bundles(labels_a, labels_b, labels_c);
-  const block_layout layout_a(a.dims, a.strides(), bundle_a, MR, KP);
-  const block_layout layout_b(b.dims, b.strides(), bundle_b, KP, NR);
-  const block_layout layout_c(c.dims, c.strides(), bundle_c, MR, NR);
+  const matrix_layout layout_a(a, bundle_a, MR, KP);
+  const matrix_layout layout_b(b, bundle_b, KP, NR);
+  const matrix_layout layout_c(c, bundle_c, MR, NR);
 
   const matrix_view matr_a = matrix_view::from_layout(layout_a);
   const matrix_view matr_b = matrix_view::from_layout(layout_b);
@@ -122,9 +122,9 @@ void contract(const tensor<T, ndim_a>& a, const std::string& labels_a,
 
   const auto [bundle_a, bundle_b, bundle_c] =
       get_index_bundles(labels_a, labels_b, labels_c);
-  const block_layout layout_a(a.dims, a.strides(), bundle_a, MR, KP);
-  const block_layout layout_b(b.dims, b.strides(), bundle_b, KP, NR);
-  const block_layout layout_c(c.dims, c.strides(), bundle_c, MR, NR);
+  const matrix_layout layout_a(a, bundle_a, MR, KP);
+  const matrix_layout layout_b(b, bundle_b, KP, NR);
+  const matrix_layout layout_c(c, bundle_c, MR, NR);
 
   const matrix_view matr_a = matrix_view::from_layout(layout_a);
   const matrix_view matr_b = matrix_view::from_layout(layout_b);

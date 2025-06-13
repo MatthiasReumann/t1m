@@ -8,6 +8,7 @@
 #include <span>
 #include <tuple>
 #include <vector>
+#include "t1m/tensor.h"
 
 namespace t1m {
 namespace internal {
@@ -29,6 +30,11 @@ struct index_bundle {
 
 using index_bundle_tuple = std::tuple<index_bundle, index_bundle, index_bundle>;
 
+/**
+ * @brief Compute index bundles for each of the labels.
+ * @details An index bundle splits the positions (or indices) of a label into 
+ *          a row and column set. Effectively, making the tensor a matrix.
+ */
 inline index_bundle_tuple get_index_bundles(const std::string& labels_a,
                                             const std::string& labels_b,
                                             const std::string& labels_c) {
@@ -77,6 +83,9 @@ inline index_bundle_tuple get_index_bundles(const std::string& labels_a,
   return index_bundle_tuple{{AX, AY}, {BX, BY}, {CX, CY}};
 }
 
+/**
+ * @brief Compute scatter vector.
+ */
 template <std::size_t ndim>
 std::vector<std::size_t> get_scatter(
     const std::vector<std::size_t>& indices,
@@ -99,7 +108,7 @@ std::vector<std::size_t> get_scatter(
     }();
   }
 
-  // second, reduce 2D to 1D vector, computing each possible combination.
+  // Compute all possible combinations and reduce.
   auto f = [](const std::vector<std::size_t>& av,
               const std::vector<std::size_t>& bv) {
     std::vector<std::size_t> cv(av.size() * bv.size());
@@ -114,6 +123,9 @@ std::vector<std::size_t> get_scatter(
   return std::reduce(std::next(parts.rbegin()), parts.rend(), parts.back(), f);
 }
 
+/**
+ * @brief Compute block scatter vector.
+ */
 inline std::vector<std::size_t> get_block_scatter(
     const std::vector<std::size_t>& scat, const std::size_t b) {
   const size_t nblocks = div_ceil(scat.size(), b);
@@ -149,7 +161,10 @@ inline std::vector<std::size_t> get_block_scatter(
   return block_scat;
 }
 
-struct block_layout {
+/**
+ * @brief Matricize tensor to matrix layout.
+ */
+struct matrix_layout {
   std::vector<std::size_t> rs;
   std::vector<std::size_t> cs;
 
@@ -158,19 +173,20 @@ struct block_layout {
   std::size_t bc;
   std::vector<std::size_t> cbs;
 
-  template <std::size_t ndim>
-  block_layout(const std::array<std::size_t, ndim>& dims,
-               const std::array<std::size_t, ndim>& strides,
-               const index_bundle& bundle, const std::size_t br,
-               const std::size_t bc)
+  template <class T, std::size_t ndim>
+  matrix_layout(const tensor<T, ndim>& t, const index_bundle& bundle,
+                const std::size_t br, const std::size_t bc)
       : br(br), bc(bc) {
-    rs = get_scatter<ndim>(bundle.X, dims, strides);
-    cs = get_scatter<ndim>(bundle.Y, dims, strides);
+    rs = get_scatter<ndim>(bundle.X, t.dims, t.strides());
+    cs = get_scatter<ndim>(bundle.Y, t.dims, t.strides());
     rbs = get_block_scatter(rs, br);
     cbs = get_block_scatter(cs, bc);
   }
 };
 
+/**
+ * @brief (Sub-)View of a matrix layout.
+ */
 struct matrix_view {
   std::span<const std::size_t> rs;
   std::span<const std::size_t> cs;
@@ -180,25 +196,29 @@ struct matrix_view {
   std::size_t bc;
   std::span<const std::size_t> cbs;
 
-  constexpr static matrix_view from_layout(const block_layout& layout) {
+  constexpr static matrix_view from_layout(const matrix_layout& layout) {
     return {layout.rs, layout.cs, layout.br, layout.rbs, layout.bc, layout.cbs};
   }
-
   constexpr matrix_view subview(std::size_t ri, std::size_t ci,
                                 std::size_t nrows,
                                 std::size_t ncols) const noexcept {
-    const std::size_t rfrstblck = ri / br;
-    const std::size_t cfrstblck = ci / bc;
-    const std::size_t rnblcks = div_ceil(nrows, br);
-    const std::size_t cnblcks = div_ceil(ncols, bc);
-    return {rs.subspan(ri, nrows),
-            cs.subspan(ci, ncols),
-            br,
-            rbs.subspan(rfrstblck, rnblcks),
-            bc,
-            cbs.subspan(cfrstblck, cnblcks)};
+    matrix_view view(*this);
+    view.slice_rows(ri, nrows);
+    view.slice_cols(ci, ncols);
+    return view;
   }
-
+  constexpr void slice_rows(const std::size_t offset, const std::size_t n) {
+    const std::size_t first_block = offset / br;
+    const std::size_t nblocks = div_ceil(n, br);
+    rs = rs.subspan(offset, n);
+    rbs = rbs.subspan(first_block, nblocks);
+  }
+  constexpr void slice_cols(const std::size_t offset, const std::size_t n) {
+    const std::size_t first_block = offset / bc;
+    const std::size_t nblocks = div_ceil(n, bc);
+    cs = cs.subspan(offset, n);
+    cbs = cbs.subspan(first_block, nblocks);
+  }
   constexpr std::size_t nrows() const noexcept { return rs.size(); }
   constexpr std::size_t ncols() const noexcept { return cs.size(); }
   constexpr std::size_t nelems() const noexcept { return nrows() * ncols(); }
