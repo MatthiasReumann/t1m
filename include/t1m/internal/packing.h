@@ -167,9 +167,17 @@ void unpack(const matrix_view& block, const T* src, T* dest) {
   const std::size_t nrows = block.nrows();
   const std::size_t ncols = block.ncols();
 
+  const std::size_t rsc = block.rbs[0];
+  const std::size_t csc = block.cbs[0];
+
+  const bool is_dense = (rsc > 0 && csc > 0);
+  const std::size_t offset = is_dense ? (block.rs[0] + block.cs[0]) : 0;
+
   for (std::size_t l = 0; l < ncols; ++l) {
     for (std::size_t k = 0; k < nrows; ++k) {
-      dest[block.rs[k] + block.cs[l]] += src[k + l * block.br];
+      const std::size_t dest_idx =
+          is_dense ? (k * rsc + l * csc + offset) : (block.rs[k] + block.cs[l]);
+      dest[dest_idx] += src[k + l * block.br];
     }
   }
 }

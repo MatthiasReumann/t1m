@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <memory>
+#include <print>
 #include <type_traits>
 #include "t1m/bli/mappings.h"
 #include "t1m/internal/packing.h"
@@ -82,15 +83,6 @@ void contract(const T alpha, const tensor<T, ndim_a>& a,
             const T* sliver_a = space_a + i_r * KC;
 
             const matrix_view view_c = matr_c.subview(cri, cci, m, n);
-
-            const std::size_t rsc = view_c.rbs[0];
-            const std::size_t csc = view_c.cbs[0];
-            if (rsc > 0 && csc > 0) {
-              gemm_kernel<T>(m, n, k, &alpha, sliver_a, sliver_b, &beta,
-                             &c.data[view_c.rs[0] + view_c.cs[0]], rsc, csc,
-                             &data, cntx);
-              continue;
-            }
 
             std::fill(space_c, space_c + space_size_c, T(0));
             gemm_kernel<T>(m, n, k, &alpha, sliver_a, sliver_b, &beta, space_c,
