@@ -9,6 +9,15 @@
 using namespace t1m;
 using namespace t1m::internal;
 
+namespace {
+template <class T, std::size_t ndim>
+void fill_complex(std::array<std::complex<T>, ndim>& elems) {
+  for (std::size_t i = 0; i < elems.size(); ++i) {
+    elems[i] = {static_cast<T>(2 * i + 1), static_cast<T>(2 * i + 2)};
+  }
+}
+}  // namespace
+
 ///-----------------------------------------------------------------------------
 ///                      \n real packing \n
 ///-----------------------------------------------------------------------------
@@ -208,8 +217,7 @@ TEST(PackingTest, Pack1MColMajorEven) {
   constexpr std::size_t KP = 8;
 
   std::array<std::complex<float>, X * Y> elems{};
-  std::generate(elems.begin(), elems.end(),
-                [r = 1.f]() mutable { return std::complex<float>{r++, r++}; });
+  fill_complex<float>(elems);
 
   // 3D Layout:
   // 1+2i 5+6i |  9+10i 13+14i |  17+18i 21+22i | 25+26i 29+30i
@@ -253,8 +261,7 @@ TEST(PackingTest, Pack1MColMajorOdd) {
   constexpr std::size_t KP = 8;
 
   std::array<std::complex<float>, X * Y> elems{};
-  std::generate(elems.begin(), elems.end(),
-                [r = 1.f]() mutable { return std::complex<float>{r++, r++}; });
+  fill_complex<float>(elems);
 
   // 3D Layout:
   // 1+2i 5+6i |  9+10i 13+14i |  17+18i 21+22i | 25+26i 29+30i
@@ -304,8 +311,7 @@ TEST(PackingTest, Pack1MRowMajorEven) {
   constexpr std::size_t NR = 2;
 
   std::array<std::complex<float>, X * Y> elems{};
-  std::generate(elems.begin(), elems.end(),
-                [r = 1.f]() mutable { return std::complex<float>{r++, r++}; });
+  fill_complex<float>(elems);
 
   // 3D Layout:
   // 1+2i 5+6i |  9+10i 13+14i |  17+18i 21+22i | 25+26i 29+30i
@@ -346,8 +352,7 @@ TEST(PackingTest, Pack1MRowMajorOdd) {
   constexpr std::size_t NR = 3;
 
   std::array<std::complex<float>, X * Y> elems{};
-  std::generate(elems.begin(), elems.end(),
-                [r = 1.f]() mutable { return std::complex<float>{r++, r++}; });
+  fill_complex<float>(elems);
 
   // 3D Layout:
   // 1+2i 5+6i |  9+10i 13+14i |  17+18i 21+22i | 25+26i 29+30i
@@ -386,8 +391,7 @@ TEST(PackingTest, Unpack1M) {
   constexpr std::size_t Y = 4;
 
   std::array<std::complex<float>, X * Y> elems{};
-  std::generate(elems.begin(), elems.end(),
-                [r = 1.f]() mutable { return std::complex<float>{r++, r++}; });
+  fill_complex<float>(elems);
 
   // Tensor Layout:
   // 1+2i   9+10i  17+18i  25+26i

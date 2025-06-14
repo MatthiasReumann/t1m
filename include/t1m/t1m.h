@@ -4,7 +4,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <memory>
-#include <print>
 #include <type_traits>
 #include "t1m/bli/mappings.h"
 #include "t1m/internal/packing.h"

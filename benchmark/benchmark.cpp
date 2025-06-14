@@ -1,6 +1,5 @@
 #include <chrono>
 #include <numeric>
-#include <print>
 #include "t1m/bli/mappings.h"
 #include "t1m/t1m.h"
 
@@ -61,7 +60,7 @@ void explicit_benchmark(const std::array<std::size_t, ndim_a>& dims_a,
   t1m::tensor<T, ndim_b> b{dims_b, reinterpret_cast<T*>(data_b), layout};
   t1m::tensor<T, ndim_c> c{dims_c, reinterpret_cast<T*>(data_c), layout};
 
-  std::print("{}-{}-{},", labels_a, labels_b, labels_c);
+  // std::print("{}-{}-{},", labels_a, labels_b, labels_c);
 
   std::array<double, REPEATS> time{};
   for (std::size_t i = 0; i < time.size(); ++i) {
@@ -78,7 +77,7 @@ void explicit_benchmark(const std::array<std::size_t, ndim_a>& dims_a,
     time[i] =
         std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count();
   }
-  std::println("{}", *std::min_element(time.begin(), time.end()));
+  //std::println("{}", *std::min_element(time.begin(), time.end()));
 
   alloc.deallocate(data_c, nelems_c);
   alloc.deallocate(data_b, nelems_b);
@@ -87,7 +86,7 @@ void explicit_benchmark(const std::array<std::size_t, ndim_a>& dims_a,
 }  // namespace
 
 template <typename T> void suite() {
-  std::println("contraction,min");
+  //std::println("contraction,min");
   // clang-format off
   explicit_benchmark<T, 5, 2, 5>(
     {24, 16, 16, 24, 16}, "efbad", 
