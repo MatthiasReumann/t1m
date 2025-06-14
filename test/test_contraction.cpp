@@ -133,8 +133,8 @@ TEST(ContractionTest, FloatGemmLike) {
 ///-----------------------------------------------------------------------------
 
 TEST(ContractionTest, DoubleGemmLike) {
-  gemm_like<float, 2, 2, 2>("ab", "bc", "ac", 1, 1, 1);
-  gemm_like<float, 3, 3, 2>("abc", "bce", "ae", 1, 1, 2);
+  gemm_like<double, 2, 2, 2>("ab", "bc", "ac", 1, 1, 1);
+  gemm_like<double, 3, 3, 2>("abc", "bce", "ae", 1, 1, 2);
   gemm_like<double, 3, 2, 3>("abc", "cd", "abd", 2, 1, 1);
   gemm_like<double, 3, 3, 4>("abc", "cde", "abde", 2, 2, 1);
   gemm_like<double, 4, 3, 3>("abcd", "cde", "abe", 2, 1, 2);
