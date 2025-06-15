@@ -51,7 +51,7 @@ TEST(PackingTest, PackColMajorEven) {
   // 3  7  11  15
   // 4  8  12  16
   std::array<float, M * K> dest{};
-  pack_block<float, A>(block, K, t.data, dest.data());
+  pack_block<float, A>(block, K, t.data(), dest.data());
 
   std::array<float, M * K> expt{1, 2, 5, 6, 9,  10, 13, 14,
                                 3, 4, 7, 8, 11, 12, 15, 16};
@@ -91,7 +91,7 @@ TEST(PackingTest, PackColMajorOdd) {
   // 0  0   0   0
 
   std::array<float, 2 * m * K> dest{};
-  pack_block<float, A>(block, K, t.data, dest.data());
+  pack_block<float, A>(block, K, t.data(), dest.data());
 
   std::array<float, 2 * m * K> expt{1, 2, 3, 5, 6, 7, 9,  10, 11, 13, 14, 15,
                                     4, 0, 0, 8, 0, 0, 12, 0,  0,  16, 0,  0};
@@ -127,7 +127,7 @@ TEST(PackingTest, PackRowMajorEven) {
   // 3  7 | 11  15
   // 4  8 | 12  16
   std::array<float, M * K> dest{};
-  pack_block<float, B>(block, K, t.data, dest.data());
+  pack_block<float, B>(block, K, t.data(), dest.data());
 
   std::array<float, M * K> expt{1, 5,  2,  6,  3,  7,  4,  8,
                                 9, 13, 10, 14, 11, 15, 12, 16};
@@ -163,7 +163,7 @@ TEST(PackingTest, PackRowMajorOdd) {
   // 3  7  11  | 15  0  0
   // 4  8  12  | 16  0  0
   std::array<float, M * 2 * k> dest{};
-  pack_block<float, B>(block, K, t.data, dest.data());
+  pack_block<float, B>(block, K, t.data(), dest.data());
 
   std::array<float, M * 2 * k> expt{1,  5, 9, 2,  6, 10, 3,  7, 11, 4,  8, 12,
                                     13, 0, 0, 14, 0, 0,  15, 0, 0,  16, 0, 0};
@@ -198,7 +198,7 @@ TEST(PackingTest, Unpack) {
   //  9  10  11  12
   // 13  14  15  16
   std::array<float, M * K> dest{};
-  unpack(block, t.data, dest.data());
+  unpack(block, t.data(), dest.data());
 
   std::array<float, M * K> expt{1, 5, 9,  13, 2, 6, 10, 14,
                                 3, 7, 11, 15, 4, 8, 12, 16};
@@ -243,7 +243,7 @@ TEST(PackingTest, Pack1MColMajorEven) {
   // 7 -8  15 -16  23 -24  31 -32
   // 8  7  16  15  24  23  32  31
   std::array<float, 2 * MR * KP> dest{};
-  pack_block_1m<std::complex<float>, A>(block, KP, t.data, dest.data());
+  pack_block_1m<std::complex<float>, A>(block, KP, t.data(), dest.data());
 
   std::array<float, 2 * MR * KP> expt{
       1,  2,  3,  4,  -2,  1,  -4,  3,  9,  10, 11, 12, -10, 9,  -12, 11,
@@ -291,7 +291,7 @@ TEST(PackingTest, Pack1MColMajorOdd) {
   // 0  0   0   0   0   0   0   0
   // 0  0   0   0   0   0   0   0
   std::array<float, 2 * MR * KP> dest{};
-  pack_block_1m<std::complex<float>, A>(block, KP, t.data, dest.data());
+  pack_block_1m<std::complex<float>, A>(block, KP, t.data(), dest.data());
 
   std::array<float, 2 * MR * KP> expt{
       1,   2,  3,   4,  5,   6,  -2,  1,  -4, 3,  -6,  5,  9,   10, 11,  12,
@@ -336,7 +336,7 @@ TEST(PackingTest, Pack1MRowMajorEven) {
   // 7 15 | 23 31
   // 8 16 | 24 32
   std::array<float, 2 * KP * NR> dest{};
-  pack_block_1m<std::complex<float>, B>(block, KP, t.data, dest.data());
+  pack_block_1m<std::complex<float>, B>(block, KP, t.data(), dest.data());
 
   std::array<float, 2 * KP * NR> expt{
       1,  9,  2,  10, 3,  11, 4,  12, 5,  13, 6,  14, 7,  15, 8,  16,
@@ -377,7 +377,7 @@ TEST(PackingTest, Pack1MRowMajorOdd) {
   // 7 15 23 | 31 0 0
   // 8 16 24 | 32 0 0
   std::array<float, 2 * KP * NR> dest{};
-  pack_block_1m<std::complex<float>, B>(block, KP, t.data, dest.data());
+  pack_block_1m<std::complex<float>, B>(block, KP, t.data(), dest.data());
 
   std::array<float, 2 * KP * NR> expt{
       1,  9,  17, 2,  10, 18, 3,  11, 19, 4, 12, 20, 5, 13, 21, 6,
@@ -409,7 +409,7 @@ TEST(PackingTest, Unpack1M) {
   matrix_view block = matrix_view::from_layout(layout);
 
   std::array<std::complex<float>, X * Y> dest{};
-  unpack_1m(block, reinterpret_cast<float*>(t.data), dest.data());
+  unpack_1m(block, reinterpret_cast<float*>(t.data()), dest.data());
 
   std::array<std::complex<float>, X * Y> expt{std::complex<float>{1, 2},
                                               {9, 10},

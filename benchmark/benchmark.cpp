@@ -1,6 +1,6 @@
 #include <chrono>
-#include <print>
 #include <numeric>
+#include <print>
 #include "t1m/bli/mappings.h"
 #include "t1m/t1m.h"
 
@@ -57,9 +57,9 @@ void explicit_benchmark(const std::array<std::size_t, ndim_a>& dims_a,
   t1m::bli::randv<T>(nelems_a, data_a, 1);
   t1m::bli::randv<T>(nelems_b, data_b, 1);
 
-  t1m::tensor<T, ndim_a> a{dims_a, reinterpret_cast<T*>(data_a), layout};
-  t1m::tensor<T, ndim_b> b{dims_b, reinterpret_cast<T*>(data_b), layout};
-  t1m::tensor<T, ndim_c> c{dims_c, reinterpret_cast<T*>(data_c), layout};
+  t1m::tensor<T, ndim_a> a(dims_a, reinterpret_cast<T*>(data_a), layout);
+  t1m::tensor<T, ndim_b> b(dims_b, reinterpret_cast<T*>(data_b), layout);
+  t1m::tensor<T, ndim_c> c(dims_c, reinterpret_cast<T*>(data_c), layout);
 
   std::print("{}-{}-{},", labels_a, labels_b, labels_c);
 

@@ -178,8 +178,8 @@ struct matrix_layout {
   matrix_layout(const tensor<T, ndim>& t, const index_bundle& bundle,
                 const std::size_t br, const std::size_t bc)
       : br(br), bc(bc) {
-    rs = get_scatter<ndim>(bundle.X, t.dims, t.strides());
-    cs = get_scatter<ndim>(bundle.Y, t.dims, t.strides());
+    rs = get_scatter<ndim>(bundle.X, t.dims(), t.strides());
+    cs = get_scatter<ndim>(bundle.Y, t.dims(), t.strides());
     rbs = get_block_scatter(rs, br);
     cbs = get_block_scatter(cs, bc);
   }

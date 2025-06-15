@@ -81,9 +81,9 @@ void gemm_like(const std::string& labels_a, const std::string& labels_b,
     t1m::bli::setv<T>(BLIS_NO_CONJUGATE, nelems_c, &zero, data_c, 1);
     t1m::bli::setv<T>(BLIS_NO_CONJUGATE, nelems_c, &zero, data_ref, 1);
 
-    t1m::tensor<T, ndim_a> a{dims_a, reinterpret_cast<T*>(data_a), layout};
-    t1m::tensor<T, ndim_b> b{dims_b, reinterpret_cast<T*>(data_b), layout};
-    t1m::tensor<T, ndim_c> c{dims_c, reinterpret_cast<T*>(data_c), layout};
+    t1m::tensor<T, ndim_a> a(dims_a, reinterpret_cast<T*>(data_a), layout);
+    t1m::tensor<T, ndim_b> b(dims_b, reinterpret_cast<T*>(data_b), layout);
+    t1m::tensor<T, ndim_c> c(dims_c, reinterpret_cast<T*>(data_c), layout);
 
     // Make sure to call the correct function for the respective types.
     if constexpr (std::is_same_v<T, float> || std::is_same_v<T, double>) {

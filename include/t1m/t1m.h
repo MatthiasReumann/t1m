@@ -57,14 +57,14 @@ void contract(const T alpha, const tensor<T, ndim_a>& a,
       const matrix_view view_b = matr_b.subview(p_c, j_c, k, nc_n);
 
       std::fill(space_b, space_b + space_size_b, T(0));
-      pack_block<T, packing_label::B>(view_b, KC, b.data, space_b);
+      pack_block<T, packing_label::B>(view_b, KC, b.data(), space_b);
 
       for (size_t i_c = 0; i_c < M; i_c += MC) {
         const std::size_t mc_m = std::min(MC, M - i_c);
         const matrix_view view_a = matr_a.subview(i_c, p_c, mc_m, k);
 
         std::fill(space_a, space_a + space_size_a, T(0));
-        pack_block<T, packing_label::A>(view_a, KC, a.data, space_a);
+        pack_block<T, packing_label::A>(view_a, KC, a.data(), space_a);
 
         for (size_t j_r = 0; j_r < nc_n; j_r += NR) {
           const std::size_t n = std::min(NR, nc_n - j_r);
@@ -86,7 +86,7 @@ void contract(const T alpha, const tensor<T, ndim_a>& a,
             gemm_kernel<T>(m, n, k, &alpha, sliver_a, sliver_b, &beta, space_c,
                            1, MR, &data, cntx);
 
-            unpack(view_c, space_c, c.data);
+            unpack(view_c, space_c, c.data());
           }
         }
       }
@@ -146,7 +146,7 @@ void contract(const tensor<T, ndim_a>& a, const std::string& labels_a,
       const matrix_view view_b = matr_b.subview(p_c, j_c, k, nc_n);
 
       std::fill(space_b, space_b + space_size_b, U(0));
-      pack_block_1m<T, packing_label::B>(view_b, KC, b.data, space_b);
+      pack_block_1m<T, packing_label::B>(view_b, KC, b.data(), space_b);
 
       for (size_t i_c = 0; i_c < M; i_c += MC / 2) {
         const std::size_t mc_m = std::min(MC / 2, M - i_c);
@@ -155,7 +155,7 @@ void contract(const tensor<T, ndim_a>& a, const std::string& labels_a,
         const matrix_view view_a = matr_a.subview(i_c, p_c, mc_m, k);
 
         std::fill(space_a, space_a + space_size_a, U(0));
-        pack_block_1m<T, packing_label::A>(view_a, KC, a.data, space_a);
+        pack_block_1m<T, packing_label::A>(view_a, KC, a.data(), space_a);
 
         for (size_t j_r = 0; j_r < nc_n; j_r += NR) {
           const std::size_t n = std::min(NR, nc_n - j_r);
@@ -176,7 +176,7 @@ void contract(const tensor<T, ndim_a>& a, const std::string& labels_a,
             gemm_kernel<T>(m, n, k_real, &alpha, sliver_a, sliver_b, &beta,
                            space_c, 1, MR, &data, cntx);
 
-            unpack_1m(view_c, space_c, c.data);
+            unpack_1m(view_c, space_c, c.data());
           }
         }
       }
