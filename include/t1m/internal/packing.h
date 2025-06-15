@@ -18,7 +18,7 @@ enum packing_label {
 
 namespace {
 template <class T, packing_label label>
-  requires std::is_floating_point_v<T>
+  requires(std::is_same_v<T, float> || std::is_same_v<T, double>)
 void pack_cell(const matrix_view& cell, const T* src, T* dest) {
   const std::size_t nrows = cell.nrows();
   const std::size_t ncols = cell.ncols();
@@ -48,9 +48,10 @@ void pack_cell(const matrix_view& cell, const T* src, T* dest) {
   }
 }
 
-template <class T, packing_label label>
-void pack_cell(const matrix_view& cell, const T* src,
-               typename T::value_type* dest) {
+template <class T, packing_label label, class U = typename T::value_type>
+  requires(std::is_same_v<T, std::complex<float>> ||
+           std::is_same_v<T, std::complex<double>>)
+void pack_cell_1m(const matrix_view& cell, const T* src, U* dest) {
   const std::size_t nrows = cell.nrows();
   const std::size_t ncols = cell.ncols();
 
@@ -93,7 +94,7 @@ void pack_cell(const matrix_view& cell, const T* src,
 }  // namespace
 
 template <class T, packing_label label>
-  requires std::is_floating_point_v<T>
+  requires(std::is_same_v<T, float> || std::is_same_v<T, double>)
 void pack_block(const matrix_view& block, const std::size_t length,
                 const T* src, T* dest) {
   const std::size_t nrows = block.nrows();
@@ -126,9 +127,11 @@ void pack_block(const matrix_view& block, const std::size_t length,
   }
 }
 
-template <class T, packing_label label>
-void pack_block(const matrix_view& block, const std::size_t length,
-                const T* src, typename T::value_type* dest) {
+template <class T, packing_label label, class U = typename T::value_type>
+  requires(std::is_same_v<T, std::complex<float>> ||
+           std::is_same_v<T, std::complex<double>>)
+void pack_block_1m(const matrix_view& block, const std::size_t length,
+                const T* src, U* dest) {
   const std::size_t nrows = block.nrows();
   const std::size_t ncols = block.ncols();
   const std::size_t half_br = block.br / 2;
@@ -143,7 +146,7 @@ void pack_block(const matrix_view& block, const std::size_t length,
         const std::size_t cell_ncols = std::min(half_bc, ncols - c);
         const matrix_view cell = block.subview(r, c, cell_nrows, cell_ncols);
 
-        pack_cell<T, label>(cell, src, dest + offset);
+        pack_cell_1m<T, label>(cell, src, dest + offset);
       }
     }
   } else {  // B
@@ -155,14 +158,14 @@ void pack_block(const matrix_view& block, const std::size_t length,
         const std::size_t cell_ncols = std::min(block.bc, ncols - c);
         const matrix_view cell = block.subview(r, c, cell_nrows, cell_ncols);
 
-        pack_cell<T, label>(cell, src, dest + offset);
+        pack_cell_1m<T, label>(cell, src, dest + offset);
       }
     }
   }
 }
 
 template <class T>
-  requires std::is_floating_point_v<T>
+  requires(std::is_same_v<T, float> || std::is_same_v<T, double>)
 void unpack(const matrix_view& block, const T* src, T* dest) {
   const std::size_t nrows = block.nrows();
   const std::size_t ncols = block.ncols();
@@ -182,9 +185,10 @@ void unpack(const matrix_view& block, const T* src, T* dest) {
   }
 }
 
-template <class T>
-void unpack(const matrix_view& block, const typename T::value_type* src,
-            T* dest) {
+template <class T, class U = typename T::value_type>
+  requires(std::is_same_v<T, std::complex<float>> ||
+           std::is_same_v<T, std::complex<double>>)
+void unpack_1m(const matrix_view& block, const U* src, T* dest) {
   const std::size_t nrows = block.nrows();
   const std::size_t ncols = block.ncols();
 
