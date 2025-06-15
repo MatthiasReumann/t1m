@@ -23,8 +23,6 @@ include(CTest)
 find_library(BLIS_LIBRARIES "libblis.a" REQUIRED)
 find_file(BLIS_INCLUDE_DIRS blis REQUIRED)
 
-cmake_print_variables(BLIS_LIBRARIES)
-
 # Build header-only library.
 add_library(t1m INTERFACE)
 target_include_directories(t1m INTERFACE ${BLIS_INCLUDE_DIRS})
@@ -45,4 +43,8 @@ endif()
 
 if(T1M_BUILD_BENCHMARK)
   add_subdirectory(benchmark)
+endif()
+
+if(T1M_BUILD_EXAMPLE)
+  add_subdirectory(example)
 endif()
