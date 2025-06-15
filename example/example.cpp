@@ -6,13 +6,16 @@
 
 int main() {
   constexpr std::size_t d = 10;
+  constexpr std::size_t size_a = d * d * d;
+  constexpr std::size_t size_b = d * d;
+  constexpr std::size_t size_c = d * d * d;
   constexpr t1m::memory_layout layout = t1m::memory_layout::col_major;
 
   std::allocator<std::complex<float>> alloc{};
 
-  std::complex<float>* data_a = alloc.allocate(d * d * d);
-  std::complex<float>* data_b = alloc.allocate(d * d);
-  std::complex<float>* data_c = alloc.allocate(d * d * d);
+  std::complex<float>* data_a = alloc.allocate(size_a);
+  std::complex<float>* data_b = alloc.allocate(size_b);
+  std::complex<float>* data_c = alloc.allocate(size_c);
 
   // initialize values in column major
 
@@ -24,7 +27,7 @@ int main() {
 
   // ...
 
-  alloc.deallocate(data_c, 2 * 2 * 2);
-  alloc.deallocate(data_b, 2 * 2);
-  alloc.deallocate(data_a, 2 * 2 * 2);
+  alloc.deallocate(data_c, size_a);
+  alloc.deallocate(data_b, size_b);
+  alloc.deallocate(data_a, size_c);
 }
