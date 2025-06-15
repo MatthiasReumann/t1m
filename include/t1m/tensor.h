@@ -3,11 +3,23 @@
 #include <array>
 #include <cstddef>
 #include <stdexcept>
+#include <type_traits>
 
 namespace t1m {
 enum memory_layout : std::uint8_t { row_major, col_major };
 
-template <typename T, std::size_t ndim> class tensor {
+// Concepts for tensor-like types
+template <typename T>
+concept TensorScalarArithmetic =
+    std::is_same_v<T, float> || std::is_same_v<T, double>;
+
+template <typename T>
+concept TensorScalarCompound = std::is_same_v<T, std::complex<float>> ||
+                               std::is_same_v<T, std::complex<double>>;
+template <typename T>
+concept TensorScalar = TensorScalarArithmetic<T> || TensorScalarCompound<T>;
+
+template <TensorScalar T, std::size_t ndim> class tensor {
  public:
   using value_type = T;
   using pointer = T*;
@@ -26,8 +38,7 @@ template <typename T, std::size_t ndim> class tensor {
   tensor(const tensor&) = default;
   tensor& operator=(const tensor&) = default;
 
-  [[nodiscard]] constexpr std::array<std::size_t, ndim> dims()
-      const noexcept {
+  [[nodiscard]] constexpr std::array<std::size_t, ndim> dims() const noexcept {
     return dims_;
   }
 

@@ -4,7 +4,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <memory>
-#include <type_traits>
 #include "t1m/bli/mappings.h"
 #include "t1m/internal/packing.h"
 #include "t1m/internal/scatter.h"
@@ -12,9 +11,8 @@
 
 namespace t1m {
 
-template <class T, std::size_t ndim_a, std::size_t ndim_b, std::size_t ndim_c,
-          class Allocator = std::allocator<T>>
-  requires(std::is_same_v<T, float> || std::is_same_v<T, double>)
+template <TensorScalarArithmetic T, std::size_t ndim_a, std::size_t ndim_b,
+          std::size_t ndim_c, class Allocator = std::allocator<T>>
 void contract(const T alpha, const tensor<T, ndim_a>& a,
               const std::string& labels_a, const tensor<T, ndim_b>& b,
               const std::string& labels_b, const T beta, tensor<T, ndim_c>& c,
@@ -96,10 +94,9 @@ void contract(const T alpha, const tensor<T, ndim_a>& a,
   std::allocator_traits<Allocator>::deallocate(alloc, space_a, space_total);
 }
 
-template <class T, std::size_t ndim_a, std::size_t ndim_b, std::size_t ndim_c,
-          class U = typename T::value_type, class Allocator = std::allocator<U>>
-  requires(std::is_same_v<T, std::complex<float>> ||
-           std::is_same_v<T, std::complex<double>>)
+template <TensorScalarCompound T, std::size_t ndim_a, std::size_t ndim_b,
+          std::size_t ndim_c, class U = typename T::value_type,
+          class Allocator = std::allocator<U>>
 void contract(const tensor<T, ndim_a>& a, const std::string& labels_a,
               const tensor<T, ndim_b>& b, const std::string& labels_b,
               tensor<T, ndim_c>& c, const std::string& labels_c,
