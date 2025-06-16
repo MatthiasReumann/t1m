@@ -163,6 +163,43 @@ inline std::vector<std::size_t> get_block_scatter(
 }
 
 /**
+ * @brief (Sub-)View of a matrix layout.
+ */
+struct matrix_view {
+  std::span<const std::size_t> rs;
+  std::span<const std::size_t> cs;
+
+  std::size_t br;
+  std::span<const std::size_t> rbs;
+  std::size_t bc;
+  std::span<const std::size_t> cbs;
+
+  constexpr matrix_view subview(std::size_t ri, std::size_t ci,
+                                std::size_t nrows,
+                                std::size_t ncols) const noexcept {
+    matrix_view view(*this);
+    view.slice_rows(ri, nrows);
+    view.slice_cols(ci, ncols);
+    return view;
+  }
+  constexpr void slice_rows(const std::size_t offset, const std::size_t n) {
+    const std::size_t boffset = offset / br;
+    const std::size_t nblocks = div_ceil(n, br);
+    rs = rs.subspan(offset, n);
+    rbs = rbs.subspan(boffset, nblocks);
+  }
+  constexpr void slice_cols(const std::size_t offset, const std::size_t n) {
+    const std::size_t boffset = offset / bc;
+    const std::size_t nblocks = div_ceil(n, bc);
+    cs = cs.subspan(offset, n);
+    cbs = cbs.subspan(boffset, nblocks);
+  }
+  constexpr std::size_t nrows() const noexcept { return rs.size(); }
+  constexpr std::size_t ncols() const noexcept { return cs.size(); }
+  constexpr std::size_t nelems() const noexcept { return nrows() * ncols(); }
+};
+
+/**
  * @brief Matricize tensor to matrix layout.
  */
 struct matrix_layout {
@@ -183,47 +220,10 @@ struct matrix_layout {
     rbs = get_block_scatter(rs, br);
     cbs = get_block_scatter(cs, bc);
   }
-};
 
-/**
- * @brief (Sub-)View of a matrix layout.
- */
-struct matrix_view {
-  std::span<const std::size_t> rs;
-  std::span<const std::size_t> cs;
-
-  std::size_t br;
-  std::span<const std::size_t> rbs;
-  std::size_t bc;
-  std::span<const std::size_t> cbs;
-
-  constexpr static matrix_view from_layout(const matrix_layout& layout) {
-    return {layout.rs, layout.cs, layout.br, layout.rbs, layout.bc, layout.cbs};
+  constexpr matrix_view to_view() const noexcept {
+    return {rs, cs, br, rbs, bc, cbs};
   }
-  constexpr matrix_view subview(std::size_t ri, std::size_t ci,
-                                std::size_t nrows,
-                                std::size_t ncols) const noexcept {
-    matrix_view view(*this);
-    view.slice_rows(ri, nrows);
-    view.slice_cols(ci, ncols);
-    return view;
-  }
-  constexpr void slice_rows(const std::size_t offset, const std::size_t n) {
-    const std::size_t first_block = offset / br;
-    const std::size_t nblocks = div_ceil(n, br);
-    rs = rs.subspan(offset, n);
-    rbs = rbs.subspan(first_block, nblocks);
-  }
-  constexpr void slice_cols(const std::size_t offset, const std::size_t n) {
-    const std::size_t first_block = offset / bc;
-    const std::size_t nblocks = div_ceil(n, bc);
-    cs = cs.subspan(offset, n);
-    cbs = cbs.subspan(first_block, nblocks);
-  }
-  constexpr std::size_t nrows() const noexcept { return rs.size(); }
-  constexpr std::size_t ncols() const noexcept { return cs.size(); }
-  constexpr std::size_t nelems() const noexcept { return nrows() * ncols(); }
-  constexpr std::size_t block_nelems() const noexcept { return br * bc; }
 };
 };  // namespace internal
 };  // namespace t1m

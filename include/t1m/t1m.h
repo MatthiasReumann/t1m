@@ -29,9 +29,9 @@ void contract(const T alpha, const tensor<T, ndim_a>& a,
   const matrix_layout layout_b(b, bundle_b, KP, NR);
   const matrix_layout layout_c(c, bundle_c, MR, NR);
 
-  const matrix_view matr_a = matrix_view::from_layout(layout_a);
-  const matrix_view matr_b = matrix_view::from_layout(layout_b);
-  const matrix_view matr_c = matrix_view::from_layout(layout_c);
+  const matrix_view matr_a = layout_a.to_view();
+  const matrix_view matr_b = layout_b.to_view();
+  const matrix_view matr_c = layout_c.to_view();
 
   const std::size_t space_size_a = MC * KC;
   const std::size_t space_size_b = KC * NC;
@@ -112,9 +112,9 @@ void contract(const tensor<T, ndim_a>& a, const std::string& labels_a,
   const matrix_layout layout_b(b, bundle_b, KP, NR);
   const matrix_layout layout_c(c, bundle_c, MR, NR);
 
-  const matrix_view matr_a = matrix_view::from_layout(layout_a);
-  const matrix_view matr_b = matrix_view::from_layout(layout_b);
-  const matrix_view matr_c = matrix_view::from_layout(layout_c);
+  const matrix_view matr_a = layout_a.to_view();
+  const matrix_view matr_b = layout_b.to_view();
+  const matrix_view matr_c = layout_c.to_view();
 
   const std::size_t space_size_a = MC * KC;
   const std::size_t space_size_b = KC * NC;
