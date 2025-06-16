@@ -30,7 +30,7 @@ int main() {
 
   // initialize values in column major
   t1m::tensor<std::complex<float>, 3> a({d, d, d}, data_a, layout);
-  t1m::tensor<std::complex<float>, 3> b({d, d}, data_b, layout);
+  t1m::tensor<std::complex<float>, 2> b({d, d}, data_b, layout);
   t1m::tensor<std::complex<float>, 3> c({d, d, d}, data_c, layout);
 
   t1m::contract(a, "abc", b, "bd", c, "acd");
