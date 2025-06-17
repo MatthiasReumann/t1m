@@ -31,8 +31,10 @@ TEST(UtilsTest, IndexBundling2) {
 
 TEST(UtilsTest, ScatterVectors) {
   t1m::tensor<float, 4> t{{3, 2, 2, 3}, nullptr, memory_layout::col_major};
-  std::vector<std::size_t> rscat = get_scatter<4>({0, 1}, t.dims(), t.strides());
-  std::vector<std::size_t> cscat = get_scatter<4>({2, 3}, t.dims(), t.strides());
+  std::vector<std::size_t> r{0, 1};
+  std::vector<std::size_t> c{2, 3};
+  std::vector<std::size_t> rscat = get_scatter<4>(r, t.dims(), t.strides());
+  std::vector<std::size_t> cscat = get_scatter<4>(c, t.dims(), t.strides());
 
   EXPECT_EQ(rscat, (std::vector<std::size_t>{0, 1, 2, 3, 4, 5}));
   EXPECT_EQ(cscat, (std::vector<std::size_t>{0, 6, 12, 18, 24, 30}));
@@ -40,8 +42,10 @@ TEST(UtilsTest, ScatterVectors) {
 
 TEST(UtilsTest, BlockScatterVectors1) {
   t1m::tensor<float, 4> t{{3, 2, 2, 3}, nullptr, memory_layout::col_major};
-  std::vector<std::size_t> rscat = get_scatter<4>({0, 1}, t.dims(), t.strides());
-  std::vector<std::size_t> cscat = get_scatter<4>({2, 3}, t.dims(), t.strides());
+  std::vector<std::size_t> r{0, 1};
+  std::vector<std::size_t> c{2, 3};
+  std::vector<std::size_t> rscat = get_scatter<4>(r, t.dims(), t.strides());
+  std::vector<std::size_t> cscat = get_scatter<4>(c, t.dims(), t.strides());
   std::vector<std::size_t> block_rscat = get_block_scatter(rscat, 3);
   std::vector<std::size_t> block_cscat = get_block_scatter(cscat, 3);
 

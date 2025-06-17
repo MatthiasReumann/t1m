@@ -1,11 +1,12 @@
 #pragma once
 
+#include <__algorithm/ranges_equal_range.h>
 #include <algorithm>
 #include <array>
-#include <cassert>
 #include <cstddef>
 #include <cstdlib>
 #include <numeric>
+#include <ranges>
 #include <span>
 #include <tuple>
 #include <vector>
@@ -36,9 +37,9 @@ using index_bundle_tuple = std::tuple<index_bundle, index_bundle, index_bundle>;
  * @details An index bundle splits the positions (or indices) of a label into 
  *          a row and column set. Effectively, making the tensor a matrix.
  */
-inline index_bundle_tuple get_index_bundles(const std::string& labels_a,
-                                            const std::string& labels_b,
-                                            const std::string& labels_c) {
+[[nodiscard]] inline index_bundle_tuple get_index_bundles(
+    const std::string& labels_a, const std::string& labels_b,
+    const std::string& labels_c) {
 
   // Copy for sorting.
   std::string a(labels_a);
@@ -88,10 +89,10 @@ inline index_bundle_tuple get_index_bundles(const std::string& labels_a,
  * @brief Compute scatter vector.
  */
 template <std::size_t ndim>
-std::vector<std::size_t> get_scatter(
-    const std::vector<std::size_t>& indices,
-    const std::array<std::size_t, ndim>& dimensions,
-    const std::array<std::size_t, ndim>& strides) {
+[[nodiscard]] std::vector<std::size_t> get_scatter(
+    std::span<const std::size_t> indices,
+    std::span<const std::size_t, ndim> dimensions,
+    std::span<const std::size_t, ndim> strides) {
 
   // Compute all index-stride combinations.
   std::vector<std::vector<std::size_t>> parts(indices.size());
@@ -100,13 +101,11 @@ std::vector<std::size_t> get_scatter(
     const std::size_t dim = dimensions[idx];
     const std::size_t stride = strides[idx];
 
-    parts[i] = [&dim, &stride] {
-      std::vector<std::size_t> v(dim);
-      for (std::size_t j = 0; j < dim; ++j) {
-        v[j] = j * stride;
-      }
-      return v;
-    }();
+    std::vector<std::size_t> v(dim);
+    for (std::size_t j = 0; j < dim; ++j) {
+      v[j] = j * stride;
+    }
+    parts[i] = std::move(v);
   }
 
   // Compute all possible combinations and reduce.
@@ -127,36 +126,29 @@ std::vector<std::size_t> get_scatter(
 /**
  * @brief Compute block scatter vector.
  */
-inline std::vector<std::size_t> get_block_scatter(
-    const std::vector<std::size_t>& scat, const std::size_t b) {
-  const size_t nblocks = div_ceil(scat.size(), b);
+[[nodiscard]] inline std::vector<std::size_t> get_block_scatter(
+    const std::span<const std::size_t> scat, const std::size_t b) {
+  std::vector<std::size_t> block_scat;
 
-  std::vector<std::size_t> block_scat(nblocks);
-  for (std::size_t i = 0; i < nblocks; ++i) {
-    const std::size_t offset = i * b;
-    const std::size_t nelem = std::min<std::size_t>(b, scat.size() - offset);
+  const std::size_t sz = scat.size();
+  for (std::size_t i = 0; i < sz; i += b) {
+    const std::size_t block_sz = std::min<std::size_t>(b, sz - i);
+    const std::span block = scat.subspan(i, block_sz);
 
-    // Compute pairwise distances.
-    const auto first = scat.begin() + offset;
-    const std::size_t n = std::distance(first, first + nelem);
-
-    if (n == 1) {
-      block_scat[i] = 0;
+    if (block.size() == 1) {
+      block_scat.push_back(0);
       continue;
     }
 
-    std::vector<std::size_t> distances(n - 1);
-    for (std::size_t j = 0; j < n - 1; ++j) {
-      distances[j] = first[j + 1] - first[j];
-    }
+    std::vector<std::size_t> dist(block_sz);
+    std::adjacent_difference(block.begin(), block.end(), dist.begin());
+    const std::size_t s =
+        std::ranges::adjacent_find(dist | std::views::drop(1),
+                                   std::ranges::not_equal_to()) == dist.end()
+            ? dist.back()
+            : 0;
 
-    // Compare pairwise distances and set block strides.
-    std::size_t stride = distances[0];
-    if (!std::all_of(distances.begin(), distances.end(),
-                     [stride](std::size_t i) { return i == stride; })) {
-      stride = 0;
-    }
-    block_scat[i] = stride;
+    block_scat.push_back(s);
   }
 
   return block_scat;
