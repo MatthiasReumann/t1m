@@ -1,8 +1,8 @@
 #pragma once
 
 #include <span>
-#include <type_traits>
 #include "t1m/internal/scatter.h"
+#include "t1m/traits.h"
 
 namespace t1m {
 namespace internal {
@@ -17,8 +17,7 @@ enum packing_label {
 };
 
 namespace {
-template <class T, packing_label label>
-  requires(std::is_same_v<T, float> || std::is_same_v<T, double>)
+template <TensorScalarArithmetic T, packing_label label>
 void pack_cell(const matrix_view& cell, const T* src, T* dest) {
   const std::size_t nrows = cell.nrows();
   const std::size_t ncols = cell.ncols();
@@ -48,9 +47,8 @@ void pack_cell(const matrix_view& cell, const T* src, T* dest) {
   }
 }
 
-template <class T, packing_label label, class U = typename T::value_type>
-  requires(std::is_same_v<T, std::complex<float>> ||
-           std::is_same_v<T, std::complex<double>>)
+template <TensorScalarCompound T, packing_label label,
+          class U = typename T::value_type>
 void pack_cell_1m(const matrix_view& cell, const T* src, U* dest) {
   const std::size_t nrows = cell.nrows();
   const std::size_t ncols = cell.ncols();
@@ -93,8 +91,7 @@ void pack_cell_1m(const matrix_view& cell, const T* src, U* dest) {
 }
 }  // namespace
 
-template <class T, packing_label label>
-  requires(std::is_same_v<T, float> || std::is_same_v<T, double>)
+template <TensorScalarArithmetic T, packing_label label>
 void pack_block(const matrix_view& block, const std::size_t length,
                 const T* src, T* dest) {
   const std::size_t nrows = block.nrows();
@@ -127,11 +124,10 @@ void pack_block(const matrix_view& block, const std::size_t length,
   }
 }
 
-template <class T, packing_label label, class U = typename T::value_type>
-  requires(std::is_same_v<T, std::complex<float>> ||
-           std::is_same_v<T, std::complex<double>>)
+template <TensorScalarCompound T, packing_label label,
+          class U = typename T::value_type>
 void pack_block_1m(const matrix_view& block, const std::size_t length,
-                const T* src, U* dest) {
+                   const T* src, U* dest) {
   const std::size_t nrows = block.nrows();
   const std::size_t ncols = block.ncols();
   const std::size_t half_br = block.br / 2;
@@ -164,8 +160,7 @@ void pack_block_1m(const matrix_view& block, const std::size_t length,
   }
 }
 
-template <class T>
-  requires(std::is_same_v<T, float> || std::is_same_v<T, double>)
+template <TensorScalarArithmetic T>
 void unpack(const matrix_view& block, const T* src, T* dest) {
   const std::size_t nrows = block.nrows();
   const std::size_t ncols = block.ncols();
@@ -185,9 +180,7 @@ void unpack(const matrix_view& block, const T* src, T* dest) {
   }
 }
 
-template <class T, class U = typename T::value_type>
-  requires(std::is_same_v<T, std::complex<float>> ||
-           std::is_same_v<T, std::complex<double>>)
+template <TensorScalarCompound T, class U = typename T::value_type>
 void unpack_1m(const matrix_view& block, const U* src, T* dest) {
   const std::size_t nrows = block.nrows();
   const std::size_t ncols = block.ncols();

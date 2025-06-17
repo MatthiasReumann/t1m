@@ -7,6 +7,7 @@
 #include "t1m/bli/mappings.h"
 #include "t1m/internal/packing.h"
 #include "t1m/internal/scatter.h"
+#include "t1m/traits.h"
 #include "t1m/tensor.h"
 
 namespace t1m {

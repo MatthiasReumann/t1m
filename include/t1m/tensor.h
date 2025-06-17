@@ -3,20 +3,10 @@
 #include <array>
 #include <cstddef>
 #include <stdexcept>
-#include <type_traits>
+#include "t1m/traits.h"
 
 namespace t1m {
 enum memory_layout : std::uint8_t { row_major, col_major };
-
-template <typename T>
-concept TensorScalarArithmetic =
-    std::is_same_v<T, float> || std::is_same_v<T, double>;
-
-template <typename T>
-concept TensorScalarCompound = std::is_same_v<T, std::complex<float>> ||
-                               std::is_same_v<T, std::complex<double>>;
-template <typename T>
-concept TensorScalar = TensorScalarArithmetic<T> || TensorScalarCompound<T>;
 
 template <TensorScalar T, std::size_t ndim> class tensor {
  public:
