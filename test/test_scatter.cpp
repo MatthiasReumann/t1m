@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
-#include "t1m/internal/scatter.h"
-#include "t1m/tensor.h"
+#include "t1m/t1m.h"
 
 using namespace t1m;
 using namespace t1m::internal;

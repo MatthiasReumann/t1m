@@ -6,7 +6,6 @@
 #include <type_traits>
 #include "t1m/bli/mappings.h"
 #include "t1m/t1m.h"
-#include "t1m/tensor.h"
 
 namespace {
 

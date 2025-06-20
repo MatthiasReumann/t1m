@@ -2,7 +2,6 @@
 #include <cstddef>
 #include <memory>
 #include "t1m/t1m.h"
-#include "t1m/tensor.h"
 
 int main() {
   constexpr std::size_t d = 10;
