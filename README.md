@@ -1,14 +1,28 @@
 # t1m
 
-A header-only library for tensor contractions. The transposition-free tensor contraction algorithm fuses the [**T**BLIS](https://github.com/devinamatthews/tblis) approach and the [**1M** method](https://www.cs.utexas.edu/users/flame/pubs/blis6_toms_rev2.pdf) for complex-valued matrix-matrix multiplication.
+A header-only library for tensor contractions. The transposition-free tensor contraction algorithm fuses the [**T**BLIS](https://github.com/devinamatthews/tblis) approach and the [**1M** method](https://www.cs.utexas.edu/users/flame/pubs/blis6_toms_rev2.pdf).
 
-## Requirements
+## Building
 
-- [BLIS](https://github.com/flame/blis)
+The only requirement for `t1m` is that [BLIS](https://github.com/flame/blis) is installed. We recommend looking at their [Build Guide](https://github.com/flame/blis/blob/master/docs/BuildSystem.md).
 
-## Usage
+The example shown below can be built the following way.
+
+```console
+foo@bar:~$ git clone https://github.com/MatthiasReumann/t1m.git
+foo@bar:~$ cd t1m
+foo@bar:~$ cmake -B build -DT1M_BUILD_EXAMPLE=ON .
+foo@bar:~$ cd build
+foo@bar:~$ cmake --build . --config Release --target example_t1m
+foo@bar:~$ ./example/example_t1m
+```
+
+To built the tests or benchmarks, use the options `-DT1M_BUILD_TEST=ON` and `-DT1M_BUILD_BENCHMARK=ON`, respectively.
+
+## Example
 
 ```cpp
+/// example/example.cpp
 #include <complex>
 #include <cstddef>
 #include <memory>
