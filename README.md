@@ -1,72 +1,65 @@
 # t1m
 
-Fusion of the [**T**BLIS](https://github.com/devinamatthews/tblis) approach and the [**1M** Method](https://www.cs.utexas.edu/users/flame/pubs/blis6_toms_rev2.pdf) for complex Matrix-Matrix Multiplication to achieve complex Tensor Contractions. 
+A header-only library for tensor contractions. The transposition-free tensor contraction algorithm fuses the [**T**BLIS](https://github.com/devinamatthews/tblis) approach and the [**1M** method](https://www.cs.utexas.edu/users/flame/pubs/blis6_toms_rev2.pdf).
 
-## Requirements
+## Building
 
-- BLIS Library ([URL](https://github.com/flame/blis))
-- MArray Library ([URL](https://github.com/devinamatthews/marray))
+The only requirement for `t1m` is that [BLIS](https://github.com/flame/blis) is installed. We recommend looking at their [Build Guide](https://github.com/flame/blis/blob/master/docs/BuildSystem.md).
 
+The example shown below can be built the following way.
 
-## API 
-
-```cpp
-namespace t1m
-{
-  void contract(Tensor<std::complex<float>> A, std::string labelsA,
-                Tensor<std::complex<float>> B, std::string labelsB,
-                Tensor<std::complex<float>> C, std::string labelsC);
-
-  void contract(Tensor<std::complex<double>> A, std::string labelsA,
-                Tensor<std::complex<double>> B, std::string labelsB,
-                Tensor<std::complex<double>> C, std::string labelsC);
-
-  void contract(float alpha, Tensor<float> A, std::string labelsA,
-                Tensor<float> B, std::string labelsB,
-                float beta, Tensor<float> C, std::string labelsC);
-
-  void contract(double alpha, Tensor<double> A, std::string labelsA,
-                Tensor<double> B, std::string labelsB,
-                double beta, Tensor<double> C, std::string labelsC);
-};
+```console
+foo@bar:~$ git clone https://github.com/MatthiasReumann/t1m.git
+foo@bar:~$ cd t1m
+foo@bar:~$ cmake -B build -DT1M_BUILD_EXAMPLE=ON .
+foo@bar:~$ cd build
+foo@bar:~$ cmake --build . --config Release --target example_t1m
+foo@bar:~$ ./example/example_t1m
 ```
 
-### Multithreading 
+Use the options `-DT1M_BUILD_TEST=ON` and `-DT1M_BUILD_BENCHMARK=ON` to build the tests or benchmarks respectively.
 
-The `t1m` library supports OpenMP. The number of threads can be specified with the environment variable `OMP_NUM_THREADS`.
-
-### Example
+## Example
 
 ```cpp
+/// example/example.cpp
 #include <complex>
-#include "t1m.hpp"
+#include <cstddef>
+#include <memory>
+#include "t1m/t1m.h"
+#include "t1m/tensor.h"
 
-int main() 
-{
-  std::complex<float> *A = nullptr, *B = nullptr, *C = nullptr;
-  t1m::utils::alloc_aligned(&A, 2 * 2 * 2);
-  t1m::utils::alloc_aligned(&B, 2 * 2);
-  t1m::utils::alloc_aligned(&C, 2 * 2 * 2);
-  
+int main() {
+  constexpr std::size_t d = 10;
+  constexpr std::size_t size_a = d * d * d;
+  constexpr std::size_t size_b = d * d;
+  constexpr std::size_t size_c = d * d * d;
+  constexpr t1m::memory_layout layout = t1m::memory_layout::col_major;
+
+  std::allocator<std::complex<float>> alloc{};
+
+  std::complex<float>* data_a = alloc.allocate(size_a);
+  std::complex<float>* data_b = alloc.allocate(size_b);
+  std::complex<float>* data_c = alloc.allocate(size_c);
+
   // initialize values in column major
+  t1m::tensor<std::complex<float>, 3> a({d, d, d}, data_a, layout);
+  t1m::tensor<std::complex<float>, 2> b({d, d}, data_b, layout);
+  t1m::tensor<std::complex<float>, 3> c({d, d, d}, data_c, layout);
 
-  auto tensorA = t1m::Tensor<std::complex<float>>({2, 2, 2}, A);
-  auto tensorB = t1m::Tensor<std::complex<float>>({2, 2}, B);
-  auto tensorC = t1m::Tensor<std::complex<float>>({2, 2, 2}, C);
+  t1m::contract(a, "abc", b, "bd", c, "acd");
 
-  t1m::contract(tensorA, "abc", tensorB, "bd", tensorC, "acd");
-  
-  // work with C or tensorC
-  
-  free(A);
-  free(B);
-  free(C);
+  // ...
+
+  alloc.deallocate(data_c, size_a);
+  alloc.deallocate(data_b, size_b);
+  alloc.deallocate(data_a, size_c);
 }
 ```
 
 ## Citation
 
-In case you want refer to `t1m` as part of a research paper, please cite appropriately ([pdf](https://mediatum.ub.tum.de/download/1718165/1718165.pdf)):
+In case you want refer to `t1m` as part of a research paper, please cite appropriately ([.pdf](https://mediatum.ub.tum.de/download/1718165/1718165.pdf)):
 
 ```text.bibtex
 @thesis {t1m2023,

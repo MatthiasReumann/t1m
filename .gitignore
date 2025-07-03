@@ -40,3 +40,5 @@
 
 build/
 external/
+lib/
+.cache/
