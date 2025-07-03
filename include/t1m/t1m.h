@@ -4,11 +4,10 @@
 #include <algorithm>
 #include <cstdlib>
 #include <cstring>
-#include <mdspan>
 #include <memory>
 #include <numeric>
-#include <vector>
 #include <ranges>
+#include <vector>
 #include "t1m/bli/mappings.h"
 
 namespace t1m {
@@ -46,7 +45,7 @@ template <TensorScalar T, std::size_t ndim> class tensor {
         }
         break;
       case row_major:
-         break;
+        break;
     }
     return strides;
   }
@@ -258,7 +257,7 @@ struct matrix_layout {
     return {rs, cs, br, rbs, bc, cbs};
   }
 
-private:
+ private:
   std::vector<std::size_t> rs;
   std::vector<std::size_t> cs;
 
