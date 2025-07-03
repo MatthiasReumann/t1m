@@ -17,7 +17,7 @@ foo@bar:~$ cmake --build . --config Release --target example_t1m
 foo@bar:~$ ./example/example_t1m
 ```
 
-To built the tests or benchmarks, use the options `-DT1M_BUILD_TEST=ON` and `-DT1M_BUILD_BENCHMARK=ON`, respectively.
+Use the options `-DT1M_BUILD_TEST=ON` and `-DT1M_BUILD_BENCHMARK=ON` to build the tests or benchmarks respectively.
 
 ## Example
 
@@ -59,7 +59,7 @@ int main() {
 
 ## Citation
 
-In case you want refer to `t1m` as part of a research paper, please cite appropriately ([pdf](https://mediatum.ub.tum.de/download/1718165/1718165.pdf)):
+In case you want refer to `t1m` as part of a research paper, please cite appropriately ([.pdf](https://mediatum.ub.tum.de/download/1718165/1718165.pdf)):
 
 ```text.bibtex
 @thesis {t1m2023,
