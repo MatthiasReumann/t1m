@@ -208,13 +208,12 @@ template <std::size_t ndim>
  * @brief (Sub-)View of a matrix layout.
  */
 struct matrix_view {
-  std::span<const std::size_t> rs;
-  std::span<const std::size_t> cs;
-
   std::size_t br;
   std::span<const std::size_t> rbs;
+  std::span<const std::size_t> rs;
   std::size_t bc;
   std::span<const std::size_t> cbs;
+  std::span<const std::size_t> cs;
 
   constexpr matrix_view subview(std::size_t ri, std::size_t ci,
                                 std::size_t nrows,
@@ -256,17 +255,16 @@ struct matrix_layout {
   }
 
   constexpr matrix_view to_view() const noexcept {
-    return {rs, cs, br, rbs, bc, cbs};
+    return {br, rbs, rs, bc, cbs, cs};
   }
 
  private:
-  std::vector<std::size_t> rs;
-  std::vector<std::size_t> cs;
-
   std::size_t br;
   std::vector<std::size_t> rbs;
+  std::vector<std::size_t> rs;
   std::size_t bc;
   std::vector<std::size_t> cbs;
+  std::vector<std::size_t> cs;
 };
 
 /**
@@ -485,13 +483,13 @@ void contract(const U alpha, const tensor<T, ndim_a>& a,
 
           for (size_t j_r = 0; j_r < nc_n; j_r += NR) {
             const T* sliver_b = space_b + KC * j_r;
-            
+
             const std::size_t n = std::min(NR, nc_n - j_r);
             const std::size_t cci = j_c + j_r;
 
             for (size_t i_r = 0; i_r < mc_m; i_r += MR) {
               const T* sliver_a = space_a + i_r * KC;
-              
+
               const std::size_t m = std::min(MR, mc_m - i_r);
               const std::size_t cri = i_c + i_r;
               const matrix_view view_c = matr_c.subview(cri, cci, m, n);
@@ -537,7 +535,7 @@ void contract(const U alpha, const tensor<T, ndim_a>& a,
 
             for (size_t i_r = 0; i_r < mc_m_real; i_r += MR) {
               const U* sliver_a = space_a + i_r * KC;
-              
+
               const std::size_t m = std::min(MR, mc_m_real - i_r);
               const std::size_t cri = i_c + (i_r / 2);
               const matrix_view view_c = matr_c.subview(cri, cci, m / 2, n);
