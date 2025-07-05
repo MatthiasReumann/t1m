@@ -241,7 +241,7 @@ TEST(PackingTest, Pack1MColMajorEven) {
   // 7 -8  15 -16  23 -24  31 -32
   // 8  7  16  15  24  23  32  31
   std::array<float, 2 * MR * KP> dest{};
-  pack_block_1m<std::complex<float>, A>(block, KP, t.data(), dest.data());
+  pack_block<std::complex<float>, A>(block, KP, t.data(), dest.data());
 
   std::array<float, 2 * MR * KP> expt{
       1,  2,  3,  4,  -2,  1,  -4,  3,  9,  10, 11, 12, -10, 9,  -12, 11,
@@ -289,7 +289,7 @@ TEST(PackingTest, Pack1MColMajorOdd) {
   // 0  0   0   0   0   0   0   0
   // 0  0   0   0   0   0   0   0
   std::array<float, 2 * MR * KP> dest{};
-  pack_block_1m<std::complex<float>, A>(block, KP, t.data(), dest.data());
+  pack_block<std::complex<float>, A>(block, KP, t.data(), dest.data());
 
   std::array<float, 2 * MR * KP> expt{
       1,   2,  3,   4,  5,   6,  -2,  1,  -4, 3,  -6,  5,  9,   10, 11,  12,
@@ -334,7 +334,7 @@ TEST(PackingTest, Pack1MRowMajorEven) {
   // 7 15 | 23 31
   // 8 16 | 24 32
   std::array<float, 2 * KP * NR> dest{};
-  pack_block_1m<std::complex<float>, B>(block, KP, t.data(), dest.data());
+  pack_block<std::complex<float>, B>(block, KP, t.data(), dest.data());
 
   std::array<float, 2 * KP * NR> expt{
       1,  9,  2,  10, 3,  11, 4,  12, 5,  13, 6,  14, 7,  15, 8,  16,
@@ -375,7 +375,7 @@ TEST(PackingTest, Pack1MRowMajorOdd) {
   // 7 15 23 | 31 0 0
   // 8 16 24 | 32 0 0
   std::array<float, 2 * KP * NR> dest{};
-  pack_block_1m<std::complex<float>, B>(block, KP, t.data(), dest.data());
+  pack_block<std::complex<float>, B>(block, KP, t.data(), dest.data());
 
   std::array<float, 2 * KP * NR> expt{
       1,  9,  17, 2,  10, 18, 3,  11, 19, 4, 12, 20, 5, 13, 21, 6,
@@ -407,7 +407,7 @@ TEST(PackingTest, Unpack1M) {
   matrix_view block = layout.to_view();
 
   std::array<std::complex<float>, X * Y> dest{};
-  unpack_1m(block, reinterpret_cast<float*>(t.data()), dest.data());
+  unpack(block, reinterpret_cast<float*>(t.data()), dest.data());
 
   std::array<std::complex<float>, X * Y> expt{std::complex<float>{1, 2},
                                               {9, 10},

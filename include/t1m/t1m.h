@@ -22,6 +22,10 @@ concept TensorScalarCompound = std::is_same_v<T, std::complex<float>> ||
 template <typename T>
 concept TensorScalar = TensorScalarArithmetic<T> || TensorScalarCompound<T>;
 
+template <typename T>
+using underlying_scalar_t =
+    std::conditional_t<TensorScalarCompound<T>, typename T::value_type, T>;
+
 enum memory_layout : std::uint8_t { row_major, col_major };
 
 template <TensorScalar T, std::size_t ndim> class tensor {
@@ -78,16 +82,14 @@ struct index_bundle {
   std::vector<std::size_t> Y;
 };
 
-using index_bundle_tuple = std::tuple<index_bundle, index_bundle, index_bundle>;
-
 /**
  * @brief Compute index bundles for each of the labels.
  * @details An index bundle splits the positions (or indices) of a label into 
  *          a row and column set. Effectively, making the tensor a matrix.
  */
-[[nodiscard]] inline index_bundle_tuple get_index_bundles(
-    const std::string& labels_a, const std::string& labels_b,
-    const std::string& labels_c) {
+[[nodiscard]] constexpr std::tuple<index_bundle, index_bundle, index_bundle>
+get_index_bundles(const std::string& labels_a, const std::string& labels_b,
+                  const std::string& labels_c) {
 
   // Copy for sorting.
   std::string a(labels_a);
@@ -130,7 +132,7 @@ using index_bundle_tuple = std::tuple<index_bundle, index_bundle, index_bundle>;
     CY[i] = labels_c.find(free_b[i]);
   }
 
-  return index_bundle_tuple{{AX, AY}, {BX, BY}, {CX, CY}};
+  return {{AX, AY}, {BX, BY}, {CX, CY}};
 }
 
 /**
@@ -174,7 +176,7 @@ template <std::size_t ndim>
 /**
  * @brief Compute block scatter vector.
  */
-[[nodiscard]] inline std::vector<std::size_t> get_block_scatter(
+[[nodiscard]] constexpr std::vector<std::size_t> get_block_scatter(
     const std::span<const std::size_t> scat, const std::size_t b) {
   std::vector<std::size_t> block_scat;
 
@@ -206,13 +208,12 @@ template <std::size_t ndim>
  * @brief (Sub-)View of a matrix layout.
  */
 struct matrix_view {
-  std::span<const std::size_t> rs;
-  std::span<const std::size_t> cs;
-
   std::size_t br;
   std::span<const std::size_t> rbs;
+  std::span<const std::size_t> rs;
   std::size_t bc;
   std::span<const std::size_t> cbs;
+  std::span<const std::size_t> cs;
 
   constexpr matrix_view subview(std::size_t ri, std::size_t ci,
                                 std::size_t nrows,
@@ -254,17 +255,16 @@ struct matrix_layout {
   }
 
   constexpr matrix_view to_view() const noexcept {
-    return {rs, cs, br, rbs, bc, cbs};
+    return {br, rbs, rs, bc, cbs, cs};
   }
 
  private:
-  std::vector<std::size_t> rs;
-  std::vector<std::size_t> cs;
-
   std::size_t br;
   std::vector<std::size_t> rbs;
+  std::vector<std::size_t> rs;
   std::size_t bc;
   std::vector<std::size_t> cbs;
+  std::vector<std::size_t> cs;
 };
 
 /**
@@ -276,8 +276,9 @@ enum packing_label {
   C   // Unpack only.
 };
 
-template <TensorScalarArithmetic T, packing_label label>
-void pack_cell(const matrix_view& cell, const T* src, T* dest) {
+template <TensorScalar T, packing_label label,
+          typename U = underlying_scalar_t<T>>
+void pack_cell(const matrix_view& cell, const T* src, U* dest) {
   const std::size_t nrows = cell.nrows();
   const std::size_t ncols = cell.ncols();
 
@@ -287,274 +288,154 @@ void pack_cell(const matrix_view& cell, const T* src, T* dest) {
   const bool is_dense = (rsc > 0 && csc > 0);
   const std::size_t offset = is_dense ? (cell.rs[0] + cell.cs[0]) : 0;
 
-  if constexpr (label == A) {
-    for (std::size_t l = 0; l < ncols; ++l) {
-      for (std::size_t k = 0; k < nrows; ++k) {
-        const std::size_t src_idx =
-            is_dense ? (k * rsc + l * csc + offset) : (cell.rs[k] + cell.cs[l]);
-        dest[k + l * cell.br] = src[src_idx];
-      }
-    }
-  } else {  // B
-    for (std::size_t k = 0; k < nrows; ++k) {
+  if constexpr (TensorScalarArithmetic<T>) {
+    if constexpr (label == A) {
       for (std::size_t l = 0; l < ncols; ++l) {
-        const std::size_t src_idx =
-            is_dense ? (k * rsc + l * csc + offset) : (cell.rs[k] + cell.cs[l]);
-        dest[l + k * cell.bc] = src[src_idx];
+        for (std::size_t k = 0; k < nrows; ++k) {
+          const std::size_t src_idx = is_dense ? (k * rsc + l * csc + offset)
+                                               : (cell.rs[k] + cell.cs[l]);
+          dest[k + l * cell.br] = src[src_idx];
+        }
       }
-    }
-  }
-}
-
-template <TensorScalarCompound T, packing_label label,
-          class U = typename T::value_type>
-void pack_cell_1m(const matrix_view& cell, const T* src, U* dest) {
-  const std::size_t nrows = cell.nrows();
-  const std::size_t ncols = cell.ncols();
-
-  const std::size_t rsc = cell.rbs[0];
-  const std::size_t csc = cell.cbs[0];
-
-  const bool is_dense = (rsc > 0 && csc > 0);
-  const std::size_t offset = is_dense ? (cell.rs[0] + cell.cs[0]) : 0;
-
-  if constexpr (label == A) {
-    for (std::size_t l = 0; l < ncols; ++l) {
+    } else {  // B
       for (std::size_t k = 0; k < nrows; ++k) {
-        const std::size_t src_idx =
-            is_dense ? (k * rsc + l * csc + offset) : (cell.rs[k] + cell.cs[l]);
-        const auto& val = src[src_idx];
-        const auto real = val.real();
-        const auto imag = val.imag();
-
-        const std::size_t base = 2 * k + 2 * l * cell.br;
-        dest[base] = real;
-        dest[base + 1] = imag;
-        dest[base + cell.br] = -imag;
-        dest[base + cell.br + 1] = real;
+        for (std::size_t l = 0; l < ncols; ++l) {
+          const std::size_t src_idx = is_dense ? (k * rsc + l * csc + offset)
+                                               : (cell.rs[k] + cell.cs[l]);
+          dest[l + k * cell.bc] = src[src_idx];
+        }
       }
     }
-  } else {  // B
-    for (std::size_t k = 0; k < nrows; ++k) {
+  } else {  // Use 1M Packing Format.
+    if constexpr (label == A) {
       for (std::size_t l = 0; l < ncols; ++l) {
-        const std::size_t src_idx =
-            is_dense ? (k * rsc + l * csc + offset) : (cell.rs[k] + cell.cs[l]);
-        const auto& val = src[src_idx];
+        for (std::size_t k = 0; k < nrows; ++k) {
+          const std::size_t src_idx = is_dense ? (k * rsc + l * csc + offset)
+                                               : (cell.rs[k] + cell.cs[l]);
+          const auto& val = src[src_idx];
+          const auto real = val.real();
+          const auto imag = val.imag();
 
-        const std::size_t base = l + 2 * k * cell.bc;
-        dest[base] = val.real();
-        dest[base + cell.bc] = val.imag();
+          const std::size_t base = 2 * k + 2 * l * cell.br;
+          dest[base] = real;
+          dest[base + 1] = imag;
+          dest[base + cell.br] = -imag;
+          dest[base + cell.br + 1] = real;
+        }
       }
-    }
-  }
-}
-
-template <TensorScalarArithmetic T, packing_label label>
-void pack_block(const matrix_view& block, const std::size_t length,
-                const T* src, T* dest) {
-  const std::size_t nrows = block.nrows();
-  const std::size_t ncols = block.ncols();
-
-  if constexpr (label == A) {
-    for (std::size_t r = 0; r < nrows; r += block.br) {
-      for (std::size_t c = 0; c < ncols; c += block.bc) {
-        const std::size_t offset = c * block.br + r * length;
-
-        const std::size_t cell_nrows = std::min(block.br, nrows - r);
-        const std::size_t cell_ncols = std::min(block.bc, ncols - c);
-        const matrix_view cell = block.subview(r, c, cell_nrows, cell_ncols);
-
-        pack_cell<T, label>(cell, src, dest + offset);
-      }
-    }
-  } else {  // B
-    for (std::size_t c = 0; c < ncols; c += block.bc) {
-      for (std::size_t r = 0; r < nrows; r += block.br) {
-        const std::size_t offset = r * block.bc + c * length;
-
-        const std::size_t cell_nrows = std::min(block.br, nrows - r);
-        const std::size_t cell_ncols = std::min(block.bc, ncols - c);
-        const matrix_view cell = block.subview(r, c, cell_nrows, cell_ncols);
-
-        pack_cell<T, label>(cell, src, dest + offset);
-      }
-    }
-  }
-}
-
-template <TensorScalarCompound T, packing_label label,
-          class U = typename T::value_type>
-void pack_block_1m(const matrix_view& block, const std::size_t length,
-                   const T* src, U* dest) {
-  const std::size_t nrows = block.nrows();
-  const std::size_t ncols = block.ncols();
-  const std::size_t half_br = block.br / 2;
-  const std::size_t half_bc = block.bc / 2;
-
-  if constexpr (label == A) {
-    for (std::size_t r = 0; r < nrows; r += half_br) {
-      for (std::size_t c = 0; c < ncols; c += half_bc) {
-        const std::size_t offset = 2 * (c * block.br + r * length);
-
-        const std::size_t cell_nrows = std::min(half_br, nrows - r);
-        const std::size_t cell_ncols = std::min(half_bc, ncols - c);
-        const matrix_view cell = block.subview(r, c, cell_nrows, cell_ncols);
-
-        pack_cell_1m<T, label>(cell, src, dest + offset);
-      }
-    }
-  } else {  // B
-    for (std::size_t c = 0; c < ncols; c += block.bc) {
-      for (std::size_t r = 0; r < nrows; r += half_br) {
-        const std::size_t offset = 2 * r * block.bc + c * length;
-
-        const std::size_t cell_nrows = std::min(half_br, nrows - r);
-        const std::size_t cell_ncols = std::min(block.bc, ncols - c);
-        const matrix_view cell = block.subview(r, c, cell_nrows, cell_ncols);
-
-        pack_cell_1m<T, label>(cell, src, dest + offset);
-      }
-    }
-  }
-}
-
-template <TensorScalarArithmetic T>
-void unpack(const matrix_view& block, const T* src, T* dest) {
-  const std::size_t nrows = block.nrows();
-  const std::size_t ncols = block.ncols();
-
-  const std::size_t rsc = block.rbs[0];
-  const std::size_t csc = block.cbs[0];
-
-  const bool is_dense = (rsc > 0 && csc > 0);
-  const std::size_t offset = is_dense ? (block.rs[0] + block.cs[0]) : 0;
-
-  for (std::size_t l = 0; l < ncols; ++l) {
-    for (std::size_t k = 0; k < nrows; ++k) {
-      const std::size_t dest_idx =
-          is_dense ? (k * rsc + l * csc + offset) : (block.rs[k] + block.cs[l]);
-      dest[dest_idx] += src[k + l * block.br];
-    }
-  }
-}
-
-template <TensorScalarCompound T, class U = typename T::value_type>
-void unpack_1m(const matrix_view& block, const U* src, T* dest) {
-  const std::size_t nrows = block.nrows();
-  const std::size_t ncols = block.ncols();
-
-  const std::size_t rsc = block.rbs[0];
-  const std::size_t csc = block.cbs[0];
-
-  const bool is_dense = (rsc > 0 && csc > 0);
-  const std::size_t offset = is_dense ? (block.rs[0] + block.cs[0]) : 0;
-
-  for (std::size_t l = 0; l < ncols; ++l) {
-    for (std::size_t k = 0; k < nrows; ++k) {
-      const std::size_t dest_idx =
-          is_dense ? (k * rsc + l * csc + offset) : (block.rs[k] + block.cs[l]);
-      const std::size_t src_idx = 2 * k + l * block.br;
-      dest[dest_idx] += T(src[src_idx], src[src_idx + 1]);
-    }
-  }
-}
-};  // namespace internal
-
-template <TensorScalarArithmetic T, std::size_t ndim_a, std::size_t ndim_b,
-          std::size_t ndim_c>
-void contract(const T alpha, const tensor<T, ndim_a>& a,
-              const std::string& labels_a, const tensor<T, ndim_b>& b,
-              const std::string& labels_b, const T beta, tensor<T, ndim_c>& c,
-              const std::string& labels_c,
-              const cntx_t* cntx = bli_gks_query_cntx()) {
-  using namespace t1m::internal;
-  using namespace t1m::bli;
-
-  const auto& [MR, NR, KP, MC, KC, NC] = get_block_sizes<T>(cntx);
-
-  const auto [bundle_a, bundle_b, bundle_c] =
-      get_index_bundles(labels_a, labels_b, labels_c);
-  const matrix_layout layout_a(a, bundle_a, MR, KP);
-  const matrix_layout layout_b(b, bundle_b, KP, NR);
-  const matrix_layout layout_c(c, bundle_c, MR, NR);
-
-  const matrix_view matr_a = layout_a.to_view();
-  const matrix_view matr_b = layout_b.to_view();
-  const matrix_view matr_c = layout_c.to_view();
-
-  const std::size_t space_size_a = MC * KC;
-  const std::size_t space_size_b = KC * NC;
-  const std::size_t space_size_c = MR * NR;
-  const std::size_t space_total = space_size_a + space_size_b + space_size_c;
-
-  T* space_a = static_cast<T*>(std::aligned_alloc(64, space_total * sizeof(T)));
-  if (!space_a) {
-    throw std::bad_alloc();
-  }
-  T* space_b = space_a + space_size_a;
-  T* space_c = space_b + space_size_b;
-
-  const std::size_t M = matr_a.nrows();
-  const std::size_t K = matr_a.ncols();
-  const std::size_t N = matr_b.ncols();
-
-  for (std::size_t j_c = 0; j_c < N; j_c += NC) {
-    const std::size_t nc_n = std::min(NC, N - j_c);
-
-    for (std::size_t p_c = 0; p_c < K; p_c += KC) {
-      const std::size_t k = std::min(KC, K - p_c);
-      const matrix_view view_b = matr_b.subview(p_c, j_c, k, nc_n);
-
-      std::fill(space_b, space_b + space_size_b, T(0));
-      pack_block<T, packing_label::B>(view_b, KC, b.data(), space_b);
-
-      for (size_t i_c = 0; i_c < M; i_c += MC) {
-        const std::size_t mc_m = std::min(MC, M - i_c);
-        const matrix_view view_a = matr_a.subview(i_c, p_c, mc_m, k);
-
-        std::fill(space_a, space_a + space_size_a, T(0));
-        pack_block<T, packing_label::A>(view_a, KC, a.data(), space_a);
-
-        for (size_t j_r = 0; j_r < nc_n; j_r += NR) {
-          const std::size_t n = std::min(NR, nc_n - j_r);
-          const std::size_t cci = j_c + j_r;
-
-          const T* sliver_b = space_b + KC * j_r;
-
-          for (size_t i_r = 0; i_r < mc_m; i_r += MR) {
-            const std::size_t m = std::min(MR, mc_m - i_r);
-            const std::size_t cri = i_c + i_r;
-
-            const T* sliver_a = space_a + i_r * KC;
-
-            const matrix_view view_c = matr_c.subview(cri, cci, m, n);
-
-            std::fill(space_c, space_c + space_size_c, T(0));
-
-            auxinfo_t data;
-            gemm_kernel<T>(m, n, k, &alpha, sliver_a, sliver_b, &beta, space_c,
-                           1, MR, &data, cntx);
-
-            unpack(view_c, space_c, c.data());
-          }
+    } else {  // B
+      for (std::size_t k = 0; k < nrows; ++k) {
+        for (std::size_t l = 0; l < ncols; ++l) {
+          const std::size_t src_idx = is_dense ? (k * rsc + l * csc + offset)
+                                               : (cell.rs[k] + cell.cs[l]);
+          const auto& val = src[src_idx];
+          const std::size_t base = l + 2 * k * cell.bc;
+          dest[base] = val.real();
+          dest[base + cell.bc] = val.imag();
         }
       }
     }
   }
-
-  std::free(space_a);
 }
 
-template <TensorScalarCompound T, std::size_t ndim_a, std::size_t ndim_b,
-          std::size_t ndim_c, class U = typename T::value_type>
-void contract(const tensor<T, ndim_a>& a, const std::string& labels_a,
-              const tensor<T, ndim_b>& b, const std::string& labels_b,
-              tensor<T, ndim_c>& c, const std::string& labels_c,
-              const cntx_t* cntx = bli_gks_query_cntx()) {
-  using namespace t1m::internal;
-  using namespace t1m::bli;
+template <TensorScalar T, packing_label label,
+          typename U = underlying_scalar_t<T>>
+void pack_block(const matrix_view& block, const std::size_t length,
+                const T* src, U* dest) {
+  const std::size_t nrows = block.nrows();
+  const std::size_t ncols = block.ncols();
 
-  const auto& [MR, NR, KP, MC, KC, NC] = get_block_sizes<T>(cntx);
+  if constexpr (TensorScalarArithmetic<T>) {
+    if constexpr (label == A) {
+      for (std::size_t r = 0; r < nrows; r += block.br) {
+        for (std::size_t c = 0; c < ncols; c += block.bc) {
+          const std::size_t offset = c * block.br + r * length;
+
+          const std::size_t cell_nrows = std::min(block.br, nrows - r);
+          const std::size_t cell_ncols = std::min(block.bc, ncols - c);
+          const matrix_view cell = block.subview(r, c, cell_nrows, cell_ncols);
+
+          pack_cell<T, label>(cell, src, dest + offset);
+        }
+      }
+    } else {  // B
+      for (std::size_t c = 0; c < ncols; c += block.bc) {
+        for (std::size_t r = 0; r < nrows; r += block.br) {
+          const std::size_t offset = r * block.bc + c * length;
+
+          const std::size_t cell_nrows = std::min(block.br, nrows - r);
+          const std::size_t cell_ncols = std::min(block.bc, ncols - c);
+          const matrix_view cell = block.subview(r, c, cell_nrows, cell_ncols);
+
+          pack_cell<T, label>(cell, src, dest + offset);
+        }
+      }
+    }
+  } else {  // Use 1M Packing Format.
+    const std::size_t half_br = block.br / 2;
+    const std::size_t half_bc = block.bc / 2;
+
+    if constexpr (label == A) {
+      for (std::size_t r = 0; r < nrows; r += half_br) {
+        for (std::size_t c = 0; c < ncols; c += half_bc) {
+          const std::size_t offset = 2 * (c * block.br + r * length);
+
+          const std::size_t cell_nrows = std::min(half_br, nrows - r);
+          const std::size_t cell_ncols = std::min(half_bc, ncols - c);
+          const matrix_view cell = block.subview(r, c, cell_nrows, cell_ncols);
+
+          pack_cell<T, label>(cell, src, dest + offset);
+        }
+      }
+    } else {  // B
+      for (std::size_t c = 0; c < ncols; c += block.bc) {
+        for (std::size_t r = 0; r < nrows; r += half_br) {
+          const std::size_t offset = 2 * r * block.bc + c * length;
+
+          const std::size_t cell_nrows = std::min(half_br, nrows - r);
+          const std::size_t cell_ncols = std::min(block.bc, ncols - c);
+          const matrix_view cell = block.subview(r, c, cell_nrows, cell_ncols);
+
+          pack_cell<T, label>(cell, src, dest + offset);
+        }
+      }
+    }
+  }
+}
+
+template <TensorScalar T, typename U = underlying_scalar_t<T>>
+void unpack(const matrix_view& block, const U* src, T* dest) {
+  const std::size_t nrows = block.nrows();
+  const std::size_t ncols = block.ncols();
+
+  const std::size_t rsc = block.rbs[0];
+  const std::size_t csc = block.cbs[0];
+
+  const bool is_dense = (rsc > 0 && csc > 0);
+  const std::size_t offset = is_dense ? (block.rs[0] + block.cs[0]) : 0;
+
+  for (std::size_t l = 0; l < ncols; ++l) {
+    for (std::size_t k = 0; k < nrows; ++k) {
+      const std::size_t dest_idx =
+          is_dense ? (k * rsc + l * csc + offset) : (block.rs[k] + block.cs[l]);
+
+      if constexpr (TensorScalarArithmetic<T>) {
+        dest[dest_idx] += src[k + l * block.br];
+      } else {  // Use 1M Packing Format.
+        const std::size_t src_idx = 2 * k + l * block.br;
+        dest[dest_idx] += T(src[src_idx], src[src_idx + 1]);
+      }
+    }
+  }
+}
+
+template <TensorScalar T, std::size_t ndim_a, std::size_t ndim_b,
+          std::size_t ndim_c, typename U = underlying_scalar_t<T>>
+void contract(const U alpha, const tensor<T, ndim_a>& a,
+              const std::string& labels_a, const tensor<T, ndim_b>& b,
+              const std::string& labels_b, const U beta, tensor<T, ndim_c>& c,
+              const std::string& labels_c, const cntx_t* cntx) {
+  const auto& [MR, NR, KP, MC, KC, NC] = bli::get_block_sizes<T>(cntx);
 
   const auto [bundle_a, bundle_b, bundle_c] =
       get_index_bundles(labels_a, labels_b, labels_c);
@@ -578,54 +459,94 @@ void contract(const tensor<T, ndim_a>& a, const std::string& labels_a,
   U* space_b = space_a + space_size_a;
   U* space_c = space_b + space_size_b;
 
-  const U alpha = U(1);
-  const U beta = U(0);
-
   const std::size_t M = matr_a.nrows();
   const std::size_t K = matr_a.ncols();
   const std::size_t N = matr_b.ncols();
 
-  for (std::size_t j_c = 0; j_c < N; j_c += NC) {
-    const std::size_t nc_n = std::min(NC, N - j_c);
+  if constexpr (TensorScalarArithmetic<T>) {
+    for (std::size_t j_c = 0; j_c < N; j_c += NC) {
+      const std::size_t nc_n = std::min(NC, N - j_c);
 
-    for (std::size_t p_c = 0; p_c < K; p_c += KC / 2) {
-      const std::size_t k = std::min(KC / 2, K - p_c);
-      const dim_t k_real = k * 2;
+      for (std::size_t p_c = 0; p_c < K; p_c += KC) {
+        const std::size_t k = std::min(KC, K - p_c);
+        const matrix_view view_b = matr_b.subview(p_c, j_c, k, nc_n);
 
-      const matrix_view view_b = matr_b.subview(p_c, j_c, k, nc_n);
+        std::fill(space_b, space_b + space_size_b, U(0));
+        pack_block<T, packing_label::B>(view_b, KC, b.data(), space_b);
 
-      std::fill(space_b, space_b + space_size_b, U(0));
-      pack_block_1m<T, packing_label::B>(view_b, KC, b.data(), space_b);
+        for (size_t i_c = 0; i_c < M; i_c += MC) {
+          const std::size_t mc_m = std::min(MC, M - i_c);
+          const matrix_view view_a = matr_a.subview(i_c, p_c, mc_m, k);
 
-      for (size_t i_c = 0; i_c < M; i_c += MC / 2) {
-        const std::size_t mc_m = std::min(MC / 2, M - i_c);
-        const std::size_t mc_m_real = 2 * mc_m;
+          std::fill(space_a, space_a + space_size_a, U(0));
+          pack_block<T, packing_label::A>(view_a, KC, a.data(), space_a);
 
-        const matrix_view view_a = matr_a.subview(i_c, p_c, mc_m, k);
+          for (size_t j_r = 0; j_r < nc_n; j_r += NR) {
+            const T* sliver_b = space_b + KC * j_r;
 
-        std::fill(space_a, space_a + space_size_a, U(0));
-        pack_block_1m<T, packing_label::A>(view_a, KC, a.data(), space_a);
+            const std::size_t n = std::min(NR, nc_n - j_r);
+            const std::size_t cci = j_c + j_r;
 
-        for (size_t j_r = 0; j_r < nc_n; j_r += NR) {
-          const std::size_t n = std::min(NR, nc_n - j_r);
-          const std::size_t cci = j_c + j_r;
-          const U* sliver_b = space_b + KC * j_r;
+            for (size_t i_r = 0; i_r < mc_m; i_r += MR) {
+              const T* sliver_a = space_a + i_r * KC;
 
-          for (size_t i_r = 0; i_r < mc_m_real; i_r += MR) {
-            const std::size_t m = std::min(MR, mc_m_real - i_r);
-            const std::size_t cri = i_c + (i_r / 2);
+              const std::size_t m = std::min(MR, mc_m - i_r);
+              const std::size_t cri = i_c + i_r;
+              const matrix_view view_c = matr_c.subview(cri, cci, m, n);
 
-            const U* sliver_a = space_a + i_r * KC;
+              std::fill(space_c, space_c + space_size_c, U(0));
 
-            const matrix_view view_c = matr_c.subview(cri, cci, m / 2, n);
+              auxinfo_t data;
+              bli::gemm_kernel<T>(m, n, k, &alpha, sliver_a, sliver_b, &beta,
+                                  space_c, 1, MR, &data, cntx);
+              unpack(view_c, space_c, c.data());
+            }
+          }
+        }
+      }
+    }
+  } else {  // Use 1M 5-Loop Approach.
+    for (std::size_t j_c = 0; j_c < N; j_c += NC) {
+      const std::size_t nc_n = std::min(NC, N - j_c);
 
-            std::fill(space_c, space_c + space_size_c, U(0));
+      for (std::size_t p_c = 0; p_c < K; p_c += KC / 2) {
+        const std::size_t k = std::min(KC / 2, K - p_c);
+        const dim_t k_real = k * 2;
 
-            auxinfo_t data;
-            gemm_kernel<T>(m, n, k_real, &alpha, sliver_a, sliver_b, &beta,
-                           space_c, 1, MR, &data, cntx);
+        const matrix_view view_b = matr_b.subview(p_c, j_c, k, nc_n);
 
-            unpack_1m(view_c, space_c, c.data());
+        std::fill(space_b, space_b + space_size_b, U(0));
+        pack_block<T, packing_label::B>(view_b, KC, b.data(), space_b);
+
+        for (size_t i_c = 0; i_c < M; i_c += MC / 2) {
+          const std::size_t mc_m = std::min(MC / 2, M - i_c);
+          const std::size_t mc_m_real = 2 * mc_m;
+
+          const matrix_view view_a = matr_a.subview(i_c, p_c, mc_m, k);
+
+          std::fill(space_a, space_a + space_size_a, U(0));
+          pack_block<T, packing_label::A>(view_a, KC, a.data(), space_a);
+
+          for (size_t j_r = 0; j_r < nc_n; j_r += NR) {
+            const U* sliver_b = space_b + KC * j_r;
+
+            const std::size_t n = std::min(NR, nc_n - j_r);
+            const std::size_t cci = j_c + j_r;
+
+            for (size_t i_r = 0; i_r < mc_m_real; i_r += MR) {
+              const U* sliver_a = space_a + i_r * KC;
+
+              const std::size_t m = std::min(MR, mc_m_real - i_r);
+              const std::size_t cri = i_c + (i_r / 2);
+              const matrix_view view_c = matr_c.subview(cri, cci, m / 2, n);
+
+              std::fill(space_c, space_c + space_size_c, U(0));
+
+              auxinfo_t data;
+              bli::gemm_kernel<T>(m, n, k_real, &alpha, sliver_a, sliver_b,
+                                  &beta, space_c, 1, MR, &data, cntx);
+              unpack(view_c, space_c, c.data());
+            }
           }
         }
       }
@@ -633,5 +554,25 @@ void contract(const tensor<T, ndim_a>& a, const std::string& labels_a,
   }
 
   std::free(space_a);
+}
+};  // namespace internal
+
+template <TensorScalarArithmetic T, std::size_t ndim_a, std::size_t ndim_b,
+          std::size_t ndim_c>
+void contract(const T alpha, const tensor<T, ndim_a>& a,
+              const std::string& labels_a, const tensor<T, ndim_b>& b,
+              const std::string& labels_b, const T beta, tensor<T, ndim_c>& c,
+              const std::string& labels_c,
+              const cntx_t* cntx = bli_gks_query_cntx()) {
+  internal::contract(alpha, a, labels_a, b, labels_b, beta, c, labels_c, cntx);
+}
+
+template <TensorScalarCompound T, std::size_t ndim_a, std::size_t ndim_b,
+          std::size_t ndim_c, class U = typename T::value_type>
+void contract(const tensor<T, ndim_a>& a, const std::string& labels_a,
+              const tensor<T, ndim_b>& b, const std::string& labels_b,
+              tensor<T, ndim_c>& c, const std::string& labels_c,
+              const cntx_t* cntx = bli_gks_query_cntx()) {
+  internal::contract(U(1), a, labels_a, b, labels_b, U(0), c, labels_c, cntx);
 }
 };  // namespace t1m
