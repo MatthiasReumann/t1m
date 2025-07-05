@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <cstring>
-#include <memory>
+#include <new>
 #include <numeric>
 #include <ranges>
 #include <vector>
@@ -461,7 +461,7 @@ void unpack_1m(const matrix_view& block, const U* src, T* dest) {
 };  // namespace internal
 
 template <TensorScalarArithmetic T, std::size_t ndim_a, std::size_t ndim_b,
-          std::size_t ndim_c, class Allocator = std::allocator<T>>
+          std::size_t ndim_c>
 void contract(const T alpha, const tensor<T, ndim_a>& a,
               const std::string& labels_a, const tensor<T, ndim_b>& b,
               const std::string& labels_b, const T beta, tensor<T, ndim_c>& c,
@@ -487,8 +487,10 @@ void contract(const T alpha, const tensor<T, ndim_a>& a,
   const std::size_t space_size_c = MR * NR;
   const std::size_t space_total = space_size_a + space_size_b + space_size_c;
 
-  Allocator alloc{};
-  T* space_a = std::allocator_traits<Allocator>::allocate(alloc, space_total);
+  T* space_a = static_cast<T*>(std::aligned_alloc(64, space_total * sizeof(T)));
+  if (!space_a) {
+    throw std::bad_alloc();
+  }
   T* space_b = space_a + space_size_a;
   T* space_c = space_b + space_size_b;
 
@@ -540,12 +542,11 @@ void contract(const T alpha, const tensor<T, ndim_a>& a,
     }
   }
 
-  std::allocator_traits<Allocator>::deallocate(alloc, space_a, space_total);
+  std::free(space_a);
 }
 
 template <TensorScalarCompound T, std::size_t ndim_a, std::size_t ndim_b,
-          std::size_t ndim_c, class U = typename T::value_type,
-          class Allocator = std::allocator<U>>
+          std::size_t ndim_c, class U = typename T::value_type>
 void contract(const tensor<T, ndim_a>& a, const std::string& labels_a,
               const tensor<T, ndim_b>& b, const std::string& labels_b,
               tensor<T, ndim_c>& c, const std::string& labels_c,
@@ -570,8 +571,10 @@ void contract(const tensor<T, ndim_a>& a, const std::string& labels_a,
   const std::size_t space_size_c = MR * NR;
   const std::size_t space_total = space_size_a + space_size_b + space_size_c;
 
-  Allocator alloc{};
-  U* space_a = std::allocator_traits<Allocator>::allocate(alloc, space_total);
+  U* space_a = static_cast<U*>(std::aligned_alloc(64, space_total * sizeof(U)));
+  if (!space_a) {
+    throw std::bad_alloc();
+  }
   U* space_b = space_a + space_size_a;
   U* space_c = space_b + space_size_b;
 
@@ -629,6 +632,6 @@ void contract(const tensor<T, ndim_a>& a, const std::string& labels_a,
     }
   }
 
-  std::allocator_traits<Allocator>::deallocate(alloc, space_a, space_total);
+  std::free(space_a);
 }
 };  // namespace t1m
