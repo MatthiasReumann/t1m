@@ -82,16 +82,14 @@ struct index_bundle {
   std::vector<std::size_t> Y;
 };
 
-using index_bundle_tuple = std::tuple<index_bundle, index_bundle, index_bundle>;
-
 /**
  * @brief Compute index bundles for each of the labels.
  * @details An index bundle splits the positions (or indices) of a label into 
  *          a row and column set. Effectively, making the tensor a matrix.
  */
-[[nodiscard]] inline index_bundle_tuple get_index_bundles(
-    const std::string& labels_a, const std::string& labels_b,
-    const std::string& labels_c) {
+[[nodiscard]] constexpr std::tuple<index_bundle, index_bundle, index_bundle>
+get_index_bundles(const std::string& labels_a, const std::string& labels_b,
+                  const std::string& labels_c) {
 
   // Copy for sorting.
   std::string a(labels_a);
@@ -134,7 +132,7 @@ using index_bundle_tuple = std::tuple<index_bundle, index_bundle, index_bundle>;
     CY[i] = labels_c.find(free_b[i]);
   }
 
-  return index_bundle_tuple{{AX, AY}, {BX, BY}, {CX, CY}};
+  return {{AX, AY}, {BX, BY}, {CX, CY}};
 }
 
 /**
@@ -178,7 +176,7 @@ template <std::size_t ndim>
 /**
  * @brief Compute block scatter vector.
  */
-[[nodiscard]] inline std::vector<std::size_t> get_block_scatter(
+[[nodiscard]] constexpr std::vector<std::size_t> get_block_scatter(
     const std::span<const std::size_t> scat, const std::size_t b) {
   std::vector<std::size_t> block_scat;
 
@@ -475,31 +473,30 @@ void contract(const U alpha, const tensor<T, ndim_a>& a,
         const std::size_t k = std::min(KC, K - p_c);
         const matrix_view view_b = matr_b.subview(p_c, j_c, k, nc_n);
 
-        std::fill(space_b, space_b + space_size_b, T(0));
+        std::fill(space_b, space_b + space_size_b, U(0));
         pack_block<T, packing_label::B>(view_b, KC, b.data(), space_b);
 
         for (size_t i_c = 0; i_c < M; i_c += MC) {
           const std::size_t mc_m = std::min(MC, M - i_c);
           const matrix_view view_a = matr_a.subview(i_c, p_c, mc_m, k);
 
-          std::fill(space_a, space_a + space_size_a, T(0));
+          std::fill(space_a, space_a + space_size_a, U(0));
           pack_block<T, packing_label::A>(view_a, KC, a.data(), space_a);
 
           for (size_t j_r = 0; j_r < nc_n; j_r += NR) {
+            const T* sliver_b = space_b + KC * j_r;
+            
             const std::size_t n = std::min(NR, nc_n - j_r);
             const std::size_t cci = j_c + j_r;
 
-            const T* sliver_b = space_b + KC * j_r;
-
             for (size_t i_r = 0; i_r < mc_m; i_r += MR) {
+              const T* sliver_a = space_a + i_r * KC;
+              
               const std::size_t m = std::min(MR, mc_m - i_r);
               const std::size_t cri = i_c + i_r;
-
-              const T* sliver_a = space_a + i_r * KC;
-
               const matrix_view view_c = matr_c.subview(cri, cci, m, n);
 
-              std::fill(space_c, space_c + space_size_c, T(0));
+              std::fill(space_c, space_c + space_size_c, U(0));
 
               auxinfo_t data;
               bli::gemm_kernel<T>(m, n, k, &alpha, sliver_a, sliver_b, &beta,
@@ -533,16 +530,16 @@ void contract(const U alpha, const tensor<T, ndim_a>& a,
           pack_block<T, packing_label::A>(view_a, KC, a.data(), space_a);
 
           for (size_t j_r = 0; j_r < nc_n; j_r += NR) {
-            const std::size_t n = std::min(NR, nc_n - j_r);
-            const std::size_t cci = j_c + j_r;
             const U* sliver_b = space_b + KC * j_r;
 
+            const std::size_t n = std::min(NR, nc_n - j_r);
+            const std::size_t cci = j_c + j_r;
+
             for (size_t i_r = 0; i_r < mc_m_real; i_r += MR) {
+              const U* sliver_a = space_a + i_r * KC;
+              
               const std::size_t m = std::min(MR, mc_m_real - i_r);
               const std::size_t cri = i_c + (i_r / 2);
-
-              const U* sliver_a = space_a + i_r * KC;
-
               const matrix_view view_c = matr_c.subview(cri, cci, m / 2, n);
 
               std::fill(space_c, space_c + space_size_c, U(0));
@@ -550,7 +547,6 @@ void contract(const U alpha, const tensor<T, ndim_a>& a,
               auxinfo_t data;
               bli::gemm_kernel<T>(m, n, k_real, &alpha, sliver_a, sliver_b,
                                   &beta, space_c, 1, MR, &data, cntx);
-
               unpack(view_c, space_c, c.data());
             }
           }
