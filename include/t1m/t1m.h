@@ -276,8 +276,10 @@ enum packing_label {
   C   // Unpack only.
 };
 
-template <TensorScalarArithmetic T, packing_label label>
-void pack_cell(const matrix_view& cell, const T* src, T* dest) {
+template <TensorScalar T, packing_label label,
+          typename U = std::conditional_t<TensorScalarCompound<T>,
+                                          typename T::value_type, T>>
+void pack_cell(const matrix_view& cell, const T* src, U* dest) {
   const std::size_t nrows = cell.nrows();
   const std::size_t ncols = cell.ncols();
 
@@ -287,139 +289,126 @@ void pack_cell(const matrix_view& cell, const T* src, T* dest) {
   const bool is_dense = (rsc > 0 && csc > 0);
   const std::size_t offset = is_dense ? (cell.rs[0] + cell.cs[0]) : 0;
 
-  if constexpr (label == A) {
-    for (std::size_t l = 0; l < ncols; ++l) {
+  if constexpr (TensorScalarArithmetic<T>) {
+    if constexpr (label == A) {
+      for (std::size_t l = 0; l < ncols; ++l) {
+        for (std::size_t k = 0; k < nrows; ++k) {
+          const std::size_t src_idx = is_dense ? (k * rsc + l * csc + offset)
+                                               : (cell.rs[k] + cell.cs[l]);
+          dest[k + l * cell.br] = src[src_idx];
+        }
+      }
+    } else {  // B
       for (std::size_t k = 0; k < nrows; ++k) {
-        const std::size_t src_idx =
-            is_dense ? (k * rsc + l * csc + offset) : (cell.rs[k] + cell.cs[l]);
-        dest[k + l * cell.br] = src[src_idx];
+        for (std::size_t l = 0; l < ncols; ++l) {
+          const std::size_t src_idx = is_dense ? (k * rsc + l * csc + offset)
+                                               : (cell.rs[k] + cell.cs[l]);
+          dest[l + k * cell.bc] = src[src_idx];
+        }
       }
     }
-  } else {  // B
-    for (std::size_t k = 0; k < nrows; ++k) {
+  } else {  // Use 1M Packing Format.
+    if constexpr (label == A) {
       for (std::size_t l = 0; l < ncols; ++l) {
-        const std::size_t src_idx =
-            is_dense ? (k * rsc + l * csc + offset) : (cell.rs[k] + cell.cs[l]);
-        dest[l + k * cell.bc] = src[src_idx];
+        for (std::size_t k = 0; k < nrows; ++k) {
+          const std::size_t src_idx = is_dense ? (k * rsc + l * csc + offset)
+                                               : (cell.rs[k] + cell.cs[l]);
+          const auto& val = src[src_idx];
+          const auto real = val.real();
+          const auto imag = val.imag();
+
+          const std::size_t base = 2 * k + 2 * l * cell.br;
+          dest[base] = real;
+          dest[base + 1] = imag;
+          dest[base + cell.br] = -imag;
+          dest[base + cell.br + 1] = real;
+        }
+      }
+    } else {  // B
+      for (std::size_t k = 0; k < nrows; ++k) {
+        for (std::size_t l = 0; l < ncols; ++l) {
+          const std::size_t src_idx = is_dense ? (k * rsc + l * csc + offset)
+                                               : (cell.rs[k] + cell.cs[l]);
+          const auto& val = src[src_idx];
+          const std::size_t base = l + 2 * k * cell.bc;
+          dest[base] = val.real();
+          dest[base + cell.bc] = val.imag();
+        }
       }
     }
   }
 }
 
-template <TensorScalarCompound T, packing_label label,
-          class U = typename T::value_type>
-void pack_cell_1m(const matrix_view& cell, const T* src, U* dest) {
-  const std::size_t nrows = cell.nrows();
-  const std::size_t ncols = cell.ncols();
-
-  const std::size_t rsc = cell.rbs[0];
-  const std::size_t csc = cell.cbs[0];
-
-  const bool is_dense = (rsc > 0 && csc > 0);
-  const std::size_t offset = is_dense ? (cell.rs[0] + cell.cs[0]) : 0;
-
-  if constexpr (label == A) {
-    for (std::size_t l = 0; l < ncols; ++l) {
-      for (std::size_t k = 0; k < nrows; ++k) {
-        const std::size_t src_idx =
-            is_dense ? (k * rsc + l * csc + offset) : (cell.rs[k] + cell.cs[l]);
-        const auto& val = src[src_idx];
-        const auto real = val.real();
-        const auto imag = val.imag();
-
-        const std::size_t base = 2 * k + 2 * l * cell.br;
-        dest[base] = real;
-        dest[base + 1] = imag;
-        dest[base + cell.br] = -imag;
-        dest[base + cell.br + 1] = real;
-      }
-    }
-  } else {  // B
-    for (std::size_t k = 0; k < nrows; ++k) {
-      for (std::size_t l = 0; l < ncols; ++l) {
-        const std::size_t src_idx =
-            is_dense ? (k * rsc + l * csc + offset) : (cell.rs[k] + cell.cs[l]);
-        const auto& val = src[src_idx];
-
-        const std::size_t base = l + 2 * k * cell.bc;
-        dest[base] = val.real();
-        dest[base + cell.bc] = val.imag();
-      }
-    }
-  }
-}
-
-template <TensorScalarArithmetic T, packing_label label>
+template <TensorScalar T, packing_label label,
+          typename U = std::conditional_t<TensorScalarCompound<T>,
+                                          typename T::value_type, T>>
 void pack_block(const matrix_view& block, const std::size_t length,
-                const T* src, T* dest) {
+                const T* src, U* dest) {
   const std::size_t nrows = block.nrows();
   const std::size_t ncols = block.ncols();
 
-  if constexpr (label == A) {
-    for (std::size_t r = 0; r < nrows; r += block.br) {
-      for (std::size_t c = 0; c < ncols; c += block.bc) {
-        const std::size_t offset = c * block.br + r * length;
-
-        const std::size_t cell_nrows = std::min(block.br, nrows - r);
-        const std::size_t cell_ncols = std::min(block.bc, ncols - c);
-        const matrix_view cell = block.subview(r, c, cell_nrows, cell_ncols);
-
-        pack_cell<T, label>(cell, src, dest + offset);
-      }
-    }
-  } else {  // B
-    for (std::size_t c = 0; c < ncols; c += block.bc) {
+  if constexpr (TensorScalarArithmetic<T>) {
+    if constexpr (label == A) {
       for (std::size_t r = 0; r < nrows; r += block.br) {
-        const std::size_t offset = r * block.bc + c * length;
+        for (std::size_t c = 0; c < ncols; c += block.bc) {
+          const std::size_t offset = c * block.br + r * length;
 
-        const std::size_t cell_nrows = std::min(block.br, nrows - r);
-        const std::size_t cell_ncols = std::min(block.bc, ncols - c);
-        const matrix_view cell = block.subview(r, c, cell_nrows, cell_ncols);
+          const std::size_t cell_nrows = std::min(block.br, nrows - r);
+          const std::size_t cell_ncols = std::min(block.bc, ncols - c);
+          const matrix_view cell = block.subview(r, c, cell_nrows, cell_ncols);
 
-        pack_cell<T, label>(cell, src, dest + offset);
+          pack_cell<T, label>(cell, src, dest + offset);
+        }
+      }
+    } else {  // B
+      for (std::size_t c = 0; c < ncols; c += block.bc) {
+        for (std::size_t r = 0; r < nrows; r += block.br) {
+          const std::size_t offset = r * block.bc + c * length;
+
+          const std::size_t cell_nrows = std::min(block.br, nrows - r);
+          const std::size_t cell_ncols = std::min(block.bc, ncols - c);
+          const matrix_view cell = block.subview(r, c, cell_nrows, cell_ncols);
+
+          pack_cell<T, label>(cell, src, dest + offset);
+        }
       }
     }
-  }
-}
+  } else {  // Use 1M Packing Format.
+    const std::size_t half_br = block.br / 2;
+    const std::size_t half_bc = block.bc / 2;
 
-template <TensorScalarCompound T, packing_label label,
-          class U = typename T::value_type>
-void pack_block_1m(const matrix_view& block, const std::size_t length,
-                   const T* src, U* dest) {
-  const std::size_t nrows = block.nrows();
-  const std::size_t ncols = block.ncols();
-  const std::size_t half_br = block.br / 2;
-  const std::size_t half_bc = block.bc / 2;
-
-  if constexpr (label == A) {
-    for (std::size_t r = 0; r < nrows; r += half_br) {
-      for (std::size_t c = 0; c < ncols; c += half_bc) {
-        const std::size_t offset = 2 * (c * block.br + r * length);
-
-        const std::size_t cell_nrows = std::min(half_br, nrows - r);
-        const std::size_t cell_ncols = std::min(half_bc, ncols - c);
-        const matrix_view cell = block.subview(r, c, cell_nrows, cell_ncols);
-
-        pack_cell_1m<T, label>(cell, src, dest + offset);
-      }
-    }
-  } else {  // B
-    for (std::size_t c = 0; c < ncols; c += block.bc) {
+    if constexpr (label == A) {
       for (std::size_t r = 0; r < nrows; r += half_br) {
-        const std::size_t offset = 2 * r * block.bc + c * length;
+        for (std::size_t c = 0; c < ncols; c += half_bc) {
+          const std::size_t offset = 2 * (c * block.br + r * length);
 
-        const std::size_t cell_nrows = std::min(half_br, nrows - r);
-        const std::size_t cell_ncols = std::min(block.bc, ncols - c);
-        const matrix_view cell = block.subview(r, c, cell_nrows, cell_ncols);
+          const std::size_t cell_nrows = std::min(half_br, nrows - r);
+          const std::size_t cell_ncols = std::min(half_bc, ncols - c);
+          const matrix_view cell = block.subview(r, c, cell_nrows, cell_ncols);
 
-        pack_cell_1m<T, label>(cell, src, dest + offset);
+          pack_cell<T, label>(cell, src, dest + offset);
+        }
+      }
+    } else {  // B
+      for (std::size_t c = 0; c < ncols; c += block.bc) {
+        for (std::size_t r = 0; r < nrows; r += half_br) {
+          const std::size_t offset = 2 * r * block.bc + c * length;
+
+          const std::size_t cell_nrows = std::min(half_br, nrows - r);
+          const std::size_t cell_ncols = std::min(block.bc, ncols - c);
+          const matrix_view cell = block.subview(r, c, cell_nrows, cell_ncols);
+
+          pack_cell<T, label>(cell, src, dest + offset);
+        }
       }
     }
   }
 }
 
-template <TensorScalarArithmetic T>
-void unpack(const matrix_view& block, const T* src, T* dest) {
+template <TensorScalar T,
+          typename U = std::conditional_t<TensorScalarCompound<T>,
+                                          typename T::value_type, T>>
+void unpack(const matrix_view& block, const U* src, T* dest) {
   const std::size_t nrows = block.nrows();
   const std::size_t ncols = block.ncols();
 
@@ -433,31 +422,37 @@ void unpack(const matrix_view& block, const T* src, T* dest) {
     for (std::size_t k = 0; k < nrows; ++k) {
       const std::size_t dest_idx =
           is_dense ? (k * rsc + l * csc + offset) : (block.rs[k] + block.cs[l]);
-      dest[dest_idx] += src[k + l * block.br];
+
+      if constexpr (TensorScalarArithmetic<T>) {
+        dest[dest_idx] += src[k + l * block.br];
+      } else {  // Use 1M Packing Format.
+        const std::size_t src_idx = 2 * k + l * block.br;
+        dest[dest_idx] += T(src[src_idx], src[src_idx + 1]);
+      }
     }
   }
 }
 
-template <TensorScalarCompound T, class U = typename T::value_type>
-void unpack_1m(const matrix_view& block, const U* src, T* dest) {
-  const std::size_t nrows = block.nrows();
-  const std::size_t ncols = block.ncols();
+// template <TensorScalarCompound T, class U = typename T::value_type>
+// void unpack_1m(const matrix_view& block, const U* src, T* dest) {
+//   const std::size_t nrows = block.nrows();
+//   const std::size_t ncols = block.ncols();
 
-  const std::size_t rsc = block.rbs[0];
-  const std::size_t csc = block.cbs[0];
+//   const std::size_t rsc = block.rbs[0];
+//   const std::size_t csc = block.cbs[0];
 
-  const bool is_dense = (rsc > 0 && csc > 0);
-  const std::size_t offset = is_dense ? (block.rs[0] + block.cs[0]) : 0;
+//   const bool is_dense = (rsc > 0 && csc > 0);
+//   const std::size_t offset = is_dense ? (block.rs[0] + block.cs[0]) : 0;
 
-  for (std::size_t l = 0; l < ncols; ++l) {
-    for (std::size_t k = 0; k < nrows; ++k) {
-      const std::size_t dest_idx =
-          is_dense ? (k * rsc + l * csc + offset) : (block.rs[k] + block.cs[l]);
-      const std::size_t src_idx = 2 * k + l * block.br;
-      dest[dest_idx] += T(src[src_idx], src[src_idx + 1]);
-    }
-  }
-}
+//   for (std::size_t l = 0; l < ncols; ++l) {
+//     for (std::size_t k = 0; k < nrows; ++k) {
+//       const std::size_t dest_idx =
+//           is_dense ? (k * rsc + l * csc + offset) : (block.rs[k] + block.cs[l]);
+//       const std::size_t src_idx = 2 * k + l * block.br;
+//       dest[dest_idx] += T(src[src_idx], src[src_idx + 1]);
+//     }
+//   }
+// }
 };  // namespace internal
 
 template <TensorScalarArithmetic T, std::size_t ndim_a, std::size_t ndim_b,
@@ -534,7 +529,6 @@ void contract(const T alpha, const tensor<T, ndim_a>& a,
             auxinfo_t data;
             gemm_kernel<T>(m, n, k, &alpha, sliver_a, sliver_b, &beta, space_c,
                            1, MR, &data, cntx);
-
             unpack(view_c, space_c, c.data());
           }
         }
@@ -595,7 +589,7 @@ void contract(const tensor<T, ndim_a>& a, const std::string& labels_a,
       const matrix_view view_b = matr_b.subview(p_c, j_c, k, nc_n);
 
       std::fill(space_b, space_b + space_size_b, U(0));
-      pack_block_1m<T, packing_label::B>(view_b, KC, b.data(), space_b);
+      pack_block<T, packing_label::B>(view_b, KC, b.data(), space_b);
 
       for (size_t i_c = 0; i_c < M; i_c += MC / 2) {
         const std::size_t mc_m = std::min(MC / 2, M - i_c);
@@ -604,7 +598,7 @@ void contract(const tensor<T, ndim_a>& a, const std::string& labels_a,
         const matrix_view view_a = matr_a.subview(i_c, p_c, mc_m, k);
 
         std::fill(space_a, space_a + space_size_a, U(0));
-        pack_block_1m<T, packing_label::A>(view_a, KC, a.data(), space_a);
+        pack_block<T, packing_label::A>(view_a, KC, a.data(), space_a);
 
         for (size_t j_r = 0; j_r < nc_n; j_r += NR) {
           const std::size_t n = std::min(NR, nc_n - j_r);
@@ -625,7 +619,7 @@ void contract(const tensor<T, ndim_a>& a, const std::string& labels_a,
             gemm_kernel<T>(m, n, k_real, &alpha, sliver_a, sliver_b, &beta,
                            space_c, 1, MR, &data, cntx);
 
-            unpack_1m(view_c, space_c, c.data());
+            unpack(view_c, space_c, c.data());
           }
         }
       }
